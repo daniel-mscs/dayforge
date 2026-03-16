@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/exercicios")
+@CrossOrigin(origins = "*", allowedHeaders = "*") // LIBERA TUDO
 public class ExercicioController {
 
     @Autowired
@@ -32,5 +33,8 @@ public class ExercicioController {
                     return repository.save(exercicio);
                 }).orElseThrow(() -> new RuntimeException("Exercício não encontrado!"));
     }
-
+    @DeleteMapping("/{id}")
+    public void deletar(@PathVariable Long id) {
+        repository.deleteById(id);
+    }
 }

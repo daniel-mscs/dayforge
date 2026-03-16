@@ -1,20 +1,36 @@
 package com.daniel.workout.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
 
-@Entity // Avisa ao Java que isso é uma tabela no banco de dados
-@Data   // O Lombok cria os Getters e Setters automaticamente
+@Entity
 public class Exercicio {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // O banco gera o ID sozinho (1, 2, 3...)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nome;
     private int series;
     private int repeticoes;
-    private double carga; // Em kg
+    private double carga;
+    private String grupoMuscular;
+    private String treino;
 
-    private String grupoMuscular; // Ex: Peito, Costas, Pernas
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+
+    public int getSeries() { return series; }
+    public void setSeries(int series) { this.series = series; }
+
+    public int getRepeticoes() { return repeticoes; }
+    public void setRepeticoes(int repeticoes) { this.repeticoes = repeticoes; }
+
+    public double getCarga() { return carga; }
+    public void setCarga(double carga) { this.carga = carga; }
+
+    public String getGrupoMuscular() { return grupoMuscular; }
+    public void setGrupoMuscular(String grupoMuscular) { this.grupoMuscular = grupoMuscular; }
 }
