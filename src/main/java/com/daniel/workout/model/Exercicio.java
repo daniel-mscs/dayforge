@@ -2,19 +2,26 @@ package com.daniel.workout.model;
 
 import jakarta.persistence.*;
 
+// No seu Exercicio.java
 @Entity
 public class Exercicio {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nome;
+    private String grupoMuscular;
     private int series;
     private int repeticoes;
     private double carga;
-    private String grupoMuscular;
     private String treino;
+
+    public String getTreino() {
+        return treino;
+    }
+
+    public void setTreino(String treino) {
+        this.treino = treino;
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
