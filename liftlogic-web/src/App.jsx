@@ -1,32 +1,45 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { supabase } from './lib/supabase'
 import Login from './pages/Login'
-import Register from './pages/Register'
-import TreinoApp from './Treino' // importa Treino.jsx
+import Treino from './Treino'
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || null)
-  const [modoAuth, setModoAuth] = useState('login')
+  const [session, setSession] = useState(null)
+  const [carregando, setCarregando] = useState(true)
 
-  const onLoginSuccess = (tokenRecebido) => {
-    setToken(tokenRecebido)
-    localStorage.setItem('token', tokenRecebido)
+  useEffect(() => {
+    // Pega sessão atual ao carregar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setCarregando(false)
+    })
+
+    // Escuta mudanças de auth (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const logout = async () => {
+    await supabase.auth.signOut()
+    setSession(null)
   }
 
-  const logout = () => {
-    setToken(null)
-    localStorage.removeItem('token')
-    setModoAuth('login')
-  }
-
-  if (!token) {
-    return modoAuth === 'login' ? (
-      <Login onSwitchToRegister={() => setModoAuth('register')} onLoginSuccess={onLoginSuccess} />
-    ) : (
-      <Register onSwitchToLogin={() => setModoAuth('login')} />
+  if (carregando) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f1113', color: '#64748b', fontSize: '14px' }}>
+        Carregando...
+      </div>
     )
   }
 
-  return <TreinoApp logout={logout} token={token} />
+  if (!session) {
+    return <Login onLoginSuccess={setSession} />
+  }
+
+  return <Treino logout={logout} user={session.user} />
 }
 
 export default App

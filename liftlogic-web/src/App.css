@@ -26,7 +26,7 @@ body {
   flex-direction: column;
 }
 
-/* NAVEGAÇÃO PRINCIPAL */
+/* NAV */
 .main-nav {
   display: flex;
   gap: 10px;
@@ -53,6 +53,15 @@ body {
   background: #24282d;
   color: #f8fafc;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.nav-btn-logout {
+  flex: 0.5;
+  color: #ef4444;
+}
+
+.nav-btn-logout:hover {
+  background: #ef444422;
 }
 
 /* HEADER */
@@ -188,7 +197,6 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover { opacity: 0.85; }
-
 button[type="submit"]:disabled {
   background: #334155;
   cursor: not-allowed;
@@ -274,7 +282,33 @@ button[type="submit"]:disabled {
   color: #fbbf24;
 }
 
-/* INPUT DE DESCANSO */
+/* BOTÕES DE DESCANSO RÁPIDO */
+.quick-rest-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-quick-rest {
+  background: #1a1d21;
+  border: 1px solid #ffffff0d;
+  color: #94a3b8;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-rest:hover {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* INPUT MANUAL DE DESCANSO */
 .custom-rest-input {
   display: flex;
   flex-direction: column;
@@ -307,7 +341,7 @@ button[type="submit"]:disabled {
   color: #475569;
 }
 
-/* BOTÕES DE AÇÃO DO DESCANSO */
+/* BOTÕES PLAY/CANCELAR DESCANSO */
 .rest-actions {
   display: flex;
   gap: 15px;
@@ -350,7 +384,6 @@ button[type="submit"]:disabled {
 }
 
 .btn-cancel-rest:hover { background: #ef444433; }
-
 .btn-cancel-rest:disabled {
   opacity: 0.2;
   cursor: not-allowed;
@@ -375,7 +408,7 @@ button[type="submit"]:disabled {
   border-color: #ef4444;
 }
 
-/* CARDS */
+/* CARDS DE EXERCÍCIO */
 .card {
   position: relative;
   background: #1a1d21;
@@ -431,12 +464,6 @@ button[type="submit"]:disabled {
   text-transform: capitalize;
 }
 
-.exercise-stats {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
 .btn-check {
   background: none;
   border: none;
@@ -489,7 +516,7 @@ button[type="submit"]:disabled {
 
 .info strong { color: #94a3b8; }
 
-/* EDIÇÃO INLINE NOS CARDS */
+/* EDIÇÃO INLINE */
 .edit-stats-row {
   display: flex;
   align-items: center;
@@ -525,7 +552,6 @@ button[type="submit"]:disabled {
   width: 55px !important;
 }
 
-/* Remove as setinhas do input number para ficar mais limpo */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -533,9 +559,7 @@ input::-webkit-inner-spin-button {
 }
 
 /* HISTÓRICO */
-.historico-section {
-  width: 100%;
-}
+.historico-section { width: 100%; }
 
 .card-historico {
   background: #1a1d21;
@@ -641,3 +665,103 @@ input::-webkit-inner-spin-button {
   transform: scale(1.05);
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
+
+/* AUTH */
+.auth-container {
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  background: #1a1d21;
+  border: 1px solid #ffffff0d;
+  border-radius: 24px;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-logo {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+
+.auth-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.1em;
+}
+
+.auth-btn {
+  width: 100%;
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 4px;
+}
+
+.auth-btn:hover { opacity: 0.85; }
+.auth-btn:disabled { background: #334155; cursor: not-allowed; }
+
+.auth-erro {
+  color: #ef4444;
+  font-size: 13px;
+  text-align: center;
+}
+
+.auth-sucesso {
+  color: #10b981;
+  font-size: 13px;
+  text-align: center;
+}
+
+.auth-switch {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+  text-decoration: underline;
+}
+
+.auth-switch:hover { color: #818cf8; }
