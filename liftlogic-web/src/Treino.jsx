@@ -1,6 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import './App.css'
+
+// --- CARD ARRASTÁVEL ---
+function ExercicioCard({ ex, concluidos, treinando, toggleConcluido, atualizarExercicio, deletarExercicio }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={`card ${concluidos[ex.id] ? 'concluido' : ''}`}>
+      <div className="card-header">
+        <span className="tag">{ex.grupo_muscular}</span>
+        <div className="card-header-actions">
+          <span className="drag-handle" {...attributes} {...listeners}>☰</span>
+          <button className="btn-delete-mini" onClick={() => deletarExercicio(ex.id)}>×</button>
+        </div>
+      </div>
+      <div className="card-main-row">
+        {treinando && (
+          <button className="btn-check" onClick={() => toggleConcluido(ex.id)}>
+            {concluidos[ex.id] ? '✅' : '⭕'}
+          </button>
+        )}
+        <div className="exercise-details">
+          <h3>{ex.nome}</h3>
+          <div className="edit-stats-row">
+            <input type="number" className="inline-edit" defaultValue={ex.series} onBlur={e => atualizarExercicio(ex.id, 'series', e.target.value)} />
+            <span>séries x</span>
+            <input type="number" className="inline-edit" defaultValue={ex.repeticoes} onBlur={e => atualizarExercicio(ex.id, 'repeticoes', e.target.value)} />
+            <span>reps</span>
+          </div>
+        </div>
+      </div>
+      <div className="info">
+        <div className="carga-edit">
+          <span>Carga:</span>
+          <input type="number" className="inline-edit carga-input" defaultValue={ex.carga} onBlur={e => atualizarExercicio(ex.id, 'carga', e.target.value)} />
+          <strong>kg</strong>
+        </div>
+        <p>{Number(ex.series || 0) * Number(ex.repeticoes || 0) * Number(ex.carga || 0)} kg</p>
+      </div>
+    </div>
+  )
+}
 
 function Treino({ logout, user }) {
   const [exercicios, setExercicios] = useState([])
@@ -24,6 +85,13 @@ function Treino({ logout, user }) {
   const [novoExercicio, setNovoExercicio] = useState({
     nome: '', series: '', repeticoes: '', carga: '', grupo_muscular: '', treino: 'A'
   })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    })
+  )
 
   // --- SOM ---
   const tocarAlertaLongo = () => {
@@ -50,7 +118,7 @@ function Treino({ logout, user }) {
       .from('exercicio')
       .select('*')
       .eq('user_id', user.id)
-      .order('nome', { ascending: true })
+      .order('ordem', { ascending: true })
     if (error) console.error('Erro:', error.message)
     else setExercicios(data || [])
     setCarregando(false)
@@ -106,6 +174,28 @@ function Treino({ logout, user }) {
     setInputDescanso('')
   }
 
+  // --- DRAG AND DROP ---
+  const handleDragEnd = async (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const exerciciosFiltrados = exercicios.filter(ex => ex.treino === treinoAtivo)
+    const outrosExercicios = exercicios.filter(ex => ex.treino !== treinoAtivo)
+
+    const oldIndex = exerciciosFiltrados.findIndex(ex => ex.id === active.id)
+    const newIndex = exerciciosFiltrados.findIndex(ex => ex.id === over.id)
+    const novaOrdem = arrayMove(exerciciosFiltrados, oldIndex, newIndex)
+
+    // Atualiza localmente primeiro (UX instantânea)
+    setExercicios([...outrosExercicios, ...novaOrdem])
+
+    // Salva no Supabase
+    const updates = novaOrdem.map((ex, index) =>
+      supabase.from('exercicio').update({ ordem: index }).eq('id', ex.id).eq('user_id', user.id)
+    )
+    await Promise.all(updates)
+  }
+
   // --- AÇÕES ---
   const finalizarTreino = async () => {
     const filtrados = exercicios.filter(ex => ex.treino === treinoAtivo)
@@ -128,6 +218,7 @@ function Treino({ logout, user }) {
   const salvarExercicio = async (e) => {
     e.preventDefault()
     setCarregando(true)
+    const exerciciosFiltrados = exercicios.filter(ex => ex.treino === treinoAtivo)
     const { error } = await supabase.from('exercicio').insert([{
       nome: novoExercicio.nome,
       grupo_muscular: novoExercicio.grupo_muscular,
@@ -135,7 +226,8 @@ function Treino({ logout, user }) {
       repeticoes: Number(novoExercicio.repeticoes),
       carga: Number(novoExercicio.carga),
       treino: treinoAtivo,
-      user_id: user.id
+      user_id: user.id,
+      ordem: exerciciosFiltrados.length
     }])
     if (error) alert(error.message)
     else {
@@ -214,7 +306,6 @@ function Treino({ logout, user }) {
                   <span>TEMPO DE TREINO</span>
                   <strong>{formatarTempo(tempoTotal)}</strong>
                 </div>
-
                 <div className={`rest-timer ${descanso > 0 ? 'active' : ''}`}>
                   <span>DESCANSO</span>
                   <strong>{formatarTempo(descanso)}</strong>
@@ -238,7 +329,6 @@ function Treino({ logout, user }) {
                     </div>
                   </div>
                 </div>
-
                 <button className="btn-stop-workout" onClick={finalizarTreino}>Finalizar Treino</button>
               </div>
             )}
@@ -270,38 +360,21 @@ function Treino({ logout, user }) {
             {!carregando && exerciciosFiltrados.length === 0 && (
               <p className="empty-msg">Nenhum exercício no Treino {treinoAtivo}. Adicione um! 💪</p>
             )}
-            {exerciciosFiltrados.map(ex => (
-              <div key={ex.id} className={`card ${concluidos[ex.id] ? 'concluido' : ''}`}>
-                <div className="card-header">
-                  <span className="tag">{ex.grupo_muscular}</span>
-                  <button className="btn-delete-mini" onClick={() => deletarExercicio(ex.id)}>×</button>
-                </div>
-                <div className="card-main-row">
-                  {treinando && (
-                    <button className="btn-check" onClick={() => toggleConcluido(ex.id)}>
-                      {concluidos[ex.id] ? '✅' : '⭕'}
-                    </button>
-                  )}
-                  <div className="exercise-details">
-                    <h3>{ex.nome}</h3>
-                    <div className="edit-stats-row">
-                      <input type="number" className="inline-edit" defaultValue={ex.series} onBlur={e => atualizarExercicio(ex.id, 'series', e.target.value)} />
-                      <span>séries x</span>
-                      <input type="number" className="inline-edit" defaultValue={ex.repeticoes} onBlur={e => atualizarExercicio(ex.id, 'repeticoes', e.target.value)} />
-                      <span>reps</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="info">
-                  <div className="carga-edit">
-                    <span>Carga:</span>
-                    <input type="number" className="inline-edit carga-input" defaultValue={ex.carga} onBlur={e => atualizarExercicio(ex.id, 'carga', e.target.value)} />
-                    <strong>kg</strong>
-                  </div>
-                  <p>{Number(ex.series || 0) * Number(ex.repeticoes || 0) * Number(ex.carga || 0)} kg</p>
-                </div>
-              </div>
-            ))}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={exerciciosFiltrados.map(ex => ex.id)} strategy={verticalListSortingStrategy}>
+                {exerciciosFiltrados.map(ex => (
+                  <ExercicioCard
+                    key={ex.id}
+                    ex={ex}
+                    concluidos={concluidos}
+                    treinando={treinando}
+                    toggleConcluido={toggleConcluido}
+                    atualizarExercicio={atualizarExercicio}
+                    deletarExercicio={deletarExercicio}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </>
       )}

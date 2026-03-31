@@ -765,3 +765,21 @@ input::-webkit-inner-spin-button {
 }
 
 .auth-switch:hover { color: #818cf8; }
+
+.drag-handle {
+  cursor: grab;
+  font-size: 1.2rem;
+  color: #888;
+  padding: 0 4px;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
