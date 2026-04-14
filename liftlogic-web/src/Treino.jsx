@@ -81,9 +81,10 @@ function Treino({ logout, user }) {
   })
   const [concluidos, setConcluidos] = useState({})
   const [carregando, setCarregando] = useState(false)
-const [abaPrincipal, setAbaPrincipal] = useState('treino')
+  const [abaPrincipal, setAbaPrincipal] = useState('treino')
   const [historico, setHistorico] = useState([])
   const [modalResumo, setModalResumo] = useState(null)
+  const [showMore, setShowMore] = useState(false)
 
 
   const [treinando, setTreinando] = useState(() => {
@@ -409,30 +410,61 @@ const buscarDashboard = async () => {
         </div>
       )}
 
-      <nav className="main-nav">
-        <button className={abaPrincipal === 'home' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('home')}>🏠</button>
-        <button className={abaPrincipal === 'treino' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('treino')}>🏋️‍♂️</button>
-        <button className={abaPrincipal === 'rotina' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('rotina')}>📋</button>
-        <button className={abaPrincipal === 'agua' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('agua')}>💧</button>
-        <button className={abaPrincipal === 'peso' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('peso')}>⚖️</button>
-        <button className={abaPrincipal === 'suplementos' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('suplementos')}>💊</button>
-        <button className={abaPrincipal === 'dieta' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('dieta')}>🥗</button>
-        <button className={abaPrincipal === 'macros' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('macros')}>🍽️</button>
-         <button className={abaPrincipal === 'historico' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('historico')}>📜</button>
-        <button className={abaPrincipal === 'perfil' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('perfil')}>👤</button>
-        <button className={abaPrincipal === 'dashboard' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('dashboard')}>📊</button>
-        <button className="nav-btn nav-btn-logout" onClick={logout}>Sair</button>
+      {/* Bottom Nav */}
+      <nav className="bottom-nav">
+        <button className={`bottom-nav-btn ${abaPrincipal === 'home' ? 'active' : ''}`} onClick={() => setAbaPrincipal('home')}>
+          <span>🏠</span><span>Home</span>
+        </button>
+        <button className={`bottom-nav-btn ${abaPrincipal === 'treino' ? 'active' : ''}`} onClick={() => setAbaPrincipal('treino')}>
+          <span>🏋️</span><span>Treino</span>
+        </button>
+        <button className={`bottom-nav-btn ${abaPrincipal === 'rotina' ? 'active' : ''}`} onClick={() => setAbaPrincipal('rotina')}>
+          <span>📋</span><span>Rotina</span>
+        </button>
+        <div className="bottom-nav-more-wrap">
+          <button className={`bottom-nav-btn ${['agua','peso','suplementos','dieta','macros','historico','dashboard'].includes(abaPrincipal) ? 'active' : ''}`} onClick={() => setShowMore(p => !p)}>
+            <span>⚡</span><span>Mais</span>
+          </button>
+          {showMore && (
+            <div className="bottom-nav-more-menu">
+              {[
+                { id: 'agua',        icon: '💧', label: 'Água'        },
+                { id: 'peso',        icon: '⚖️', label: 'Peso'        },
+                { id: 'dieta',       icon: '🥗', label: 'Dieta'       },
+                { id: 'suplementos', icon: '💊', label: 'Suplementos' },
+                { id: 'macros',      icon: '🍽️', label: 'Macros'      },
+                { id: 'historico',   icon: '📜', label: 'Histórico'   },
+                { id: 'dashboard',   icon: '📊', label: 'Stats'       },
+              ].map(item => (
+                <button key={item.id} className={`more-menu-item ${abaPrincipal === item.id ? 'active' : ''}`}
+                  onClick={() => { setAbaPrincipal(item.id); setShowMore(false) }}>
+                  <span>{item.icon}</span><span>{item.label}</span>
+                </button>
+              ))}
+              <button className="more-menu-item more-menu-logout" onClick={logout}>
+                <span>🚪</span><span>Sair</span>
+              </button>
+            </div>
+          )}
+        </div>
+        <button className={`bottom-nav-btn ${abaPrincipal === 'perfil' ? 'active' : ''}`} onClick={() => setAbaPrincipal('perfil')}>
+          <span>👤</span><span>Perfil</span>
+        </button>
       </nav>
 
-      {abaPrincipal === 'home' && (
-        <Home
-          user={user}
-          onIniciarTreino={() => setAbaPrincipal('treino')}
-          treinando={treinando}
-          treinoAtivo={treinoAtivo}
-          divisao={divisao}
-        />
-      )}
+      {/* Overlay pra fechar o menu */}
+      {showMore && <div className="bottom-nav-overlay" onClick={() => setShowMore(false)} />}
+
+        {abaPrincipal === 'home' && (
+          <Home
+            user={user}
+            onIniciarTreino={() => setAbaPrincipal('treino')}
+            treinando={treinando}
+            treinoAtivo={treinoAtivo}
+            divisao={divisao}
+            onNavegar={setAbaPrincipal}
+          />
+        )}
 
       {abaPrincipal === 'rotina' && (
             <Rotina user={user} />

@@ -42,7 +42,7 @@ function getDaysLeft() {
   return { diasRestantes, pct: Math.round((diaDoAno / totalDias) * 100) }
 }
 
-export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, divisao }) {
+export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, divisao, onNavegar }) {
   const [perfil, setPerfil]       = useState(null)
   const [historico, setHistorico] = useState([])
   const [streak, setStreak]       = useState(0)
@@ -194,7 +194,7 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
 
       {/* Cards água + peso */}
       <div className="home-cards-row">
-        <div className="home-mini-card">
+        <div className="home-mini-card" onClick={() => onNavegar('agua')} style={{ cursor: 'pointer' }}>
           <div className="home-mini-icon">💧</div>
           <div className="home-mini-info">
             <div className="home-mini-label">ÁGUA HOJE</div>
@@ -205,7 +205,7 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
             <div className="home-mini-sub">{pctAgua}% da meta ({aguaHoje.meta.toLocaleString('pt-BR')} ml)</div>
           </div>
         </div>
-        <div className="home-mini-card">
+        <div className="home-mini-card" onClick={() => onNavegar('peso')} style={{ cursor: 'pointer' }}>
           <div className="home-mini-icon">⚖️</div>
           <div className="home-mini-info">
             <div className="home-mini-label">PESO HOJE</div>
