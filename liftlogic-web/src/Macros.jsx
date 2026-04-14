@@ -7,76 +7,78 @@ function formatarData(date) {
 
 function round1(n) { return Math.round(n * 10) / 10 }
 
-const ALIMENTOS_BASE = [
-  { nome: 'Arroz branco cozido',     kcal: 128, prot: 2.5,  carb: 28.1, gord: 0.2  },
-  { nome: 'Arroz integral cozido',   kcal: 124, prot: 2.6,  carb: 25.8, gord: 1.0  },
-  { nome: 'Batata doce cozida',      kcal: 77,  prot: 1.4,  carb: 18.4, gord: 0.1  },
-  { nome: 'Batata inglesa cozida',   kcal: 56,  prot: 1.6,  carb: 13.0, gord: 0.1  },
-  { nome: 'Macarrão cozido',         kcal: 130, prot: 4.3,  carb: 26.4, gord: 0.9  },
-  { nome: 'Pão francês',             kcal: 300, prot: 8.0,  carb: 58.6, gord: 3.1  },
-  { nome: 'Aveia em flocos',         kcal: 394, prot: 13.9, carb: 67.0, gord: 8.5  },
-  { nome: 'Feijão cozido',           kcal: 76,  prot: 4.8,  carb: 13.5, gord: 0.5  },
-  { nome: 'Frango grelhado (peito)', kcal: 159, prot: 32.0, carb: 0.0,  gord: 2.7  },
-  { nome: 'Frango cozido (coxa)',    kcal: 191, prot: 26.0, carb: 0.0,  gord: 9.3  },
-  { nome: 'Carne bovina patinho',    kcal: 219, prot: 21.0, carb: 0.0,  gord: 14.5 },
-  { nome: 'Carne moída (patinho)',   kcal: 189, prot: 26.0, carb: 0.0,  gord: 9.5  },
-  { nome: 'Tilápia grelhada',        kcal: 128, prot: 26.2, carb: 0.0,  gord: 2.7  },
-  { nome: 'Salmão grelhado',         kcal: 208, prot: 20.0, carb: 0.0,  gord: 13.4 },
-  { nome: 'Atum em lata (água)',     kcal: 109, prot: 24.4, carb: 0.0,  gord: 0.9  },
-  { nome: 'Ovo inteiro cozido',      kcal: 155, prot: 12.6, carb: 1.1,  gord: 10.6 },
-  { nome: 'Clara de ovo',            kcal: 52,  prot: 11.0, carb: 0.7,  gord: 0.2  },
-  { nome: 'Whey protein',            kcal: 370, prot: 75.0, carb: 9.0,  gord: 4.0  },
-  { nome: 'Iogurte grego natural',   kcal: 97,  prot: 9.0,  carb: 3.6,  gord: 5.0  },
-  { nome: 'Leite em pó integral',    kcal: 496, prot: 24.6, carb: 39.4, gord: 26.3 },
-  { nome: 'Banana nanica',           kcal: 89,  prot: 1.1,  carb: 22.8, gord: 0.3  },
-  { nome: 'Maçã',                    kcal: 56,  prot: 0.3,  carb: 15.2, gord: 0.1  },
-  { nome: 'Azeite de oliva',         kcal: 884, prot: 0.0,  carb: 0.0,  gord: 100.0},
-  { nome: 'Amendoim torrado',        kcal: 567, prot: 25.8, carb: 16.1, gord: 49.2 },
-  { nome: 'Brócolis cozido',         kcal: 35,  prot: 2.4,  carb: 6.6,  gord: 0.4  },
-  { nome: 'Cenoura crua',            kcal: 34,  prot: 0.9,  carb: 7.9,  gord: 0.2  },
-  { nome: 'Salada (folhas mistas)',  kcal: 17,  prot: 1.3,  carb: 2.9,  gord: 0.2  },
+const REFEICOES_OPTS = [
+  { id: 'cafe',      label: '☀️ Café da manhã'  },
+  { id: 'lanche1',   label: '🍎 Lanche da manhã' },
+  { id: 'almoco',    label: '🍽️ Almoço'          },
+  { id: 'cafetarde', label: '☕ Café da tarde'   },
+  { id: 'janta',     label: '🌙 Janta'           },
+  { id: 'outro',     label: '⏰ Fora de horário' },
 ]
 
 function normalizar(t) { return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') }
 
+function calcTMB(perfil) {
+  if (!perfil?.peso || !perfil?.altura || !perfil?.idade || !perfil?.sexo) return null
+  if (perfil.sexo === 'M') return Math.round(88.36 + (13.4 * Number(perfil.peso)) + (4.8 * Number(perfil.altura)) - (5.7 * Number(perfil.idade)))
+  return Math.round(447.6 + (9.2 * Number(perfil.peso)) + (3.1 * Number(perfil.altura)) - (4.3 * Number(perfil.idade)))
+}
+
 export default function Macros({ user }) {
-  const [registros, setRegistros]       = useState([])
-  const [meta, setMeta]                 = useState(2000)
-  const [metaInput, setMetaInput]       = useState('')
-  const [carregando, setCarregando]     = useState(true)
-  const [customFoods, setCustomFoods]   = useState([])
-  const [query, setQuery]               = useState('')
-  const [sugestoes, setSugestoes]       = useState([])
-  const [foodSel, setFoodSel]           = useState(null)
-  const [gramas, setGramas]             = useState('')
+  const [registros, setRegistros]         = useState([])
+  const [meta, setMeta]                   = useState(2000)
+  const [metaInput, setMetaInput]         = useState('')
+  const [editandoMeta, setEditandoMeta]   = useState(false)
+  const [carregando, setCarregando]       = useState(true)
+  const [alimentosBase, setAlimentosBase] = useState([])
+  const [customFoods, setCustomFoods]     = useState([])
+  const [perfil, setPerfil]               = useState(null)
+  const [query, setQuery]                 = useState('')
+  const [sugestoes, setSugestoes]         = useState([])
+  const [foodSel, setFoodSel]             = useState(null)
+  const [gramas, setGramas]               = useState('')
+  const [refeicaoSel, setRefeicaoSel]     = useState('cafe')
   const [showCustomForm, setShowCustomForm] = useState(false)
-  const [novoAlimento, setNovoAlimento] = useState({ nome: '', kcal: '', prot: '', carb: '', gord: '' })
+  const [novoAlimento, setNovoAlimento]   = useState({ nome: '', kcal: '', prot: '', carb: '', gord: '' })
 
   const hoje = formatarData(new Date())
 
   const buscarTudo = useCallback(async () => {
     setCarregando(true)
-    const [{ data: regs }, { data: metaData }, { data: customs }] = await Promise.all([
-      supabase.from('macros_registro').select('*').eq('user_id', user.id).eq('data', hoje).order('created_at', { ascending: false }),
+    const [
+      { data: regs },
+      { data: metaData },
+      { data: customs },
+      { data: base },
+      { data: perfilData },
+    ] = await Promise.all([
+      supabase.from('macros_registro').select('*').eq('user_id', user.id).eq('data', hoje).order('created_at', { ascending: true }),
       supabase.from('macros_meta').select('*').eq('user_id', user.id).single(),
       supabase.from('alimentos_custom').select('*').eq('user_id', user.id),
+      supabase.from('alimentos_base').select('*').order('nome', { ascending: true }),
+      supabase.from('perfil').select('*').eq('user_id', user.id).single(),
     ])
     setRegistros(regs || [])
     if (metaData) setMeta(metaData.meta_kcal)
     setCustomFoods(customs || [])
+    setAlimentosBase(base || [])
+    if (perfilData) setPerfil(perfilData)
     setCarregando(false)
   }, [user.id])
 
   useEffect(() => { buscarTudo() }, [buscarTudo])
 
-  const todosAlimentos = [...ALIMENTOS_BASE, ...customFoods]
+  const todosAlimentos = [
+    ...alimentosBase,
+    ...customFoods.map(f => ({ ...f, custom: true }))
+  ]
 
   const buscarSugestoes = (q) => {
     setQuery(q)
     setFoodSel(null)
     if (!q.trim()) { setSugestoes([]); return }
     const norm = normalizar(q)
-    setSugestoes(todosAlimentos.filter(a => normalizar(a.nome).includes(norm)).slice(0, 6))
+    setSugestoes(todosAlimentos.filter(a => normalizar(a.nome).includes(norm)).slice(0, 8))
   }
 
   const selecionarFood = (food) => {
@@ -97,16 +99,30 @@ export default function Macros({ user }) {
 
   const preview = foodSel && gramas ? calcMacros(foodSel, parseFloat(gramas)) : null
 
+  const refeicaoAtualSugerida = () => {
+    const h = new Date().getHours()
+    if (h >= 5  && h <= 9)  return 'cafe'
+    if (h >= 10 && h <= 11) return 'lanche1'
+    if (h >= 12 && h <= 13) return 'almoco'
+    if (h >= 14 && h <= 17) return 'cafetarde'
+    if (h >= 18 && h <= 22) return 'janta'
+    return 'outro'
+  }
+
+  useEffect(() => { setRefeicaoSel(refeicaoAtualSugerida()) }, [])
+
   const adicionarAlimento = async () => {
     if (!foodSel) { alert('Selecione um alimento!'); return }
     const g = parseFloat(gramas)
     if (!g || g <= 0) { alert('Digite a quantidade em gramas!'); return }
     const m = calcMacros(foodSel, g)
+    const ref = REFEICOES_OPTS.find(r => r.id === refeicaoSel)
     const { data, error } = await supabase.from('macros_registro').insert([{
-      user_id: user.id, data: hoje, nome: foodSel.nome, gramas: g, ...m
+      user_id: user.id, data: hoje, nome: foodSel.nome,
+      gramas: g, refeicao: refeicaoSel, ...m
     }]).select()
     if (error) { alert('Erro: ' + error.message); return }
-    setRegistros(prev => [data[0], ...prev])
+    setRegistros(prev => [...prev, data[0]])
     setQuery(''); setGramas(''); setFoodSel(null); setSugestoes([])
   }
 
@@ -119,15 +135,15 @@ export default function Macros({ user }) {
     const val = parseInt(metaInput)
     if (!val || val < 500) { alert('Meta inválida!'); return }
     await supabase.from('macros_meta').upsert({ user_id: user.id, meta_kcal: val }, { onConflict: 'user_id' })
-    setMeta(val); setMetaInput('')
+    setMeta(val); setMetaInput(''); setEditandoMeta(false)
   }
 
   const salvarCustom = async () => {
     const { nome, kcal, prot, carb, gord } = novoAlimento
     if (!nome || !kcal) { alert('Preencha nome e calorias!'); return }
     const { data, error } = await supabase.from('alimentos_custom').insert([{
-      user_id: user.id, nome, kcal: parseFloat(kcal), prot: parseFloat(prot||0),
-      carb: parseFloat(carb||0), gord: parseFloat(gord||0)
+      user_id: user.id, nome, kcal: parseFloat(kcal),
+      prot: parseFloat(prot||0), carb: parseFloat(carb||0), gord: parseFloat(gord||0)
     }]).select()
     if (error) { alert('Erro: ' + error.message); return }
     setCustomFoods(prev => [...prev, data[0]])
@@ -143,6 +159,14 @@ export default function Macros({ user }) {
   }), { kcal: 0, prot: 0, carb: 0, gord: 0 })
 
   const pct = Math.min(100, Math.round((total.kcal / meta) * 100))
+  const tmb = calcTMB(perfil)
+
+  // Agrupa registros por refeição
+  const porRefeicao = REFEICOES_OPTS.reduce((acc, r) => {
+    const itens = registros.filter(reg => reg.refeicao === r.id)
+    if (itens.length > 0) acc[r.id] = { label: r.label, itens }
+    return acc
+  }, {})
 
   if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
 
@@ -150,10 +174,10 @@ export default function Macros({ user }) {
     <div className="macros-section">
       <h2 className="title-divisao">🍽️ Controle de Macros</h2>
 
-      {/* Resumo do dia */}
+      {/* Resumo */}
       <div className="macros-resumo">
         <div className="macros-resumo-top">
-          <div className="macros-resumo-kcal">
+          <div>
             <span className="macros-resumo-num">{total.kcal}</span>
             <span className="macros-resumo-unit">kcal</span>
           </div>
@@ -163,25 +187,84 @@ export default function Macros({ user }) {
           <div className="macros-bar-fill" style={{ width: `${pct}%`, background: pct >= 100 ? '#10b981' : '#f59e0b' }} />
         </div>
         <div className="macros-grid-mini">
-          <div className="macros-mini-item">
-            <span>🥩 Prot</span><strong>{total.prot}g</strong>
-          </div>
-          <div className="macros-mini-item">
-            <span>🍞 Carb</span><strong>{total.carb}g</strong>
-          </div>
-          <div className="macros-mini-item">
-            <span>🧈 Gord</span><strong>{total.gord}g</strong>
-          </div>
+          <div className="macros-mini-item"><span>🥩 Prot</span><strong>{total.prot}g</strong></div>
+          <div className="macros-mini-item"><span>🍞 Carb</span><strong>{total.carb}g</strong></div>
+          <div className="macros-mini-item"><span>🧈 Gord</span><strong>{total.gord}g</strong></div>
         </div>
+      </div>
+
+      {/* TMB */}
+      {tmb && (
+        <div className="macros-card">
+          <div className="macros-card-title">TAXA METABÓLICA BASAL (TMB)</div>
+          <div className="macros-tmb-row">
+            <div className="macros-tmb-item">
+              <span>Repouso</span>
+              <strong>{tmb} kcal</strong>
+              <small>sem atividade</small>
+            </div>
+            <div className="macros-tmb-item">
+              <span>Leve</span>
+              <strong>{Math.round(tmb * 1.375)} kcal</strong>
+              <small>1-3x/semana</small>
+            </div>
+            <div className="macros-tmb-item">
+              <span>Moderado</span>
+              <strong>{Math.round(tmb * 1.55)} kcal</strong>
+              <small>3-5x/semana</small>
+            </div>
+            <div className="macros-tmb-item">
+              <span>Intenso</span>
+              <strong>{Math.round(tmb * 1.725)} kcal</strong>
+              <small>6-7x/semana</small>
+            </div>
+          </div>
+          <p style={{ fontSize: 11, color: '#475569', marginTop: 10, lineHeight: 1.5 }}>
+            💡 Para emagrecer consuma 500–800 kcal abaixo do seu gasto total. Para ganhar massa, 300–500 acima.
+          </p>
+        </div>
+      )}
+
+      {/* Meta calórica */}
+      <div className="macros-card">
+        <div className="macros-card-title-row">
+          <div className="macros-card-title" style={{ margin: 0 }}>META CALÓRICA</div>
+          {!editandoMeta && (
+            <button className="peso-btn-alterar" onClick={() => setEditandoMeta(true)}>Alterar</button>
+          )}
+        </div>
+        {!editandoMeta ? (
+          <div className="macros-meta-display">
+            <span className="macros-meta-val">🎯 {meta.toLocaleString('pt-BR')} kcal/dia</span>
+            {tmb && (
+              <span className="macros-meta-diff" style={{ color: meta < tmb ? '#10b981' : '#64748b' }}>
+                {meta < tmb ? `${tmb - meta} kcal abaixo do TMB` : `${meta - tmb} kcal acima do TMB`}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="macros-add-row" style={{ marginTop: 0 }}>
+            <input
+              type="number"
+              placeholder={`Meta atual: ${meta} kcal`}
+              value={metaInput}
+              onChange={e => setMetaInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') salvarMeta() }}
+              autoFocus
+            />
+            <button className="macros-btn-add" onClick={salvarMeta}>Salvar</button>
+            <button className="peso-btn-cancelar" onClick={() => { setEditandoMeta(false); setMetaInput('') }}>✕</button>
+          </div>
+        )}
       </div>
 
       {/* Busca alimento */}
       <div className="macros-card">
         <div className="macros-card-title">ADICIONAR ALIMENTO</div>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', marginBottom: 10 }}>
           <input
             type="text"
-            placeholder="Buscar alimento..."
+            placeholder="Buscar alimento... (ex: frango, arroz)"
             value={query}
             onChange={e => buscarSugestoes(e.target.value)}
             onFocus={() => query && buscarSugestoes(query)}
@@ -191,47 +274,39 @@ export default function Macros({ user }) {
             <div className="macros-sugestoes">
               {sugestoes.map((s, i) => (
                 <div key={i} className="macros-sug-item" onClick={() => selecionarFood(s)}>
-                  <span className="macros-sug-nome">{s.nome}</span>
-                  <span className="macros-sug-info">{s.kcal} kcal | P:{s.prot}g C:{s.carb}g G:{s.gord}g</span>
+                  <span className="macros-sug-nome">{s.nome} {s.custom ? <span style={{ fontSize: 10, color: '#6366f1' }}>personalizado</span> : ''}</span>
+                  <span className="macros-sug-info">{s.kcal} kcal | P:{s.prot}g C:{s.carb}g G:{s.gord}g /100g</span>
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div className="macros-add-row">
+        <div className="macros-add-row-full">
           <input
             type="number"
-            placeholder="Quantidade (g)"
+            placeholder="Gramas"
             value={gramas}
             onChange={e => setGramas(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') adicionarAlimento() }}
             min="1" max="2000"
+            style={{ width: 90, flexShrink: 0 }}
           />
-          <button className="macros-btn-add" onClick={adicionarAlimento}>+ Adicionar</button>
+          <select
+            className="macros-refeicao-sel"
+            value={refeicaoSel}
+            onChange={e => setRefeicaoSel(e.target.value)}
+          >
+            {REFEICOES_OPTS.map(r => (
+              <option key={r.id} value={r.id}>{r.label}</option>
+            ))}
+          </select>
+          <button className="macros-btn-add" onClick={adicionarAlimento}>+ Add</button>
         </div>
         {preview && (
           <div className="macros-preview">
             ⚡ {preview.kcal} kcal &nbsp;|&nbsp; 🥩 {preview.prot}g &nbsp;|&nbsp; 🍞 {preview.carb}g &nbsp;|&nbsp; 🧈 {preview.gord}g
           </div>
         )}
-      </div>
-
-      {/* Meta calórica */}
-      <div className="macros-card">
-        <div className="macros-card-title">META CALÓRICA</div>
-        <div className="macros-add-row">
-          <input
-            type="number"
-            placeholder={`Meta atual: ${meta} kcal`}
-            value={metaInput}
-            onChange={e => setMetaInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') salvarMeta() }}
-          />
-          <button className="macros-btn-add" onClick={salvarMeta}>Salvar</button>
-        </div>
-        <p style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
-          💡 Para emagrecer consuma ~500 kcal abaixo do seu gasto diário.
-        </p>
       </div>
 
       {/* Alimentos personalizados */}
@@ -270,9 +345,12 @@ export default function Macros({ user }) {
             ))}
           </div>
         )}
+        {customFoods.length === 0 && !showCustomForm && (
+          <p style={{ fontSize: 12, color: '#475569', marginTop: 8 }}>Nenhum alimento personalizado ainda.</p>
+        )}
       </div>
 
-      {/* Log de hoje */}
+      {/* Log agrupado por refeição */}
       <div className="macros-card">
         <div className="macros-card-title-row">
           <div className="macros-card-title" style={{ margin: 0 }}>REFEIÇÕES DE HOJE</div>
@@ -287,22 +365,31 @@ export default function Macros({ user }) {
         {registros.length === 0 ? (
           <p className="empty-msg" style={{ marginTop: 8, fontSize: 13 }}>Nenhum alimento registrado ainda.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-            {registros.map(r => (
-              <div key={r.id} className="macros-log-item">
-                <div className="macros-log-top">
-                  <span className="macros-log-nome">{r.nome} <span style={{ color: '#64748b', fontWeight: 400 }}>({r.gramas}g)</span></span>
-                  <button className="agua-log-del" onClick={() => deletarRegistro(r.id)}>✕</button>
+          Object.entries(porRefeicao).map(([id, { label, itens }]) => {
+            const totalRef = itens.reduce((a, r) => ({ kcal: a.kcal + r.kcal, prot: round1(a.prot + Number(r.prot)), carb: round1(a.carb + Number(r.carb)), gord: round1(a.gord + Number(r.gord)) }), { kcal: 0, prot: 0, carb: 0, gord: 0 })
+            return (
+              <div key={id} style={{ marginBottom: 16 }}>
+                <div className="macros-ref-header">
+                  <span className="macros-ref-label">{label}</span>
+                  <span className="macros-ref-total">{totalRef.kcal} kcal</span>
                 </div>
-                <div className="macros-log-vals">
-                  <span>⚡ {r.kcal}</span>
-                  <span>🥩 {r.prot}g</span>
-                  <span>🍞 {r.carb}g</span>
-                  <span>🧈 {r.gord}g</span>
-                </div>
+                {itens.map(r => (
+                  <div key={r.id} className="macros-log-item">
+                    <div className="macros-log-top">
+                      <span className="macros-log-nome">{r.nome} <span style={{ color: '#64748b', fontWeight: 400 }}>({r.gramas}g)</span></span>
+                      <button className="agua-log-del" onClick={() => deletarRegistro(r.id)}>✕</button>
+                    </div>
+                    <div className="macros-log-vals">
+                      <span>⚡ {r.kcal}</span>
+                      <span>🥩 {r.prot}g</span>
+                      <span>🍞 {r.carb}g</span>
+                      <span>🧈 {r.gord}g</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )
+          })
         )}
       </div>
     </div>

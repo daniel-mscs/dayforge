@@ -2699,3 +2699,64 @@ input::-webkit-inner-spin-button {
 .container {
   padding-bottom: 80px !important;
 }
+
+/* TMB */
+.macros-tmb-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.macros-tmb-item {
+  background: #24282d;
+  border: 1px solid #ffffff0d;
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.macros-tmb-item span { font-size: 10px; color: #64748b; }
+.macros-tmb-item strong { font-size: 14px; font-weight: 700; color: #f8fafc; }
+.macros-tmb-item small { font-size: 9px; color: #475569; }
+
+/* Meta display */
+.macros-meta-display { display: flex; flex-direction: column; gap: 4px; }
+.macros-meta-val { font-size: 18px; font-weight: 600; color: #f8fafc; }
+.macros-meta-diff { font-size: 12px; }
+
+/* Add row completa */
+.macros-add-row-full {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.macros-refeicao-sel {
+  flex: 1;
+  background: #24282d;
+  border: 1px solid #ffffff0d;
+  border-radius: 8px;
+  padding: 10px 8px;
+  color: #f8fafc;
+  font-size: 12px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+/* Log por refeição */
+.macros-ref-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #ffffff08;
+}
+.macros-ref-label { font-size: 12px; font-weight: 700; color: #94a3b8; }
+.macros-ref-total { font-size: 12px; color: #f59e0b; font-weight: 600; }
+
+@media (max-width: 400px) {
+  .macros-tmb-row { grid-template-columns: repeat(2, 1fr); }
+}
