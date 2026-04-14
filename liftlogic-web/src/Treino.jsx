@@ -86,6 +86,7 @@ function Treino({ logout, user }) {
   const [modalResumo, setModalResumo] = useState(null)
   const [showMore, setShowMore] = useState(false)
   const [subAbaTreino, setSubAbaTreino] = useState('exercicios')
+  const [subAbaPerfil, setSubAbaPerfil] = useState('perfil')
 
 
   const [treinando, setTreinando] = useState(() => {
@@ -692,60 +693,87 @@ const buscarDashboard = async () => {
           </div>
         )}
       </>
-    )}
-      {abaPrincipal === 'perfil' && (
+
+        )}{abaPrincipal === 'perfil' && (
         <div className="perfil-section">
-          <h1 className="title-divisao">Meu Perfil 👤</h1>
-          <form className="form-cadastro" onSubmit={salvarPerfil}>
-            <input type="text" placeholder="Seu nome" value={perfil.nome} onChange={e => setPerfil({ ...perfil, nome: e.target.value })} />
-            <div className="row">
-              <input type="number" placeholder="Peso (kg)" value={perfil.peso} onChange={e => setPerfil({ ...perfil, peso: e.target.value })} />
-              <input type="number" placeholder="Altura (cm)" value={perfil.altura} onChange={e => setPerfil({ ...perfil, altura: e.target.value })} />
-              <input type="number" placeholder="Idade" value={perfil.idade} onChange={e => setPerfil({ ...perfil, idade: e.target.value })} />
-            </div>
-            <div className="sexo-selector">
-              <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
-              <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
-            </div>
-            <button type="submit" disabled={salvandoPerfil}>{salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}</button>
-            {perfilMsg && <p className={perfilMsg.includes('Erro') ? 'auth-erro' : 'auth-sucesso'}>{perfilMsg}</p>}
-          </form>
-          {(imc || tmb) && (
-            <div className="stats-grid">
-              {imc && (
-                <div className="stat-card">
-                  <span>IMC</span>
-                  <strong style={{ color: classificarIMC(imc).color }}>{imc}</strong>
-                  <small>{classificarIMC(imc).label}</small>
+
+          {/* Sub-nav perfil */}
+          <div className="treino-subnav" style={{ marginBottom: 20 }}>
+            <button className={subAbaPerfil === 'perfil' ? 'treino-subnav-btn active' : 'treino-subnav-btn'} onClick={() => setSubAbaPerfil('perfil')}>👤 Perfil</button>
+            <button className={subAbaPerfil === 'ajuda' ? 'treino-subnav-btn active' : 'treino-subnav-btn'} onClick={() => setSubAbaPerfil('ajuda')}>❓ Ajuda</button>
+          </div>
+
+          {/* Perfil */}
+          {subAbaPerfil === 'perfil' && (
+            <>
+              <h1 className="title-divisao">Meu Perfil 👤</h1>
+              <form className="form-cadastro" onSubmit={salvarPerfil}>
+                <input type="text" placeholder="Seu nome" value={perfil.nome} onChange={e => setPerfil({ ...perfil, nome: e.target.value })} />
+                <div className="row">
+                  <input type="number" placeholder="Peso (kg)" value={perfil.peso} onChange={e => setPerfil({ ...perfil, peso: e.target.value })} />
+                  <input type="number" placeholder="Altura (cm)" value={perfil.altura} onChange={e => setPerfil({ ...perfil, altura: e.target.value })} />
+                  <input type="number" placeholder="Idade" value={perfil.idade} onChange={e => setPerfil({ ...perfil, idade: e.target.value })} />
+                </div>
+                <div className="sexo-selector">
+                  <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
+                  <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
+                </div>
+                <button type="submit" disabled={salvandoPerfil}>{salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}</button>
+                {perfilMsg && <p className={perfilMsg.includes('Erro') ? 'auth-erro' : 'auth-sucesso'}>{perfilMsg}</p>}
+              </form>
+              {(imc || tmb) && (
+                <div className="stats-grid">
+                  {imc && <div className="stat-card"><span>IMC</span><strong style={{ color: classificarIMC(imc).color }}>{imc}</strong><small>{classificarIMC(imc).label}</small></div>}
+                  {tmb && <div className="stat-card"><span>TMB</span><strong>{tmb}</strong><small>kcal/dia em repouso</small></div>}
+                  {perfil.peso && perfil.altura && <div className="stat-card"><span>PESO</span><strong>{perfil.peso} kg</strong><small>{perfil.altura} cm</small></div>}
+                  {perfil.idade && <div className="stat-card"><span>IDADE</span><strong>{perfil.idade}</strong><small>anos</small></div>}
                 </div>
               )}
-              {tmb && (
-                <div className="stat-card">
-                  <span>TMB</span>
-                  <strong>{tmb}</strong>
-                  <small>kcal/dia em repouso</small>
-                </div>
-              )}
-              {perfil.peso && perfil.altura && (
-                <div className="stat-card">
-                  <span>PESO</span>
-                  <strong>{perfil.peso} kg</strong>
-                  <small>{perfil.altura} cm</small>
-                </div>
-              )}
-              {perfil.idade && (
-                <div className="stat-card">
-                  <span>IDADE</span>
-                  <strong>{perfil.idade}</strong>
-                  <small>anos</small>
-                </div>
-              )}
+              <button className="nav-btn-logout" style={{ marginTop: 24, width: '100%', padding: 14, borderRadius: 10, border: '1px solid #ef444433', background: '#3a1a1a', color: '#ef4444', cursor: 'pointer', fontWeight: 600 }} onClick={logout}>🚪 Sair da conta</button>
+            </>
+          )}
+
+          {/* Ajuda */}
+          {subAbaPerfil === 'ajuda' && (
+            <div className="ajuda-section">
+              <h1 className="title-divisao">❓ Ajuda & Saúde</h1>
+
+              <div className="ajuda-group-title">📱 Como usar o app</div>
+              <div className="ajuda-item"><div className="ajuda-num">1</div><div className="ajuda-body"><strong>Home</strong><p>Visão geral do dia — tarefas, água, peso, refeição atual, suplementos e hábitos.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">2</div><div className="ajuda-body"><strong>Treino</strong><p>Exercícios com timer, descanso cronometrado, stats de kcal/volume/tempo e histórico completo.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">3</div><div className="ajuda-body"><strong>Rotina</strong><p>Gere blocos de dias com tarefas por período (Acordar, Manhã, Tarde, Noite). Enter cria a próxima tarefa. ⧉ clona o dia.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">4</div><div className="ajuda-body"><strong>Mais</strong><p>Acessa Água, Peso, Dieta, Suplementos e Macros pelo menu ⚡.</p></div></div>
+
+              <div className="ajuda-group-title">🧠 Cortisol — o hormônio do estresse</div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>O que é o cortisol?</strong><p>Hormônio produzido em resposta ao estresse. Cronicamente elevado causa retenção de líquido (até 2kg a mais na balança), dificulta queima de gordura, prejudica o sono e reduz testosterona.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Como reduzir?</strong><p>Dormir 7–8h, treinos moderados (máx. 1h/sessão), alimentação equilibrada, hidratação adequada e gerenciar estresse emocional.</p></div></div>
+
+              <div className="ajuda-group-title">😴 Sono — por que 7 a 8 horas importam</div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>O que acontece dormindo?</strong><p>O GH (hormônio do crescimento) é liberado durante o sono — responsável pela recuperação muscular e queima de gordura. Menos de 6h aumenta cortisol, grelina (fome) e reduz leptina (saciedade).</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Dica prática</strong><p>Acorde sempre no mesmo horário, mesmo no fim de semana. Evite telas 30 minutos antes de dormir.</p></div></div>
+
+              <div className="ajuda-group-title">🏋️ Musculação — benefícios além da estética</div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Metabolismo acelerado</strong><p>Cada kg de músculo queima 13–20 kcal por dia em repouso. Quanto mais massa muscular, mais calorias você gasta sem fazer nada.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Saúde mental e hormonal</strong><p>Treino de força aumenta testosterona, serotonina e dopamina. 3–4x por semana já gera benefício comprovado.</p></div></div>
+
+              <div className="ajuda-group-title">💧 Hidratação</div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>35ml vs 50ml por kg</strong><p>35ml/kg é o mínimo para sedentários. Se você treina, use 50ml/kg. Desidratação de 2% já reduz performance em até 20%.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Água e cortisol</strong><p>Cortisol elevado causa retenção hídrica. Beber mais água paradoxalmente ajuda a reduzir essa retenção. Comece o dia com 500ml em jejum.</p></div></div>
+
+              <div className="ajuda-group-title">🥗 Dieta — como funciona o emagrecimento</div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Deficit calórico</strong><p>1kg de gordura = ~7.700 kcal. Deficit de 500–800 kcal/dia = 0,5–0,8kg/semana. Acima de 1.000 kcal de deficit queima músculo e derruba o metabolismo.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Proteína em deficit</strong><p>Consuma 1,8–2,2g de proteína por kg de peso para preservar músculo enquanto emagrece.</p></div></div>
+
+              <div className="ajuda-group-title">⚖️ Pesagem diária — como interpretar</div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Por que pesar todo dia?</strong><p>O peso oscila 1–3kg por resíduo gástrico, hidratação e sódio. Essas variações não são gordura — são fluidos.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>A média de 7 dias é o que importa</strong><p>Se a média da semana 2 for menor que a da semana 1, você emagreceu. Um único dia nunca conta a história real.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Como se pesar corretamente</strong><p>Sempre em jejum logo após acordar, após urinar, sem roupa ou com roupa leve sempre igual. Mesmo horário todo dia.</p></div></div>
             </div>
           )}
         </div>
-      )}
-    </div>
-  )
-}
+              )}
+            </div>
+          )
+        }
 
 export default Treino
