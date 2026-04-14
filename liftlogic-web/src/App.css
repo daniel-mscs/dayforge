@@ -2397,3 +2397,65 @@ input::-webkit-inner-spin-button {
 .supl-dose { font-size: 11px; color: #64748b; }
 .supl-toggle { font-size: 14px; color: #475569; }
 .supl-item.done .supl-toggle { color: #10b981; }
+
+/* ══════════════════════════════════════
+   DIETA
+══════════════════════════════════════ */
+.dieta-section { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+
+.dieta-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 4px;
+}
+
+.dieta-card {
+  background: #1a1d21; border: 1px solid #ffffff0d;
+  border-radius: 16px; padding: 18px;
+  transition: border-color 0.2s;
+}
+
+.dieta-card.atual { border-color: #10b98144; background: #10b98108; }
+
+.dieta-card-header {
+  display: flex; align-items: center;
+  gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+}
+
+.dieta-card-label {
+  font-size: 14px; font-weight: 700; color: #f8fafc; flex: 1;
+}
+
+.dieta-card-badge {
+  background: #10b98122; border: 1px solid #10b98144;
+  color: #10b981; border-radius: 6px;
+  padding: 2px 8px; font-size: 10px; font-weight: 700;
+}
+
+.dieta-card-horario {
+  font-size: 11px; color: #475569;
+}
+
+.dieta-textarea {
+  width: 100%; background: #24282d;
+  border: 1px solid #ffffff0d; border-radius: 10px;
+  padding: 10px 12px; color: #f8fafc;
+  font-size: 14px; font-family: inherit;
+  resize: vertical; min-height: 80px;
+  line-height: 1.6; box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.dieta-textarea:focus { outline: none; border-color: #6366f144; }
+.dieta-textarea::placeholder { color: #334155; }
+
+/* Compacto home */
+.dieta-compact { display: flex; flex-direction: column; gap: 4px; }
+
+.dieta-compact-label {
+  font-size: 12px; font-weight: 700;
+  color: #10b981; margin-bottom: 6px;
+}
+
+.dieta-compact-item {
+  font-size: 13px; color: #94a3b8; line-height: 1.5;
+}
