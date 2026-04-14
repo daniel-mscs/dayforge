@@ -24,6 +24,7 @@ import Agua from './Agua'
 import Peso from './Peso'
 import Suplementos from './Suplementos'
 import Dieta from './Dieta'
+import Macros from './Macros'
 
 function ExercicioCard({ ex, concluidos, treinando, toggleConcluido, atualizarExercicio, deletarExercicio }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id })
@@ -416,6 +417,7 @@ const buscarDashboard = async () => {
         <button className={abaPrincipal === 'peso' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('peso')}>⚖️</button>
         <button className={abaPrincipal === 'suplementos' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('suplementos')}>💊</button>
         <button className={abaPrincipal === 'dieta' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('dieta')}>🥗</button>
+        <button className={abaPrincipal === 'macros' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('macros')}>🍽️</button>
          <button className={abaPrincipal === 'historico' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('historico')}>📜</button>
         <button className={abaPrincipal === 'perfil' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('perfil')}>👤</button>
         <button className={abaPrincipal === 'dashboard' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('dashboard')}>📊</button>
@@ -449,6 +451,10 @@ const buscarDashboard = async () => {
   )}
     {abaPrincipal === 'dieta' && (
   <Dieta user={user} />
+    )}
+
+    {abaPrincipal === 'macros' && (
+      <Macros user={user} />
     )}
 
       {abaPrincipal === 'treino' && (
