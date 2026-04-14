@@ -19,6 +19,8 @@ import { CSS } from '@dnd-kit/utilities'
 import './App.css'
 import Home from './Home'
 import Rotina from './Rotina'
+import Habitos from './Habitos'
+import Agua from './Agua'
 
 function ExercicioCard({ ex, concluidos, treinando, toggleConcluido, atualizarExercicio, deletarExercicio }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ex.id })
@@ -407,6 +409,7 @@ const buscarDashboard = async () => {
         <button className={abaPrincipal === 'home' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('home')}>🏠</button>
         <button className={abaPrincipal === 'treino' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('treino')}>🏋️‍♂️</button>
         <button className={abaPrincipal === 'rotina' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('rotina')}>📋</button>
+        <button className={abaPrincipal === 'agua' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('agua')}>💧</button>
          <button className={abaPrincipal === 'historico' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('historico')}>📜</button>
         <button className={abaPrincipal === 'perfil' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('perfil')}>👤</button>
         <button className={abaPrincipal === 'dashboard' ? 'nav-btn active' : 'nav-btn'} onClick={() => setAbaPrincipal('dashboard')}>📊</button>
@@ -425,6 +428,10 @@ const buscarDashboard = async () => {
 
       {abaPrincipal === 'rotina' && (
             <Rotina user={user} />
+      )}
+
+      {abaPrincipal === 'agua' && (
+        <Agua user={user} />
       )}
 
       {abaPrincipal === 'treino' && (

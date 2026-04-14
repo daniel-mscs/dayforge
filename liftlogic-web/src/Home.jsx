@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
+import Habitos from './Habitos'
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -228,6 +229,11 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
           </div>
         </div>
       )}
+        {/* Hábitos do dia */}
+        <div className="home-habitos">
+          <div className="home-section-title">HÁBITOS DO DIA</div>
+          <Habitos user={user} compact={true} />
+        </div>
 
       {/* Histórico rápido da semana */}
       {historico.filter(t => diasDesdeData(t.created_at) <= 6).length > 0 && (
