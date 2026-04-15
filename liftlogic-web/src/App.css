@@ -1568,15 +1568,16 @@ input::-webkit-inner-spin-button {
 /* Grid hábitos */
 .habitos-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
+  margin-bottom: 12px;
 }
 
 .habito-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #1a1d21;
+  gap: 10px;
+  background: #1e2126;
   border: 1px solid #ffffff0d;
   border-radius: 12px;
   padding: 12px 14px;
@@ -1585,193 +1586,66 @@ input::-webkit-inner-spin-button {
   user-select: none;
 }
 
-.habito-item:hover { background: #24282d; }
-
-.habito-item.done {
-  border-color: #10b98144;
-  background: #10b98110;
-}
-
-.habito-icon { font-size: 16px; flex-shrink: 0; }
-
-.habito-label {
-  font-size: 13px;
-  color: #f8fafc;
-  flex: 1;
-}
-
-.habito-check {
-  font-size: 15px;
-  color: #475569;
-  transition: color 0.15s;
-}
-
+.habito-item:hover { border-color: #ffffff1a; }
+.habito-item.done { background: #10b98115; border-color: #10b98133; }
+.habito-icon { font-size: 20px; flex-shrink: 0; }
+.habito-label { flex: 1; font-size: 13px; font-weight: 500; color: #f8fafc; }
+.habito-check { font-size: 14px; color: #475569; flex-shrink: 0; }
 .habito-item.done .habito-check { color: #10b981; }
 
-/* Histórico */
+.habito-del-btn {
+  background: none; border: none; color: #ffffff1a;
+  font-size: 16px; cursor: pointer; padding: 0 2px;
+  flex-shrink: 0; transition: color 0.15s; line-height: 1;
+}
+.habito-del-btn:hover { color: #ef4444; }
+
+/* Histórico hábitos */
 .habitos-historico {
   background: #1a1d21;
   border: 1px solid #ffffff0d;
   border-radius: 14px;
   padding: 16px 18px;
 }
-
-.habitos-hist-title {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  margin-bottom: 14px;
-}
-
-.habitos-hist-grid {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-.habitos-hist-dia {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.habitos-hist-weekday {
-  font-size: 10px;
-  color: #475569;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.habitos-hist-dot {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  transition: all 0.2s;
-}
-
+.habitos-hist-title { font-size: 10px; color: #64748b; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 14px; }
+.habitos-hist-grid { display: flex; justify-content: space-between; gap: 4px; }
+.habitos-hist-dia { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.habitos-hist-weekday { font-size: 10px; color: #475569; font-weight: 600; text-transform: uppercase; }
+.habitos-hist-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; transition: all 0.2s; }
 .habitos-hist-dot.zero  { background: #24282d; color: #475569; border: 1px solid #ffffff0d; }
 .habitos-hist-dot.low   { background: #10b98122; color: #10b981; border: 1px solid #10b98133; }
 .habitos-hist-dot.mid   { background: #10b98144; color: #10b981; border: 1px solid #10b98155; }
-.habitos-hist-dot.high  { background: #10b981;   color: white;   border: 1px solid #10b981; }
+.habitos-hist-dot.high  { background: #10b981; color: white; border: 1px solid #10b981; }
 .habitos-hist-dot.hoje  { box-shadow: 0 0 0 2px #6366f1; }
 
-/* hábitos personalizáveis */
-.habito-del {
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-size: 16px;
-  cursor: pointer;
-  opacity: 0;
-  padding: 0 2px;
-  transition: opacity 0.15s;
-  flex-shrink: 0;
+/* Adicionar hábito */
+.habitos-add-section { margin-top: 8px; }
+.habitos-btn-add {
+  width: 100%; background: transparent;
+  border: 1px dashed #ffffff1a; border-radius: 12px;
+  color: #6366f1; font-size: 13px; font-weight: 600;
+  padding: 12px; cursor: pointer; transition: all 0.15s;
 }
-.habito-item:hover .habito-del { opacity: 0.6; }
-.habito-del:hover { opacity: 1 !important; }
+.habitos-btn-add:hover { background: #6366f110; border-color: #6366f144; }
+.habitos-form { display: flex; flex-direction: column; gap: 8px; }
+.habitos-form-row { display: flex; gap: 8px; align-items: center; }
+.habitos-form-row input { flex: 1; }
+.habitos-emoji-btn { width: 44px; height: 44px; border-radius: 10px; border: 1px solid #ffffff0d; background: #24282d; font-size: 20px; cursor: pointer; flex-shrink: 0; }
+.habitos-btn-salvar { background: #6366f1; color: #fff; border: none; border-radius: 10px; width: 44px; height: 44px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+.habitos-btn-cancelar { background: transparent; border: 1px solid #ef444433; color: #ef4444; border-radius: 10px; width: 44px; height: 44px; font-size: 14px; cursor: pointer; flex-shrink: 0; }
+.habitos-emoji-picker { display: flex; flex-wrap: wrap; gap: 6px; background: #24282d; border: 1px solid #ffffff0d; border-radius: 12px; padding: 12px; }
+.habitos-emoji-opt { background: none; border: 1px solid transparent; border-radius: 8px; font-size: 20px; width: 36px; height: 36px; cursor: pointer; transition: all 0.1s; }
+.habitos-emoji-opt:hover { background: #ffffff10; }
+.habitos-emoji-opt.selected { border-color: #6366f1; background: #6366f120; }
 
-.habito-add {
-  border-style: dashed !important;
-  opacity: 0.5;
-  transition: opacity 0.2s !important;
-}
-.habito-add:hover { opacity: 1 !important; }
-
-.habito-form {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 14px;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.habito-form-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.habito-emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 6px;
-}
-
-.habito-emoji-btn {
-  background: #24282d;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-}
-
-.habito-emoji-btn.active {
-  border-color: #6366f1;
-  background: #6366f122;
-}
-
-.habito-form-btns {
-  display: flex;
-  gap: 8px;
-}
-
-.habito-form-cancel {
-  flex: 1;
-  background: transparent;
-  border: 1px solid #ffffff0d;
-  color: #64748b;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.habito-form-save {
-  flex: 2;
-  background: #6366f1;
-  border: none;
-  color: white;
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.habito-form-save:hover { opacity: 0.85; }
-
+/* Compacto */
 .habitos-compact { display: flex; flex-direction: column; gap: 10px; }
+.habitos-compact-header { margin-bottom: 10px; }
+.habitos-compact-bar-bg { height: 4px; background: #ffffff0d; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+.habitos-compact-bar-fill { height: 4px; background: #10b981; border-radius: 99px; transition: width 0.3s; }
 
-.habitos-compact-
-
-.home-section-title {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  margin-bottom: 10px;
-}
-
-.home-habitos {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 16px;
-  padding: 16px 18px;
-}
+.home-section-title { font-size: 10px; color: #64748b; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 10px; }
+.home-habitos { background: #1a1d21; border: 1px solid #ffffff0d; border-radius: 16px; padding: 16px 18px; }
 
 /* ══════════════════════════════════════
    ÁGUA
@@ -3374,9 +3248,6 @@ input::-webkit-inner-spin-button {
 .habitos-compact-bar-fill { height: 4px; background: #10b981; border-radius: 99px; transition: width 0.3s; }
 
 /* Habito item atualizado */
-.habito-item { display: flex; justify-content: space-between; align-items: center; }
-.habito-item-left { display: flex; align-items: center; gap: 10px; flex: 1; cursor: pointer; }
-.habito-item-right { display: flex; align-items: center; gap: 6px; }
 .habito-del-btn {
   background: none;
   border: none;
@@ -3444,3 +3315,64 @@ input::-webkit-inner-spin-button {
   gap: 8px;
   margin-bottom: 12px;
 }
+
+/* ══════════════════════════════════════
+   HÁBITOS - GRID UNIFICADO
+══════════════════════════════════════ */
+.habitos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.habito-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e2126;
+  border: 1px solid #ffffff0d;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.habito-item:hover { border-color: #ffffff1a; }
+
+.habito-item.done {
+  background: #10b98115;
+  border-color: #10b98133;
+}
+
+.habito-icon { font-size: 20px; flex-shrink: 0; }
+
+.habito-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.habito-check {
+  font-size: 14px;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.habito-item.done .habito-check { color: #10b981; }
+
+.habito-del-btn {
+  background: none;
+  border: none;
+  color: #ffffff1a;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.habito-del-btn:hover { color: #ef4444; }
