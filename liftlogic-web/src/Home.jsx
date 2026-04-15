@@ -43,6 +43,11 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
   const [rotina, setRotina]       = useState(null)
   const [carregando, setCarregando] = useState(true)
   const [frase, setFrase] = useState(null)
+  const [mostrarHabitos, setMostrarHabitos] = useState(() => {
+      return localStorage.getItem('home_mostrar_habitos') !== 'false'
+    })
+  const [kcalHoje, setKcalHoje] = useState(0)
+  const [kcalMeta, setKcalMeta] = useState(2000)
 
   const hoje = formatarData(new Date())
   const buscarFrase = useCallback(async () => {
@@ -58,24 +63,28 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
   const carregar = useCallback(async () => {
     setCarregando(true)
     const [
-      { data: p },
-      { data: h },
-      { data: aguaRegs },
-      { data: aguaMeta },
-      { data: pesoRegs },
-      { data: diasData },
-      { data: passosData },
-      { data: passosMetaData },
-    ] = await Promise.all([
-      supabase.from('perfil').select('*').eq('user_id', user.id).single(),
-      supabase.from('treinos_finalizados').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
-      supabase.from('agua_registro').select('ml').eq('user_id', user.id).eq('data', hoje),
-      supabase.from('agua_meta').select('meta_ml').eq('user_id', user.id).single(),
-      supabase.from('peso_registro').select('*').eq('user_id', user.id).order('data', { ascending: false }).limit(2),
-      supabase.from('rotina_dias').select('id,data').eq('user_id', user.id).eq('data', hoje).single(),
-            supabase.from('passos_registro').select('passos').eq('user_id', user.id).eq('data', hoje).single(),
-            supabase.from('passos_meta').select('meta_passos').eq('user_id', user.id).single(),
-          ])
+        { data: p },
+        { data: h },
+        { data: aguaRegs },
+        { data: aguaMeta },
+        { data: pesoRegs },
+        { data: diasData },
+        { data: passosData },
+        { data: passosMetaData },
+        { data: macrosData },
+        { data: macrosMetaData },
+      ] = await Promise.all([
+        supabase.from('perfil').select('*').eq('user_id', user.id).single(),
+        supabase.from('treinos_finalizados').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('agua_registro').select('ml').eq('user_id', user.id).eq('data', hoje),
+        supabase.from('agua_meta').select('meta_ml').eq('user_id', user.id).single(),
+        supabase.from('peso_registro').select('*').eq('user_id', user.id).order('data', { ascending: false }).limit(2),
+        supabase.from('rotina_dias').select('id,data').eq('user_id', user.id).eq('data', hoje).single(),
+        supabase.from('passos_registro').select('passos').eq('user_id', user.id).eq('data', hoje).single(),
+        supabase.from('passos_meta').select('meta_passos').eq('user_id', user.id).single(),
+        supabase.from('macros_registro').select('kcal').eq('user_id', user.id).eq('data', hoje),
+        supabase.from('macros_meta').select('meta_kcal').eq('user_id', user.id).single(),
+      ])
     if (p) setPerfil(p)
     if (h) { setHistorico(h); setStreak(calcularStreak(h)) }
 
@@ -84,6 +93,9 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
 
     if (passosData) setPassosHoje(passosData.passos)
     if (passosMetaData) setPassosMeta(passosMetaData.meta_passos)
+    const totalKcal = (macrosData || []).reduce((s, r) => s + r.kcal, 0)
+        setKcalHoje(totalKcal)
+        if (macrosMetaData) setKcalMeta(macrosMetaData.meta_kcal)
 
     if (pesoRegs && pesoRegs.length > 0) {
       setPesoHoje(pesoRegs[0])
@@ -247,6 +259,21 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         </div>
       </div>
 
+      {/* Card kcal */}
+      {kcalHoje > 0 && (
+        <div className="home-mini-card" onClick={() => onNavegar('macros')} style={{ cursor: 'pointer' }}>
+          <div className="home-mini-icon">🔥</div>
+          <div className="home-mini-info">
+            <div className="home-mini-label">KCAL HOJE</div>
+            <div className="home-mini-val">{kcalHoje.toLocaleString('pt-BR')}</div>
+            <div className="home-mini-bar-bg">
+              <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje >= kcalMeta ? '#10b981' : '#f59e0b' }} />
+            </div>
+            <div className="home-mini-sub">{Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}% da meta ({kcalMeta.toLocaleString('pt-BR')} kcal)</div>
+          </div>
+        </div>
+      )}
+
       {/* Card passos */}
       {passosHoje !== null && (
         <div className="home-mini-card" onClick={() => onNavegar('passos')} style={{ cursor: 'pointer' }}>
@@ -274,20 +301,31 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         <Suplementos user={user} compact={true} />
       </div>
 
-      {/* Hábitos do dia */}
-            <div className="home-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div className="home-section-title" style={{ margin: 0 }}>HÁBITOS DO DIA</div>
-                <button
-                  onClick={() => onNavegar('habitos')}
-                  style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#6366f1', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}
-                >
-                  + Personalizar
-                </button>
-              </div>
-              <Habitos user={user} compact={true} />
-            </div>
-
-    </div>
-  )
-}
+{/* Hábitos do dia */}
+      <div className="home-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: mostrarHabitos ? 8 : 0 }}>
+          <div className="home-section-title" style={{ margin: 0 }}>HÁBITOS DO DIA</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => onNavegar('habitos')}
+              style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#6366f1', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}
+            >
+              + Personalizar
+            </button>
+            <button
+              onClick={() => {
+                const novo = !mostrarHabitos
+                setMostrarHabitos(novo)
+                localStorage.setItem('home_mostrar_habitos', String(novo))
+              }}
+              style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#64748b', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}
+            >
+              {mostrarHabitos ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
+        </div>
+        {mostrarHabitos && <Habitos user={user} compact={true} />}
+      </div>
+      </div>
+        )
+      }
