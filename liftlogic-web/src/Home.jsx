@@ -14,7 +14,9 @@ function getGreeting() {
 }
 
 function formatarData(date) {
-  return date.toISOString().split('T')[0]
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60000)
+  return local.toISOString().split('T')[0]
 }
 
 function diasDesdeData(dataStr) {
@@ -61,7 +63,8 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
     useEffect(() => { buscarFrase() }, [buscarFrase])
 
   const carregar = useCallback(async () => {
-    setCarregando(true)
+      const hoje = formatarData(new Date())
+      setCarregando(true)
     const [
         { data: p },
         { data: h },
@@ -109,22 +112,24 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
     }
 
     setCarregando(false)
-  }, [user.id, hoje])
+  }, [user.id])
 
   useEffect(() => { carregar() }, [carregar])
 
   function calcularStreak(hist) {
-    if (!hist || hist.length === 0) return 0
-    let s = 0
-    const diasTreino = new Set(hist.map(t => new Date(t.created_at).toLocaleDateString('pt-BR')))
-    for (let i = 0; i < 60; i++) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      if (diasTreino.has(d.toLocaleDateString('pt-BR'))) s++
-      else if (i > 0) break
+      if (!hist || hist.length === 0) return 1 // hoje conta sempre
+      const diasTreino = new Set(hist.map(t => new Date(t.created_at).toLocaleDateString('pt-BR')))
+      // Adiciona hoje sempre (entrou no app = ativo hoje)
+      diasTreino.add(new Date().toLocaleDateString('pt-BR'))
+      let s = 0
+      for (let i = 0; i < 60; i++) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        if (diasTreino.has(d.toLocaleDateString('pt-BR'))) s++
+        else if (i > 0) break
+      }
+      return s
     }
-    return s
-  }
 
   const toggleTarefa = async (tarefa) => {
     const nova = !tarefa.concluida

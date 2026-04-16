@@ -8,18 +8,28 @@ function App() {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    // Pega sessão atual ao carregar
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setCarregando(false)
     })
 
-    // Escuta mudanças de auth (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      if (!session) setCarregando(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Renova o token a cada 10 minutos
+    const refreshInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await supabase.auth.refreshSession()
+      }
+    }, 10 * 60 * 1000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearInterval(refreshInterval)
+    }
   }, [])
 
   const logout = async () => {

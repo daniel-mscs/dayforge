@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 
 function formatarData(date) {
-  return date.toISOString().split('T')[0]
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60000)
+  return local.toISOString().split('T')[0]
 }
 
 function round1(n) { return Math.round(n * 10) / 10 }
@@ -24,7 +26,7 @@ function calcTMB(perfil) {
   return Math.round(447.6 + (9.2 * Number(perfil.peso)) + (3.1 * Number(perfil.altura)) - (4.3 * Number(perfil.idade)))
 }
 
-export default function Macros({ user }) {
+export default function Macros({ user, onAjuda }) {
   const [registros, setRegistros]         = useState([])
   const [meta, setMeta]                   = useState(2000)
   const [metaInput, setMetaInput]         = useState('')
@@ -172,7 +174,10 @@ export default function Macros({ user }) {
 
   return (
     <div className="macros-section">
-      <h2 className="title-divisao">🍽️ Controle de Macros</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 className="title-divisao" style={{ margin: 0 }}>🍽️ Controle de Macros</h2>
+        <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-dieta')}>?</button>
+      </div>
 
       {/* Resumo */}
       <div className="macros-resumo">

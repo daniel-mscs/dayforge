@@ -9,7 +9,7 @@ const REFEICOES = [
   { id: 'janta',     label: '🌙 Janta',           horaDe: 18, horeAte: 22, placeholder: 'Ex: 120g de frango desfiado\n120g de arroz\nfeijão' },
 ]
 
-export default function Dieta({ user, compact = false }) {
+export default function Dieta({ user, compact = false, onAjuda }) {
   const [plano, setPlano]           = useState({})
   const [carregando, setCarregando] = useState(true)
   const [salvando, setSalvando]     = useState(false)
@@ -62,7 +62,10 @@ export default function Dieta({ user, compact = false }) {
   return (
     <div className="dieta-section">
       <div className="dieta-header">
-        <h2 className="title-divisao" style={{ margin: 0 }}>🥗 Minha Dieta</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 className="title-divisao" style={{ margin: 0 }}>🥗 Plano Alimentar</h2>
+          <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-dieta')}>?</button>
+        </div>
         {salvando && <span style={{ fontSize: 12, color: '#64748b' }}>Salvando...</span>}
       </div>
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>

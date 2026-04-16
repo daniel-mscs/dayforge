@@ -3,7 +3,9 @@ import { supabase } from './lib/supabase'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 function formatarData(date) {
-  return date.toISOString().split('T')[0]
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60000)
+  return local.toISOString().split('T')[0]
 }
 
 function getLast7Days() {

@@ -5,7 +5,7 @@ function formatarData(date) {
   return date.toISOString().split('T')[0]
 }
 
-export default function Suplementos({ user, compact = false }) {
+export default function Suplementos({ user, compact = false, onAjuda }) {
   const [lista, setLista]           = useState([])
   const [checks, setChecks]         = useState({})
   const [carregando, setCarregando] = useState(true)
@@ -89,7 +89,10 @@ export default function Suplementos({ user, compact = false }) {
   // MODO COMPLETO
   return (
     <div className="supl-section">
-      <h2 className="title-divisao">💊 Suplementação</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 className="title-divisao" style={{ margin: 0 }}>💊 Suplementação</h2>
+        <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-geral')}>?</button>
+      </div>
 
       {/* Progresso do dia */}
       {lista.length > 0 && (

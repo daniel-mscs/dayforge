@@ -3,7 +3,9 @@ import { supabase } from './lib/supabase'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 function formatarData(date) {
-  return date.toISOString().split('T')[0]
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60000)
+  return local.toISOString().split('T')[0]
 }
 
 function calcularIMC(peso, alturaCm) {
@@ -25,7 +27,7 @@ function imcBarPct(imc) {
   return Math.min(100, Math.max(0, ((imc - min) / (max - min)) * 100))
 }
 
-export default function Peso({ user }) {
+export default function Peso({ user, onAjuda }) {
   const [registros, setRegistros]     = useState([])
   const [perfil, setPerfil]           = useState(null)
   const [pesoInput, setPesoInput]     = useState('')
@@ -119,7 +121,10 @@ export default function Peso({ user }) {
 
   return (
     <div className="peso-section">
-      <h2 className="title-divisao">⚖️ Controle de Peso</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 className="title-divisao" style={{ margin: 0 }}>⚖️ Controle de Peso</h2>
+        <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-peso')}>?</button>
+      </div>
 
       {/* Cards principais */}
       <div className="peso-cards-grid">

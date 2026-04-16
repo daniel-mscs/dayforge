@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 
 function formatarData(date) {
-  return date.toISOString().split('T')[0]
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60000)
+  return local.toISOString().split('T')[0]
 }
 
 function getLast7Days() {
@@ -13,7 +15,7 @@ function getLast7Days() {
   })
 }
 
-export default function Agua({ user }) {
+export default function Agua({ user, onAjuda }) {
   const [registros, setRegistros]     = useState([])
   const [historico, setHistorico]     = useState({})
   const [meta, setMeta]               = useState(2500)
@@ -92,7 +94,10 @@ export default function Agua({ user }) {
   return (
     <div className="agua-section">
 
-      <h2 className="title-divisao">💧 Controle de Água</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 className="title-divisao" style={{ margin: 0 }}>💧 Controle de Água</h2>
+        <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-hidratacao')}>?</button>
+      </div>
 
       {/* Card principal */}
       <div className="agua-main-card">

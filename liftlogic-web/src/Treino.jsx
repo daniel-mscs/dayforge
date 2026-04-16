@@ -89,6 +89,7 @@ function Treino({ logout, user }) {
   const [showMore, setShowMore] = useState(false)
   const [subAbaTreino, setSubAbaTreino] = useState('exercicios')
   const [subAbaPerfil, setSubAbaPerfil] = useState('perfil')
+  const [ajudaAncora, setAjudaAncora] = useState(null)
 
 
   const [treinando, setTreinando] = useState(() => {
@@ -369,6 +370,11 @@ const buscarDashboard = async () => {
   }
 
   const toggleConcluido = id => setConcluidos(prev => ({ ...prev, [id]: !prev[id] }))
+  const abrirAjuda = (ancora) => {
+      setAjudaAncora(ancora)
+      setAbaPrincipal('perfil')
+      setSubAbaPerfil('ajuda')
+    }
 
   const formatarTempo = segundos => {
     const s = Number(segundos || 0)
@@ -469,26 +475,26 @@ const buscarDashboard = async () => {
       )}
 
       {abaPrincipal === 'agua' && (
-        <Agua user={user} />
+        <Agua user={user} onAjuda={abrirAjuda} />
       )}
 
       {abaPrincipal === 'peso' && (
-        <Peso user={user} />
+        <Peso user={user} onAjuda={abrirAjuda} />
       )}
 
   {abaPrincipal === 'suplementos' && (
-    <Suplementos user={user} />
+    <Suplementos user={user} onAjuda={abrirAjuda} />
   )}
     {abaPrincipal === 'dieta' && (
-  <Dieta user={user} />
+      <Dieta user={user} onAjuda={abrirAjuda} />
     )}
 
     {abaPrincipal === 'macros' && (
-      <Macros user={user} />
+      <Macros user={user} onAjuda={abrirAjuda} />
     )}
 
     {abaPrincipal === 'passos' && (
-      <Passos user={user} />
+      <Passos user={user} onAjuda={abrirAjuda} />
     )}
 
     {abaPrincipal === 'stats' && (
@@ -753,41 +759,49 @@ const buscarDashboard = async () => {
 
           {/* Ajuda */}
           {subAbaPerfil === 'ajuda' && (
-            <div className="ajuda-section">
-              <h1 className="title-divisao">❓ Ajuda & Saúde</h1>
+                      <div className="ajuda-section" ref={el => {
+                        if (el && ajudaAncora) {
+                          setTimeout(() => {
+                            const target = document.getElementById(ajudaAncora)
+                            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                            setAjudaAncora(null)
+                          }, 100)
+                        }
+                      }}>
+                        <h1 className="title-divisao">❓ Ajuda & Saúde</h1>
 
-              <div className="ajuda-group-title">📱 Como usar o app</div>
+              <div id="ajuda-geral" className="ajuda-group-title">📱 Como usar o app</div>
               <div className="ajuda-item"><div className="ajuda-num">1</div><div className="ajuda-body"><strong>Home</strong><p>Visão geral do dia — tarefas, água, peso, refeição atual, suplementos e hábitos.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">2</div><div className="ajuda-body"><strong>Treino</strong><p>Exercícios com timer, descanso cronometrado, stats de kcal/volume/tempo e histórico completo.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">3</div><div className="ajuda-body"><strong>Rotina</strong><p>Gere blocos de dias com tarefas por período (Acordar, Manhã, Tarde, Noite). Enter cria a próxima tarefa. ⧉ clona o dia.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">4</div><div className="ajuda-body"><strong>Mais</strong><p>Acessa Água, Peso, Dieta, Suplementos e Macros pelo menu 🗃️.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Hábitos personalizados</strong><p>Na seção Hábitos do dia (Home), role até o final e toque em "+ Adicionar hábito". Você pode criar hábitos com emoji e nome personalizados além dos 6 padrões.</p></div></div>
 
-              <div className="ajuda-group-title">🧠 Cortisol — o hormônio do estresse</div>
+              <div id="ajuda-cortisol" className="ajuda-group-title">🧠 Cortisol — o hormônio do estresse</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>O que é o cortisol?</strong><p>Hormônio produzido em resposta ao estresse. Cronicamente elevado causa retenção de líquido (até 2kg a mais na balança), dificulta queima de gordura, prejudica o sono e reduz testosterona.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Como reduzir?</strong><p>Dormir 7–8h, treinos moderados (máx. 1h/sessão), alimentação equilibrada, hidratação adequada e gerenciar estresse emocional.</p></div></div>
 
-              <div className="ajuda-group-title">😴 Sono — por que 7 a 8 horas importam</div>
+              <div id="ajuda-sono" className="ajuda-group-title">😴 Sono — por que 7 a 8 horas importam</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>O que acontece dormindo?</strong><p>O GH (hormônio do crescimento) é liberado durante o sono — responsável pela recuperação muscular e queima de gordura. Menos de 6h aumenta cortisol, grelina (fome) e reduz leptina (saciedade).</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Dica prática</strong><p>Acorde sempre no mesmo horário, mesmo no fim de semana. Evite telas 30 minutos antes de dormir.</p></div></div>
 
-              <div className="ajuda-group-title">🏋️ Musculação — benefícios além da estética</div>
+              <div id="ajuda-musculacao" className="ajuda-group-title">🏋️ Musculação — benefícios além da estética</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Metabolismo acelerado</strong><p>Cada kg de músculo queima 13–20 kcal por dia em repouso. Quanto mais massa muscular, mais calorias você gasta sem fazer nada.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Saúde mental e hormonal</strong><p>Treino de força aumenta testosterona, serotonina e dopamina. 3–4x por semana já gera benefício comprovado.</p></div></div>
 
-              <div className="ajuda-group-title">💧 Hidratação</div>
+              <div id="ajuda-hidratacao" className="ajuda-group-title">💧 Hidratação</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>35ml vs 50ml por kg</strong><p>35ml/kg é o mínimo para sedentários. Se você treina, use 50ml/kg. Desidratação de 2% já reduz performance em até 20%.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Água e cortisol</strong><p>Cortisol elevado causa retenção hídrica. Beber mais água paradoxalmente ajuda a reduzir essa retenção. Comece o dia com 500ml em jejum.</p></div></div>
 
-              <div className="ajuda-group-title">🥗 Dieta — como funciona o emagrecimento</div>
+              <div id="ajuda-dieta" className="ajuda-group-title">🥗 Dieta — como funciona o emagrecimento</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Deficit calórico</strong><p>1kg de gordura = ~7.700 kcal. Deficit de 500–800 kcal/dia = 0,5–0,8kg/semana. Acima de 1.000 kcal de deficit queima músculo e derruba o metabolismo.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Proteína em deficit</strong><p>Consuma 1,8–2,2g de proteína por kg de peso para preservar músculo enquanto emagrece.</p></div></div>
 
-              <div className="ajuda-group-title">⚖️ Pesagem diária — como interpretar</div>
+              <div id="ajuda-peso" className="ajuda-group-title">⚖️ Pesagem diária — como interpretar</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Por que pesar todo dia?</strong><p>O peso oscila 1–3kg por resíduo gástrico, hidratação e sódio. Essas variações não são gordura — são fluidos.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>A média de 7 dias é o que importa</strong><p>Se a média da semana 2 for menor que a da semana 1, você emagreceu. Um único dia nunca conta a história real.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Como se pesar corretamente</strong><p>Sempre em jejum logo após acordar, após urinar, sem roupa ou com roupa leve sempre igual. Mesmo horário todo dia.</p></div></div>
-              <div className="ajuda-group-title">👟 Passos diários</div>
+              <div id="ajuda-passos" className="ajuda-group-title">👟 Passos diários</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Como registrar seus passos</strong><p>Usa relógio ou celular que conta passos? Ao final do dia vá na aba Passos (menu 🗃️) e registre quantos passos você deu. Com o tempo você terá um histórico real da sua atividade diária.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Por que 10.000 passos?</strong><p>A OMS recomenda 10.000 passos por dia para adultos saudáveis — equivale a aproximadamente 8km e 400 kcal. Mas qualquer aumento já traz benefícios: quem sai de 3.000 para 7.000 já reduz risco cardiovascular significativamente.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Passos e emagrecimento</strong><p>Cada 1.000 passos queima aproximadamente 40 kcal. 10.000 passos diários = ~400 kcal extras por dia.</p></div></div>

@@ -2717,6 +2717,30 @@ input::-webkit-inner-spin-button {
   line-height: 1.6;
 }
 
+.ajuda-shortcut-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #6366f144;
+  background: #6366f115;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  line-height: 28px;
+  padding: 0;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ajuda-shortcut-btn:hover {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
 /* ══════════════════════════════════════
    ROTINA GRADE 7x7
 ══════════════════════════════════════ */
@@ -3376,3 +3400,4 @@ input::-webkit-inner-spin-button {
 }
 
 .habito-del-btn:hover { color: #ef4444; }
+

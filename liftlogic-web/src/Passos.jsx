@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 
 function formatarData(date) {
-  return date.toISOString().split('T')[0]
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60000)
+  return local.toISOString().split('T')[0]
 }
 
 function getLast7Days() {
@@ -13,7 +15,7 @@ function getLast7Days() {
   })
 }
 
-export default function Passos({ user }) {
+export default function Passos({ user, onAjuda }) {
   const [registros, setRegistros]   = useState([])
   const [meta, setMeta]             = useState(10000)
   const [metaInput, setMetaInput]   = useState('')
@@ -84,7 +86,10 @@ export default function Passos({ user }) {
 
   return (
     <div className="passos-section">
-      <h2 className="title-divisao">👟 Passos Diários</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 className="title-divisao" style={{ margin: 0 }}>👟 Passos Diários</h2>
+        <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-passos')}>?</button>
+      </div>
 
       {/* Card principal */}
       <div className="passos-main-card">
