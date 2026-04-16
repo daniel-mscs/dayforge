@@ -66,7 +66,6 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
       { id: 'tarefas',      label: 'Tarefas',      visivel: true },
       { id: 'cards',        label: 'Água + Peso',  visivel: true },
       { id: 'kcal',         label: 'Kcal',         visivel: true },
-      { id: 'passos',       label: 'Passos',       visivel: true },
       { id: 'refeicao',     label: 'Refeição',     visivel: true },
       { id: 'suplementos',  label: 'Suplementos',  visivel: true },
       { id: 'habitos',      label: 'Hábitos',      visivel: true },
@@ -329,34 +328,34 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
                       </div>
                     )}
 
-                    {bloco.id === 'kcal' && kcalHoje > 0 && (
-                      <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('macros')} style={{ cursor: 'pointer' }}>
-                        <div className="home-mini-icon">🔥</div>
-                        <div className="home-mini-info">
-                          <div className="home-mini-label">KCAL HOJE</div>
-                          <div className="home-mini-val">{kcalHoje.toLocaleString('pt-BR')}</div>
-                          <div className="home-mini-bar-bg">
-                            <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje >= kcalMeta ? '#10b981' : '#f59e0b' }} />
-                          </div>
-                          <div className="home-mini-sub">{Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}% da meta</div>
-                        </div>
+{bloco.id === 'kcal' && (
+                <div className="home-cards-row">
+                  <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('macros')} style={{ cursor: 'pointer' }}>
+                    <div className="home-mini-icon">🔥</div>
+                    <div className="home-mini-info">
+                      <div className="home-mini-label">KCAL HOJE</div>
+                      <div className="home-mini-val">{kcalHoje > 0 ? kcalHoje.toLocaleString('pt-BR') : '—'}</div>
+                      <div className="home-mini-bar-bg">
+                        <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje >= kcalMeta ? '#10b981' : '#f59e0b' }} />
                       </div>
-                    )}
-
-                    {bloco.id === 'passos' && passosHoje !== null && (
-                      <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('passos')} style={{ cursor: 'pointer' }}>
-                        <div className="home-mini-icon">👟</div>
-                        <div className="home-mini-info">
-                          <div className="home-mini-label">PASSOS HOJE</div>
-                          <div className="home-mini-val">{passosHoje.toLocaleString('pt-BR')}</div>
-                          <div className="home-mini-bar-bg">
-                            <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((passosHoje / passosMeta) * 100))}%`, background: passosHoje >= passosMeta ? '#10b981' : '#6366f1' }} />
-                          </div>
-                          <div className="home-mini-sub">{Math.min(100, Math.round((passosHoje / passosMeta) * 100))}% da meta</div>
-                        </div>
+                      <div className="home-mini-sub">{Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}% da meta</div>
+                    </div>
+                  </div>
+                  <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('passos')} style={{ cursor: 'pointer' }}>
+                    <div className="home-mini-icon">👟</div>
+                    <div className="home-mini-info">
+                      <div className="home-mini-label">PASSOS HOJE</div>
+                      <div className="home-mini-val">{passosHoje ? passosHoje.toLocaleString('pt-BR') : '—'}</div>
+                      <div className="home-mini-bar-bg">
+                        <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round(((passosHoje || 0) / passosMeta) * 100))}%`, background: (passosHoje || 0) >= passosMeta ? '#10b981' : '#6366f1' }} />
                       </div>
-                    )}
+                      <div className="home-mini-sub">{Math.min(100, Math.round(((passosHoje || 0) / passosMeta) * 100))}% da meta</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
+              {bloco.id === 'passos' && null}
                     {bloco.id === 'refeicao' && (
                       <div className="home-card">
                         <div className="home-section-title">🥗 REFEIÇÃO ATUAL</div>
