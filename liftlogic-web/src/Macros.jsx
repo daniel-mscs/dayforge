@@ -35,6 +35,7 @@ export default function Macros({ user, onAjuda }) {
   const [alimentosBase, setAlimentosBase] = useState([])
   const [customFoods, setCustomFoods]     = useState([])
   const [perfil, setPerfil]               = useState(null)
+  const [kcalGasto, setKcalGasto] = useState({ passos: 0, treino: 0 })
   const [query, setQuery]                 = useState('')
   const [sugestoes, setSugestoes]         = useState([])
   const [foodSel, setFoodSel]             = useState(null)
@@ -53,19 +54,26 @@ export default function Macros({ user, onAjuda }) {
       { data: customs },
       { data: base },
       { data: perfilData },
-    ] = await Promise.all([
+            { data: passosHoje },
+            { data: treinoHoje },
+          ] = await Promise.all([
       supabase.from('macros_registro').select('*').eq('user_id', user.id).eq('data', hoje).order('created_at', { ascending: true }),
       supabase.from('macros_meta').select('*').eq('user_id', user.id).single(),
       supabase.from('alimentos_custom').select('*').eq('user_id', user.id),
       supabase.from('alimentos_base').select('*').order('nome', { ascending: true }),
       supabase.from('perfil').select('*').eq('user_id', user.id).single(),
+      supabase.from('passos_registro').select('passos').eq('user_id', user.id).eq('data', hoje).single(),
+      supabase.from('treinos_finalizados').select('kcal').eq('user_id', user.id).gte('created_at', hoje).single(),
     ])
     setRegistros(regs || [])
     if (metaData) setMeta(metaData.meta_kcal)
     setCustomFoods(customs || [])
     setAlimentosBase(base || [])
     if (perfilData) setPerfil(perfilData)
-    setCarregando(false)
+        const kcalPassos = Math.round((passosHoje?.passos || 0) * 0.04)
+        const kcalTreino = treinoHoje?.kcal || 0
+        setKcalGasto({ passos: kcalPassos, treino: kcalTreino })
+        setCarregando(false)
   }, [user.id])
 
   useEffect(() => { buscarTudo() }, [buscarTudo])
@@ -163,6 +171,13 @@ export default function Macros({ user, onAjuda }) {
   const pct = Math.min(100, Math.round((total.kcal / meta) * 100))
   const tmb = calcTMB(perfil)
 
+  // Saldo calórico
+  const calcSaldo = () => {
+    if (!tmb) return null
+    const kcalPassos = Math.round((perfil?.passos_hoje || 0) * 0.04)
+    return { tmb, kcalPassos, total: total.kcal, saldo: total.kcal - meta }
+  }
+
   // Agrupa registros por refeição
   const porRefeicao = REFEICOES_OPTS.reduce((acc, r) => {
     const itens = registros.filter(reg => reg.refeicao === r.id)
@@ -197,6 +212,45 @@ export default function Macros({ user, onAjuda }) {
           <div className="macros-mini-item"><span>🧈 Gord</span><strong>{total.gord}g</strong></div>
         </div>
       </div>
+
+      {tmb && (
+        <div className="macros-card">
+          <div className="macros-card-title">SALDO CALÓRICO DO DIA</div>
+              {(() => {
+                const gastoTotal = meta + kcalGasto.treino + kcalGasto.passos
+                const saldo = total.kcal - gastoTotal
+                const maxVal = Math.max(gastoTotal, total.kcal, 1)
+                const linhas = [
+                  { label: 'Meta base', val: meta, extra: '', color: '#6366f1' },
+                  { label: '+ Treino', val: kcalGasto.treino, extra: '', color: '#10b981' },
+                  { label: '+ Passos', val: kcalGasto.passos, extra: '', color: '#10b981' },
+                  { label: 'Ingerido', val: total.kcal, extra: '', color: total.kcal > gastoTotal ? '#ef4444' : '#f59e0b' },
+                ]
+                return (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                      {linhas.map((l, i) => (
+                        <div key={i}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, color: '#94a3b8' }}>{l.label}</span>
+                            <strong style={{ fontSize: 12, color: l.color }}>{l.val.toLocaleString('pt-BR')} kcal</strong>
+                          </div>
+                          <div className="macros-bar-bg">
+                            <div style={{ height: 6, borderRadius: 99, background: l.color, width: `${Math.min(100, Math.round((l.val / maxVal) * 100))}%`, transition: 'width 0.4s' }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="macros-saldo-total" style={{ color: saldo < 0 ? '#10b981' : '#ef4444' }}>
+                      {saldo < 0
+                        ? `Deficit de ${Math.abs(saldo).toLocaleString('pt-BR')} kcal`
+                        : `Superavit de ${saldo.toLocaleString('pt-BR')} kcal`}
+                    </div>
+                  </>
+                )
+              })()}
+        </div>
+      )}
 
       {/* TMB */}
       {tmb && (

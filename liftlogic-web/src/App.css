@@ -3318,3 +3318,31 @@ input::-webkit-inner-spin-button {
 }
 
 .home-bloco-toggle:hover { border-color: #6366f144; color: #f8fafc; }
+
+.macros-saldo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.macros-saldo-item {
+  background: #24282d;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.macros-saldo-item span { font-size: 11px; color: #64748b; }
+.macros-saldo-item strong { font-size: 15px; color: #f8fafc; font-weight: 700; }
+
+.macros-saldo-total {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px;
+  background: #24282d;
+  border-radius: 10px;
+}
