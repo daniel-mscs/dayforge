@@ -1,4 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove, SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { supabase } from './lib/supabase'
 import Habitos from './Habitos'
 import Dieta from './Dieta'
@@ -51,11 +58,26 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
   const [kcalHoje, setKcalHoje] = useState(0)
   const [kcalMeta, setKcalMeta] = useState(2000)
 
+  const [editandoHome, setEditandoHome] = useState(false)
+  const [blocos, setBlocos] = useState(() => {
+    const saved = localStorage.getItem('home_blocos')
+    if (saved) return JSON.parse(saved)
+    return [
+      { id: 'tarefas',      label: 'Tarefas',      visivel: true },
+      { id: 'cards',        label: 'Água + Peso',  visivel: true },
+      { id: 'kcal',         label: 'Kcal',         visivel: true },
+      { id: 'passos',       label: 'Passos',       visivel: true },
+      { id: 'refeicao',     label: 'Refeição',     visivel: true },
+      { id: 'suplementos',  label: 'Suplementos',  visivel: true },
+      { id: 'habitos',      label: 'Hábitos',      visivel: true },
+    ]
+  })
+
   const hoje = formatarData(new Date())
   const buscarFrase = useCallback(async () => {
       const { data } = await supabase.from('frases').select('texto, autor')
       if (data && data.length > 0) {
-        const idx = new Date().getDate() % data.length
+        const idx = Math.floor(Math.random() * data.length)
         setFrase(data[idx])
       }
     }, [])
@@ -129,6 +151,27 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         else if (i > 0) break
       }
       return s
+    }
+
+  const sensors = useSensors(
+      useSensor(PointerSensor),
+      useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+    )
+
+    const handleDragEnd = (event) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+      const oldIndex = blocos.findIndex(b => b.id === active.id)
+      const newIndex = blocos.findIndex(b => b.id === over.id)
+      const novosBlocos = arrayMove(blocos, oldIndex, newIndex)
+      setBlocos(novosBlocos)
+      localStorage.setItem('home_blocos', JSON.stringify(novosBlocos))
+    }
+
+    const toggleVisivel = (id) => {
+      const novosBlocos = blocos.map(b => b.id === id ? { ...b, visivel: !b.visivel } : b)
+      setBlocos(novosBlocos)
+      localStorage.setItem('home_blocos', JSON.stringify(novosBlocos))
     }
 
   const toggleTarefa = async (tarefa) => {
@@ -207,130 +250,176 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         </div>
       </div>
 
-      {/* Tarefas de hoje */}
-      <div className="home-card">
-        <div className="home-section-title">TAREFAS DE HOJE</div>
-        {!temTarefas ? (
-          <p style={{ fontSize: 13, color: '#475569', textAlign: 'center', padding: '8px 0' }}>
-            Nenhuma tarefa para hoje. Gere sua rotina! 📋
-          </p>
-        ) : (
-          Object.entries(tarefasPorPeriodo).map(([periodo, itens]) => (
-            <div key={periodo} style={{ marginBottom: 12 }}>
-              <div className="home-periodo-title">{periodo}</div>
-              {itens.map(t => (
-                <label key={t.id} className={`home-tarefa ${t.concluida ? 'done' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={!!t.concluida}
-                    onChange={() => toggleTarefa(t)}
-                    style={{ accentColor: '#6366f1', width: 16, height: 16, flexShrink: 0 }}
-                  />
-                  <span style={{ textDecoration: t.concluida ? 'line-through' : 'none', color: t.concluida ? '#475569' : '#f8fafc' }}>
-                    {t.texto}
-                  </span>
-                </label>
-              ))}
+      {/* Botão personalizar */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setEditandoHome(!editandoHome)}
+                style={{
+                  background: editandoHome ? '#6366f1' : 'none',
+                  border: '1px solid #ffffff0d',
+                  borderRadius: 8, color: editandoHome ? '#fff' : '#64748b',
+                  fontSize: 11, padding: '5px 12px', cursor: 'pointer'
+                }}
+              >
+                {editandoHome ? '✓ Concluir' : '✏️ Personalizar'}
+              </button>
             </div>
-          ))
-        )}
-      </div>
 
-      {/* Cards água + peso */}
-      <div className="home-cards-row">
-        <div className="home-mini-card" onClick={() => onNavegar('agua')} style={{ cursor: 'pointer' }}>
-          <div className="home-mini-icon">💧</div>
-          <div className="home-mini-info">
-            <div className="home-mini-label">ÁGUA HOJE</div>
-            <div className="home-mini-val">{aguaHoje.total.toLocaleString('pt-BR')} ml</div>
-            <div className="home-mini-bar-bg">
-              <div className="home-mini-bar-fill" style={{ width: `${pctAgua}%`, background: pctAgua >= 100 ? '#10b981' : '#3b82f6' }} />
-            </div>
-            <div className="home-mini-sub">{pctAgua}% da meta ({aguaHoje.meta.toLocaleString('pt-BR')} ml)</div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={blocos.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                {blocos.map(bloco => (
+                  <BlocoArrastavel
+                    key={bloco.id}
+                    bloco={bloco}
+                    editando={editandoHome}
+                    onToggleVisivel={toggleVisivel}
+                  >
+                    {bloco.id === 'tarefas' && (
+                      <div className="home-card">
+                        <div className="home-section-title">TAREFAS DE HOJE</div>
+                        {!temTarefas ? (
+                          <p style={{ fontSize: 13, color: '#475569', textAlign: 'center', padding: '8px 0' }}>
+                            Nenhuma tarefa para hoje. Gere sua rotina! 📋
+                          </p>
+                        ) : (
+                          Object.entries(tarefasPorPeriodo).map(([periodo, itens]) => (
+                            <div key={periodo} style={{ marginBottom: 12 }}>
+                              <div className="home-periodo-title">{periodo}</div>
+                              {itens.map(t => (
+                                <label key={t.id} className={`home-tarefa ${t.concluida ? 'done' : ''}`}>
+                                  <input type="checkbox" checked={!!t.concluida} onChange={() => toggleTarefa(t)}
+                                    style={{ accentColor: '#6366f1', width: 16, height: 16, flexShrink: 0 }} />
+                                  <span style={{ textDecoration: t.concluida ? 'line-through' : 'none', color: t.concluida ? '#475569' : '#f8fafc' }}>
+                                    {t.texto}
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    {bloco.id === 'cards' && (
+                      <div className="home-cards-row">
+                        <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('agua')} style={{ cursor: 'pointer' }}>
+                          <div className="home-mini-icon">💧</div>
+                          <div className="home-mini-info">
+                            <div className="home-mini-label">ÁGUA HOJE</div>
+                            <div className="home-mini-val">{aguaHoje.total.toLocaleString('pt-BR')} ml</div>
+                            <div className="home-mini-bar-bg">
+                              <div className="home-mini-bar-fill" style={{ width: `${pctAgua}%`, background: pctAgua >= 100 ? '#10b981' : '#3b82f6' }} />
+                            </div>
+                            <div className="home-mini-sub">{pctAgua}% da meta</div>
+                          </div>
+                        </div>
+                        <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('peso')} style={{ cursor: 'pointer' }}>
+                          <div className="home-mini-icon">⚖️</div>
+                          <div className="home-mini-info">
+                            <div className="home-mini-label">PESO HOJE</div>
+                            <div className="home-mini-val">{pesoHoje ? `${Number(pesoHoje.peso).toFixed(1)} kg` : '—'}</div>
+                            {diffPeso !== null && (
+                              <div className="home-mini-sub" style={{ color: Number(diffPeso) < 0 ? '#10b981' : Number(diffPeso) > 0 ? '#ef4444' : '#64748b' }}>
+                                {Number(diffPeso) > 0 ? '▲' : Number(diffPeso) < 0 ? '▼' : '='} {Math.abs(diffPeso)} kg
+                              </div>
+                            )}
+                            {!pesoHoje && <div className="home-mini-sub">Registre seu peso</div>}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {bloco.id === 'kcal' && kcalHoje > 0 && (
+                      <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('macros')} style={{ cursor: 'pointer' }}>
+                        <div className="home-mini-icon">🔥</div>
+                        <div className="home-mini-info">
+                          <div className="home-mini-label">KCAL HOJE</div>
+                          <div className="home-mini-val">{kcalHoje.toLocaleString('pt-BR')}</div>
+                          <div className="home-mini-bar-bg">
+                            <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje >= kcalMeta ? '#10b981' : '#f59e0b' }} />
+                          </div>
+                          <div className="home-mini-sub">{Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}% da meta</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {bloco.id === 'passos' && passosHoje !== null && (
+                      <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('passos')} style={{ cursor: 'pointer' }}>
+                        <div className="home-mini-icon">👟</div>
+                        <div className="home-mini-info">
+                          <div className="home-mini-label">PASSOS HOJE</div>
+                          <div className="home-mini-val">{passosHoje.toLocaleString('pt-BR')}</div>
+                          <div className="home-mini-bar-bg">
+                            <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((passosHoje / passosMeta) * 100))}%`, background: passosHoje >= passosMeta ? '#10b981' : '#6366f1' }} />
+                          </div>
+                          <div className="home-mini-sub">{Math.min(100, Math.round((passosHoje / passosMeta) * 100))}% da meta</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {bloco.id === 'refeicao' && (
+                      <div className="home-card">
+                        <div className="home-section-title">🥗 REFEIÇÃO ATUAL</div>
+                        <Dieta user={user} compact={true} />
+                      </div>
+                    )}
+
+                    {bloco.id === 'suplementos' && (
+                      <div className="home-card">
+                        <div className="home-section-title">💊 SUPLEMENTOS</div>
+                        <Suplementos user={user} compact={true} />
+                      </div>
+                    )}
+
+                    {bloco.id === 'habitos' && (
+                      <div className="home-card">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: mostrarHabitos ? 8 : 0 }}>
+                          <div className="home-section-title" style={{ margin: 0 }}>HÁBITOS DO DIA</div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => onNavegar('habitos')}
+                              style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#6366f1', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}>
+                              + Personalizar
+                            </button>
+                            <button onClick={() => { const novo = !mostrarHabitos; setMostrarHabitos(novo); localStorage.setItem('home_mostrar_habitos', String(novo)) }}
+                              style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#64748b', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}>
+                              {mostrarHabitos ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                          </div>
+                        </div>
+                        {mostrarHabitos && <Habitos user={user} compact={true} />}
+                      </div>
+                    )}
+                  </BlocoArrastavel>
+                ))}
+              </SortableContext>
+            </DndContext>
+
           </div>
-        </div>
-        <div className="home-mini-card" onClick={() => onNavegar('peso')} style={{ cursor: 'pointer' }}>
-          <div className="home-mini-icon">⚖️</div>
-          <div className="home-mini-info">
-            <div className="home-mini-label">PESO HOJE</div>
-            <div className="home-mini-val">{pesoHoje ? `${Number(pesoHoje.peso).toFixed(1)} kg` : '—'}</div>
-            {diffPeso !== null && (
-              <div className="home-mini-sub" style={{ color: Number(diffPeso) < 0 ? '#10b981' : Number(diffPeso) > 0 ? '#ef4444' : '#64748b' }}>
-                {Number(diffPeso) > 0 ? '▲' : Number(diffPeso) < 0 ? '▼' : '='} {Math.abs(diffPeso)} kg
+        )
+      }
+
+      function BlocoArrastavel({ bloco, editando, onToggleVisivel, children }) {
+        const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: bloco.id })
+        const style = {
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0.5 : bloco.visivel ? 1 : 0.3,
+        }
+
+        if (!bloco.visivel && !editando) return null
+
+        return (
+          <div ref={setNodeRef} style={style}>
+            {editando && (
+              <div className="home-bloco-edit-bar">
+                <span className="home-bloco-drag" {...attributes} {...listeners}>☰</span>
+                <span className="home-bloco-label">{bloco.label}</span>
+                <button className="home-bloco-toggle" onClick={() => onToggleVisivel(bloco.id)}>
+                  {bloco.visivel ? '👁' : '🙈'}
+                </button>
               </div>
             )}
-            {!pesoHoje && <div className="home-mini-sub">Registre seu peso</div>}
+            {children}
           </div>
-        </div>
-      </div>
-
-      {/* Card kcal */}
-      {kcalHoje > 0 && (
-        <div className="home-mini-card" onClick={() => onNavegar('macros')} style={{ cursor: 'pointer' }}>
-          <div className="home-mini-icon">🔥</div>
-          <div className="home-mini-info">
-            <div className="home-mini-label">KCAL HOJE</div>
-            <div className="home-mini-val">{kcalHoje.toLocaleString('pt-BR')}</div>
-            <div className="home-mini-bar-bg">
-              <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje >= kcalMeta ? '#10b981' : '#f59e0b' }} />
-            </div>
-            <div className="home-mini-sub">{Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}% da meta ({kcalMeta.toLocaleString('pt-BR')} kcal)</div>
-          </div>
-        </div>
-      )}
-
-      {/* Card passos */}
-      {passosHoje !== null && (
-        <div className="home-mini-card" onClick={() => onNavegar('passos')} style={{ cursor: 'pointer' }}>
-          <div className="home-mini-icon">👟</div>
-          <div className="home-mini-info">
-            <div className="home-mini-label">PASSOS HOJE</div>
-            <div className="home-mini-val">{passosHoje.toLocaleString('pt-BR')}</div>
-            <div className="home-mini-bar-bg">
-              <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((passosHoje / passosMeta) * 100))}%`, background: passosHoje >= passosMeta ? '#10b981' : '#6366f1' }} />
-            </div>
-            <div className="home-mini-sub">{Math.min(100, Math.round((passosHoje / passosMeta) * 100))}% da meta</div>
-          </div>
-        </div>
-      )}
-
-      {/* Refeição atual */}
-      <div className="home-card">
-        <div className="home-section-title">🥗 REFEIÇÃO ATUAL</div>
-        <Dieta user={user} compact={true} />
-      </div>
-
-      {/* Suplementos do dia */}
-      <div className="home-card">
-        <div className="home-section-title">💊 SUPLEMENTOS</div>
-        <Suplementos user={user} compact={true} />
-      </div>
-
-{/* Hábitos do dia */}
-      <div className="home-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: mostrarHabitos ? 8 : 0 }}>
-          <div className="home-section-title" style={{ margin: 0 }}>HÁBITOS DO DIA</div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              onClick={() => onNavegar('habitos')}
-              style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#6366f1', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}
-            >
-              + Personalizar
-            </button>
-            <button
-              onClick={() => {
-                const novo = !mostrarHabitos
-                setMostrarHabitos(novo)
-                localStorage.setItem('home_mostrar_habitos', String(novo))
-              }}
-              style={{ background: 'none', border: '1px solid #ffffff0d', borderRadius: 8, color: '#64748b', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}
-            >
-              {mostrarHabitos ? 'Ocultar' : 'Mostrar'}
-            </button>
-          </div>
-        </div>
-        {mostrarHabitos && <Habitos user={user} compact={true} />}
-      </div>
-      </div>
         )
       }

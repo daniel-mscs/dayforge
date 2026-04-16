@@ -914,10 +914,7 @@ input::-webkit-inner-spin-button {
   margin-bottom: 2px;
 }
 
-.home-date {
-  font-size: 13px;
-  color: #64748b;
-}
+.home-date { font-size: 13px; color: #64748b; }
 
 .home-streak {
   background: #1a1d21;
@@ -929,276 +926,49 @@ input::-webkit-inner-spin-button {
   white-space: nowrap;
 }
 
-/* Score card */
-.home-score-card {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 16px;
-  padding: 20px;
+/* Bloco drag */
+.home-bloco-edit-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.home-score-label {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin-bottom: 6px;
-}
-
-.home-score-num {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #f8fafc;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.home-score-sub {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.home-score-ring {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-}
-
-.home-score-pct {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #94a3b8;
-}
-
-/* Pilares */
-.home-pilares {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-}
-
-.home-pilar {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 14px;
-  padding: 14px 12px;
-  transition: all 0.2s;
-}
-
-.home-pilar.active {
-  border-color: #10b98144;
-  background: #10b98110;
-}
-
-.home-pilar:hover {
-  border-color: #6366f133;
-  transform: translateY(-1px);
-}
-
-.home-pilar-icon {
-  font-size: 18px;
-  margin-bottom: 6px;
-}
-
-.home-pilar-label {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  background: #6366f115;
+  border: 1px dashed #6366f144;
+  border-radius: 8px;
+  padding: 8px 12px;
   margin-bottom: 4px;
 }
 
-.home-pilar-val {
-  font-size: 13px;
-  font-weight: 600;
-  color: #f8fafc;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.home-pilar-bar {
-  height: 3px;
-  background: #ffffff08;
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.home-pilar-bar-fill {
-  height: 3px;
-  border-radius: 99px;
-  transition: width 0.4s;
-}
-
-/* Próximo treino */
-.home-proximo {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 16px;
-  padding: 16px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.home-proximo-label {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin-bottom: 4px;
-}
-
-.home-proximo-letra {
-  font-size: 1.8rem;
-  font-weight: 700;
+.home-bloco-drag {
+  cursor: grab;
   color: #6366f1;
-  line-height: 1;
+  font-size: 18px;
+  touch-action: none;
+  padding: 0 4px;
 }
 
-.home-btn-treino {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 12px 18px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-}
+.home-bloco-drag:active { cursor: grabbing; }
 
-.home-btn-treino:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.home-btn-treino.em-andamento {
-  background: #6366f1;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  animation: pulse-btn 2s ease-in-out infinite;
-}
-
-@keyframes pulse-btn {
-  0%, 100% { box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-  50% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.6); }
-}
-
-/* Último treino */
-.home-ultimo {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 16px;
-  padding: 16px 18px;
-}
-
-.home-ultimo-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.home-ultimo-title {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.home-ultimo-badge {
-  background: #6366f122;
-  color: #818cf8;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.home-ultimo-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.home-ultimo-stat span {
-  display: block;
-  font-size: 9px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  margin-bottom: 3px;
-}
-
-.home-ultimo-stat strong {
-  font-size: 16px;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-/* Semana */
-.home-semana {
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
-  border-radius: 16px;
-  padding: 16px 18px;
-}
-
-.home-semana-title {
-  font-size: 10px;
-  color: #64748b;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
-}
-
-.home-semana-dias {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
-}
-
-.home-semana-dia {
+.home-bloco-label {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.home-semana-dia-letter {
-  font-size: 10px;
-  color: #475569;
+  font-size: 12px;
   font-weight: 600;
+  color: #94a3b8;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.home-semana-dia-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+.home-bloco-toggle {
   background: #24282d;
-  border: 1px solid #ffffff08;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 800;
-  color: #475569;
+  border: 1px solid #ffffff0d;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 10px;
+  color: #64748b;
+  transition: all 0.15s;
 }
+
+.home-bloco-toggle:hover { border-color: #6366f144; color: #f8fafc; }
 
 .home-semana-dia-dot.feito {
   background: #6366f1;
@@ -3503,3 +3273,40 @@ input::-webkit-inner-spin-button {
   line-height: 1.5;
 }
 
+/* ══════════════════════════════════════
+   HOME PERSONALIZAR
+══════════════════════════════════════ */
+.home-bloco-edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #6366f115;
+  border: 1px dashed #6366f144;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.home-bloco-drag {
+  cursor: grab;
+  color: #6366f1;
+  font-size: 18px;
+  touch-action: none;
+  padding: 0 4px;
+}
+
+.home-bloco-drag:active { cursor: grabbing; }
+
+.home-bloco-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.home-bloco-toggle:hover {
+  border-color: #6366f144;
+  color: #f8fafc;
+}
