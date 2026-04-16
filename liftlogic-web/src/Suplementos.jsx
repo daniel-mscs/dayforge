@@ -12,9 +12,8 @@ export default function Suplementos({ user, compact = false, onAjuda }) {
   const [nomeInput, setNomeInput]   = useState('')
   const [doseInput, setDoseInput]   = useState('')
 
-  const hoje = formatarData(new Date())
-
   const buscarTudo = useCallback(async () => {
+    const hoje = formatarData(new Date())
     setCarregando(true)
     const [{ data: suplementos }, { data: checksData }] = await Promise.all([
       supabase.from('suplementos').select('*').eq('user_id', user.id).order('ordem', { ascending: true }),
@@ -22,20 +21,21 @@ export default function Suplementos({ user, compact = false, onAjuda }) {
     ])
     setLista(suplementos || [])
     const mapa = {}
-        ;(checksData || []).forEach(c => { mapa[c.suplemento_id] = { concluido: c.concluido, hora: c.hora } })
-        setChecks(mapa)
+    ;(checksData || []).forEach(c => { mapa[c.suplemento_id] = { concluido: c.concluido, hora: c.hora } })
+    setChecks(mapa)
     setCarregando(false)
   }, [user.id])
 
   useEffect(() => { buscarTudo() }, [buscarTudo])
 
     const toggleCheck = async (suplId) => {
-    const atual = checks[suplId] || false
-    const novo  = !atual
-    const hora = novo ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null
-    setChecks(prev => ({ ...prev, [suplId]: { concluido: novo, hora } }))
-    await supabase.from('suplementos_check').upsert({
-      user_id: user.id, data: hoje, suplemento_id: suplId, concluido: novo, hora
+        const hoje = formatarData(new Date())
+        const atual = checks[suplId]?.concluido || false
+        const novo  = !atual
+        const hora = novo ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null
+        setChecks(prev => ({ ...prev, [suplId]: { concluido: novo, hora } }))
+        await supabase.from('suplementos_check').upsert({
+          user_id: user.id, data: hoje, suplemento_id: suplId, concluido: novo, hora
     }, { onConflict: 'user_id,data,suplemento_id' })
   }
 

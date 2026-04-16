@@ -110,6 +110,8 @@ function Treino({ logout, user }) {
   const [inputDescanso, setInputDescanso] = useState('')
 
   const [perfil, setPerfil] = useState({ nome: '', peso: '', altura: '', idade: '', sexo: 'M' })
+  const [perfilEditado, setPerfilEditado] = useState(false)
+  const [perfilOriginal, setPerfilOriginal] = useState(null)
   const [salvandoPerfil, setSalvandoPerfil] = useState(false)
   const [perfilMsg, setPerfilMsg] = useState('')
   const [dashData, setDashData] = useState({ historico: [], exercicioSelecionado: null, evolucao: [] })
@@ -167,7 +169,12 @@ function Treino({ logout, user }) {
   const buscarPerfil = async () => {
     const { data, error } = await supabase.from('perfil').select('*').eq('user_id', user.id).single()
     if (error && error.code !== 'PGRST116') console.error('Erro perfil:', error.message)
-    if (data) setPerfil({ nome: data.nome || '', peso: data.peso || '', altura: data.altura || '', idade: data.idade || '', sexo: data.sexo || 'M' })
+    if (data) {
+      const p = { nome: data.nome || '', peso: data.peso || '', altura: data.altura || '', idade: data.idade || '', sexo: data.sexo || 'M' }
+      setPerfil(p)
+      setPerfilOriginal(p)
+      setPerfilEditado(false)
+    }
   }
 
   const salvarPerfil = async (e) => {
@@ -733,7 +740,7 @@ const buscarDashboard = async () => {
             <>
               <h1 className="title-divisao">Meu Perfil 👤</h1>
               <form className="form-cadastro" onSubmit={salvarPerfil}>
-                <input type="text" placeholder="Seu nome" value={perfil.nome} onChange={e => setPerfil({ ...perfil, nome: e.target.value })} />
+                <input type="text" placeholder="Seu nome" value={perfil.nome} onChange={e => { setPerfil({ ...perfil, nome: e.target.value }); setPerfilEditado(true) }} />
                 <div className="row">
                   <input type="number" placeholder="Peso (kg)" value={perfil.peso} onChange={e => setPerfil({ ...perfil, peso: e.target.value })} />
                   <input type="number" placeholder="Altura (cm)" value={perfil.altura} onChange={e => setPerfil({ ...perfil, altura: e.target.value })} />
@@ -743,7 +750,9 @@ const buscarDashboard = async () => {
                   <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
                   <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
                 </div>
-                <button type="submit" disabled={salvandoPerfil}>{salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}</button>
+                {perfilEditado && (
+                  <button type="submit" disabled={salvandoPerfil}>{salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}</button>
+                )}
                 {perfilMsg && <p className={perfilMsg.includes('Erro') ? 'auth-erro' : 'auth-sucesso'}>{perfilMsg}</p>}
               </form>
               {(imc || tmb) && (

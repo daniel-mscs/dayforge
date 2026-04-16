@@ -336,9 +336,11 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
                       <div className="home-mini-label">KCAL HOJE</div>
                       <div className="home-mini-val">{kcalHoje > 0 ? kcalHoje.toLocaleString('pt-BR') : '—'}</div>
                       <div className="home-mini-bar-bg">
-                        <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje >= kcalMeta ? '#10b981' : '#f59e0b' }} />
+                        <div className="home-mini-bar-fill" style={{ width: `${Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}%`, background: kcalHoje > kcalMeta ? '#ef4444' : kcalHoje >= kcalMeta * 0.9 ? '#10b981' : '#f59e0b' }} />
                       </div>
-                      <div className="home-mini-sub">{Math.min(100, Math.round((kcalHoje / kcalMeta) * 100))}% da meta</div>
+                      <div className="home-mini-sub" style={{ color: kcalHoje > kcalMeta ? '#ef4444' : '#64748b' }}>
+                        {Math.round((kcalHoje / kcalMeta) * 100)}% da meta {kcalHoje > kcalMeta ? '⚠️' : ''}
+                      </div>
                     </div>
                   </div>
                   <div className="home-mini-card" onClick={() => !editandoHome && onNavegar('passos')} style={{ cursor: 'pointer' }}>
@@ -414,8 +416,8 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
                 <span className="home-bloco-drag" {...attributes} {...listeners}>☰</span>
                 <span className="home-bloco-label">{bloco.label}</span>
                 <button className="home-bloco-toggle" onClick={() => onToggleVisivel(bloco.id)}>
-                  {bloco.visivel ? '👁' : '🙈'}
-                </button>
+                            {bloco.visivel ? 'Ocultar' : 'Mostrar'}
+                          </button>
               </div>
             )}
             {children}

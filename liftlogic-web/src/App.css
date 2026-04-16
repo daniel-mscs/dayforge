@@ -2285,8 +2285,8 @@ input::-webkit-inner-spin-button {
 .bottom-nav-more-wrap { position: relative; }
 
 .bottom-nav-more-menu {
-  position: absolute;
-  bottom: calc(100% + 12px);
+  position: fixed;
+  bottom: 70px;
   left: 50%;
   transform: translateX(-50%);
   background: #1e2126;
@@ -2296,7 +2296,8 @@ input::-webkit-inner-spin-button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  min-width: 200px;
+  width: calc(100vw - 40px);
+  max-width: 400px;
   box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
   z-index: 200;
 }
@@ -2336,9 +2337,6 @@ input::-webkit-inner-spin-button {
   inset: 0;
   z-index: 99;
 }
-
-
-
 /* TMB */
 .macros-tmb-row {
   display: grid;
@@ -3279,34 +3277,44 @@ input::-webkit-inner-spin-button {
 .home-bloco-edit-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: #6366f115;
   border: 1px dashed #6366f144;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   margin-bottom: 4px;
 }
 
 .home-bloco-drag {
   cursor: grab;
   color: #6366f1;
-  font-size: 18px;
+  font-size: 16px;
   touch-action: none;
-  padding: 0 4px;
+  flex-shrink: 0;
 }
 
 .home-bloco-drag:active { cursor: grabbing; }
 
 .home-bloco-label {
   flex: 1;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.home-bloco-toggle:hover {
-  border-color: #6366f144;
-  color: #f8fafc;
+.home-bloco-toggle {
+  background: #24282d;
+  border: 1px solid #ffffff0d;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 8px;
+  color: #64748b;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
+
+.home-bloco-toggle:hover { border-color: #6366f144; color: #f8fafc; }
