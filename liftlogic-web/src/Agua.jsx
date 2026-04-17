@@ -31,8 +31,8 @@ export default function Agua({ user, onAjuda }) {
     setCarregando(true)
     const [{ data: regs }, { data: metaData }, { data: perfilData }] = await Promise.all([
       supabase.from('agua_registro').select('*').eq('user_id', user.id).gte('data', ultimos7[0]).order('data', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('agua_meta').select('*').eq('user_id', user.id).single(),
-      supabase.from('perfil').select('peso').eq('user_id', user.id).single(),
+      supabase.from('agua_meta').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('perfil').select('peso').eq('user_id', user.id).maybeSingle(),
     ])
 
     const hist = {}

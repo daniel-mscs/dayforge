@@ -316,21 +316,23 @@ const buscarDashboard = async () => {
   }
 
   const finalizarTreino = () => {
-    const filtrados = exercicios.filter(ex => ex.treino === treinoAtivo)
+      const treinoIniciado = localStorage.getItem(TREINO_ATIVO_KEY) || treinoAtivo
+      const filtrados = exercicios.filter(ex => ex.treino === treinoIniciado)
     const volumeTotal = filtrados.reduce((acc, ex) => acc + (Number(ex.series || 0) * Number(ex.repeticoes || 0) * Number(ex.carga || 0)), 0)
     const concluídosCount = Object.values(concluidos).filter(Boolean).length
     const kcal = perfil.peso ? Math.round(5.0 * Number(perfil.peso) * (tempoTotal / 3600)) : null
     const maisHeavy = filtrados.reduce((max, ex) => Number(ex.carga) > Number(max?.carga || 0) ? ex : max, null)
-    setModalResumo({ volumeTotal, concluídosCount, total: filtrados.length, kcal, maisHeavy })
+    setModalResumo({ volumeTotal, concluídosCount, total: filtrados.length, kcal, maisHeavy, treinoIniciado })
   }
 
     const confirmarFinalizarTreino = async () => {
-    localStorage.removeItem(TREINO_START_KEY)
-    localStorage.removeItem(TREINO_ATIVO_KEY)
-    const filtrados = exercicios.filter(ex => ex.treino === treinoAtivo)
-    const volumeTotal = filtrados.reduce((acc, ex) => acc + (Number(ex.series || 0) * Number(ex.repeticoes || 0) * Number(ex.carga || 0)), 0)
-    const { data, error } = await supabase.from('treinos_finalizados').insert([{
-      treino: treinoAtivo, tempo_segundos: tempoTotal, volume_total: volumeTotal, kcal: modalResumo.kcal || 0, user_id: user.id
+        const treinoIniciado = localStorage.getItem(TREINO_ATIVO_KEY) || treinoAtivo
+        localStorage.removeItem(TREINO_START_KEY)
+        localStorage.removeItem(TREINO_ATIVO_KEY)
+        const filtrados = exercicios.filter(ex => ex.treino === treinoIniciado)
+        const volumeTotal = filtrados.reduce((acc, ex) => acc + (Number(ex.series || 0) * Number(ex.repeticoes || 0) * Number(ex.carga || 0)), 0)
+        const { data, error } = await supabase.from('treinos_finalizados').insert([{
+          treino: treinoIniciado, tempo_segundos: tempoTotal, volume_total: volumeTotal, kcal: modalResumo.kcal || 0, user_id: user.id
     }]).select()
     if (error) { alert('Erro ao salvar: ' + error.message); return }
     const registrosCarga = filtrados.map(ex => ({
@@ -401,7 +403,7 @@ const buscarDashboard = async () => {
       {modalResumo && (
         <div className="modal-overlay">
           <div className="modal-resumo">
-            <h2>🏁 Resumo do Treino {treinoAtivo}</h2>
+            <h2>🏁 Resumo do Treino {modalResumo.treinoIniciado || treinoAtivo}</h2>
             <div className="stats-grid">
               <div className="stat-card"><span>TEMPO</span><strong>{formatarTempo(tempoTotal)}</strong></div>
               <div className="stat-card"><span>EXERCÍCIOS</span><strong>{modalResumo.concluídosCount}/{modalResumo.total}</strong><small>concluídos</small></div>

@@ -30,7 +30,7 @@ export default function Passos({ user, onAjuda }) {
     setCarregando(true)
     const [{ data: regs }, { data: metaData }] = await Promise.all([
       supabase.from('passos_registro').select('*').eq('user_id', user.id).gte('data', ultimos7[0]).order('data', { ascending: false }),
-      supabase.from('passos_meta').select('*').eq('user_id', user.id).single(),
+      supabase.from('passos_meta').select('*').eq('user_id', user.id).maybeSingle(),
     ])
     setRegistros(regs || [])
     if (metaData) setMeta(metaData.meta_passos)

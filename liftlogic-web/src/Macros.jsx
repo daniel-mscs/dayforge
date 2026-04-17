@@ -58,7 +58,7 @@ export default function Macros({ user, onAjuda }) {
             { data: treinoHoje },
           ] = await Promise.all([
       supabase.from('macros_registro').select('*').eq('user_id', user.id).eq('data', hoje).order('created_at', { ascending: true }),
-      supabase.from('macros_meta').select('*').eq('user_id', user.id).single(),
+      supabase.from('macros_meta').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('alimentos_custom').select('*').eq('user_id', user.id),
       supabase.from('alimentos_base').select('*').order('nome', { ascending: true }),
       supabase.from('perfil').select('*').eq('user_id', user.id).single(),
