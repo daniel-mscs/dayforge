@@ -162,7 +162,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
       <div className="dieta-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 className="title-divisao" style={{ margin: 0 }}>🥗 Plano Alimentar</h2>
-          <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-dieta')}>?</button>
+                  <button className="ajuda-shortcut-btn" onClick={() => onAjuda('ajuda-dieta')}>?</button>
         </div>
         {salvando && <span style={{ fontSize: 12, color: '#64748b' }}>Salvando...</span>}
       </div>

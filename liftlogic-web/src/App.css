@@ -2009,10 +2009,7 @@ input::-webkit-inner-spin-button {
 ══════════════════════════════════════ */
 .dieta-section { width: 100%; display: flex; flex-direction: column; gap: 14px; }
 
-.dieta-header {
-  display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 4px;
-}
+.dieta-header { margin-bottom: 4px; }}
 
 .dieta-card {
   background: #1a1d21; border: 1px solid #ffffff0d;
