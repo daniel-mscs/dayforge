@@ -260,7 +260,7 @@ export default function Rotina({ user }) {
   const diaSel = dias.find(d => d.id === diaSelecionado)
   const semanas = chunkArray(dias, 7)
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Forjando sua rotina... 🧱</div>
 
   return (
     <div className="rotina-section">

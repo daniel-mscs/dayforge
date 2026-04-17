@@ -82,7 +82,7 @@ export default function Passos({ user, onAjuda }) {
   }
   const media = mediaSemana()
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando seus passos... 👟</div>
 
   return (
     <div className="passos-section">

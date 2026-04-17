@@ -618,7 +618,7 @@ const buscarDashboard = async () => {
             )}
 
             <div className="lista-exercicios">
-              {carregando && <p className="empty-msg">Carregando...</p>}
+              {carregando && <p className="empty-msg">Forjando seu treino... 🧱</p>}
               {!carregando && exerciciosFiltrados.length === 0 && (
                 <p className="empty-msg">Nenhum exercício no Treino {treinoAtivo}. Adicione um! 💪</p>
               )}
@@ -740,18 +740,29 @@ const buscarDashboard = async () => {
           {/* Perfil */}
           {subAbaPerfil === 'perfil' && (
             <>
-              <h1 className="title-divisao">Meu Perfil 👤</h1>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h1 className="title-divisao" style={{ margin: 0 }}>Meu Perfil 👤</h1>
+                {!perfilEditado && perfilOriginal && (
+                  <button className="peso-btn-alterar" onClick={() => setPerfilEditado(true)}>Alterar</button>
+                )}
+              </div>
               <form className="form-cadastro" onSubmit={salvarPerfil}>
-                <input type="text" placeholder="Seu nome" value={perfil.nome} onChange={e => { setPerfil({ ...perfil, nome: e.target.value }); setPerfilEditado(true) }} />
+                <input type="text" placeholder="Seu nome" value={perfil.nome} onChange={e => { setPerfil({ ...perfil, nome: e.target.value }); setPerfilEditado(true) }} disabled={!perfilEditado} style={{ opacity: perfilEditado ? 1 : 0.6 }} />
                 <div className="row">
-                  <input type="number" placeholder="Peso (kg)" value={perfil.peso} onChange={e => setPerfil({ ...perfil, peso: e.target.value })} />
-                  <input type="number" placeholder="Altura (cm)" value={perfil.altura} onChange={e => setPerfil({ ...perfil, altura: e.target.value })} />
-                  <input type="number" placeholder="Idade" value={perfil.idade} onChange={e => setPerfil({ ...perfil, idade: e.target.value })} />
+                  <input type="number" placeholder="Peso (kg)" value={perfil.peso} onChange={e => { setPerfil({ ...perfil, peso: e.target.value }); setPerfilEditado(true) }} disabled={!perfilEditado} style={{ opacity: perfilEditado ? 1 : 0.6 }} />
+                  <input type="number" placeholder="Altura (cm)" value={perfil.altura} onChange={e => { setPerfil({ ...perfil, altura: e.target.value }); setPerfilEditado(true) }} disabled={!perfilEditado} style={{ opacity: perfilEditado ? 1 : 0.6 }} />
+                  <input type="number" placeholder="Idade" value={perfil.idade} onChange={e => { setPerfil({ ...perfil, idade: e.target.value }); setPerfilEditado(true) }} disabled={!perfilEditado} style={{ opacity: perfilEditado ? 1 : 0.6 }} />
                 </div>
-                <div className="sexo-selector">
-                  <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
-                  <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
-                </div>
+                {perfilEditado ? (
+                        <div className="sexo-selector">
+                          <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
+                          <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 13, color: '#64748b', padding: '4px 0' }}>
+                          {perfil.sexo === 'M' ? '♂ Masculino' : '♀ Feminino'}
+                        </div>
+                      )}
                 {perfilEditado && (
                   <button type="submit" disabled={salvandoPerfil}>{salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}</button>
                 )}
@@ -768,7 +779,6 @@ const buscarDashboard = async () => {
               <button className="nav-btn-logout" style={{ marginTop: 24, width: '100%', padding: 14, borderRadius: 10, border: '1px solid #ef444433', background: '#3a1a1a', color: '#ef4444', cursor: 'pointer', fontWeight: 600 }} onClick={logout}>🚪 Sair da conta</button>
             </>
           )}
-
           {/* Ajuda */}
           {subAbaPerfil === 'ajuda' && (
                       <div className="ajuda-section" ref={el => {
@@ -786,7 +796,9 @@ const buscarDashboard = async () => {
               <div className="ajuda-item"><div className="ajuda-num">1</div><div className="ajuda-body"><strong>Home</strong><p>Visão geral do dia — tarefas, água, peso, refeição atual, suplementos e hábitos.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">2</div><div className="ajuda-body"><strong>Treino</strong><p>Exercícios com timer, descanso cronometrado, stats de kcal/volume/tempo e histórico completo.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">3</div><div className="ajuda-body"><strong>Rotina</strong><p>Gere blocos de dias com tarefas por período (Acordar, Manhã, Tarde, Noite). Enter cria a próxima tarefa. ⧉ clona o dia.</p></div></div>
-              <div className="ajuda-item"><div className="ajuda-num">4</div><div className="ajuda-body"><strong>Mais</strong><p>Acessa Água, Peso, Dieta, Suplementos e Macros pelo menu 🗃️.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">4</div><div className="ajuda-body"><strong>Mais</strong><p>Acessa Água, Peso, Dieta, Suplementos, Macros, Passos e Stats pelo menu 🗃️.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">5</div><div className="ajuda-body"><strong>Home personalizável</strong><p>Toque em "✏️ Personalizar" na home para reordenar os cards arrastando ou ocultar seções que não usa. A ordem é salva automaticamente.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Hábitos personalizados</strong><p>Na aba Hábitos (menu 🗃️) role até o final e toque em "+ Adicionar hábito" para criar hábitos com emoji e nome personalizados.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Hábitos personalizados</strong><p>Na seção Hábitos do dia (Home), role até o final e toque em "+ Adicionar hábito". Você pode criar hábitos com emoji e nome personalizados além dos 6 padrões.</p></div></div>
 
               <div id="ajuda-cortisol" className="ajuda-group-title">🧠 Cortisol — o hormônio do estresse</div>
@@ -805,9 +817,11 @@ const buscarDashboard = async () => {
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>35ml vs 50ml por kg</strong><p>35ml/kg é o mínimo para sedentários. Se você treina, use 50ml/kg. Desidratação de 2% já reduz performance em até 20%.</p></div></div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Água e cortisol</strong><p>Cortisol elevado causa retenção hídrica. Beber mais água paradoxalmente ajuda a reduzir essa retenção. Comece o dia com 500ml em jejum.</p></div></div>
 
-              <div id="ajuda-dieta" className="ajuda-group-title">🥗 Dieta — como funciona o emagrecimento</div>
+              <div id="ajuda-dieta" className="ajuda-group-title">🥗 Dieta e Macros</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Deficit calórico</strong><p>1kg de gordura = ~7.700 kcal. Deficit de 500–800 kcal/dia = 0,5–0,8kg/semana. Acima de 1.000 kcal de deficit queima músculo e derruba o metabolismo.</p></div></div>
-              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Proteína em deficit</strong><p>Consuma 1,8–2,2g de proteína por kg de peso para preservar músculo enquanto emagrece.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Saldo calórico</strong><p>Na aba Macros você vê o saldo do dia: meta base + kcal do treino + kcal dos passos - kcal ingeridas. Verde = deficit (emagrecendo). Vermelho = superavit (ganhando peso).</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Sugestão de dieta automática</strong><p>Na aba Dieta toque em "✨ Sugestão de dieta automática", escolha seu objetivo (emagrecer, manter, ganhar massa) e renda financeira (baixa, média, alta). O app gera um plano alimentar completo que você pode editar depois.</p></div></div>
+              <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Alimentos personalizados</strong><p>Não achou seu alimento no banco TACO? Na aba Macros role até "Alimentos Personalizados" e cadastre com nome, kcal, proteína, carboidrato e gordura por 100g.</p></div></div>
 
               <div id="ajuda-peso" className="ajuda-group-title">⚖️ Pesagem diária — como interpretar</div>
               <div className="ajuda-item"><div className="ajuda-num">💡</div><div className="ajuda-body"><strong>Por que pesar todo dia?</strong><p>O peso oscila 1–3kg por resíduo gástrico, hidratação e sódio. Essas variações não são gordura — são fluidos.</p></div></div>

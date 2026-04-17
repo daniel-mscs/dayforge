@@ -89,7 +89,7 @@ export default function Agua({ user, onAjuda }) {
     salvarMeta(ml)
   }
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando sua hidratação... 💧</div>
 
   return (
     <div className="agua-section">

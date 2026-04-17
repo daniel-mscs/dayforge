@@ -39,9 +39,11 @@ function App() {
 
   if (carregando) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f1113', color: '#64748b', fontSize: '14px' }}>
-        Carregando...
-      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#0f1113', gap: 16 }}>
+              <div style={{ fontSize: 52 }}>🧱</div>
+              <div style={{ color: '#f8fafc', fontSize: 18, fontWeight: 700 }}>DayForge</div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>Forjando seu dia...</div>
+            </div>
     )
   }
 

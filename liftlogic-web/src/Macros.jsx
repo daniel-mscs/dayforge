@@ -185,7 +185,7 @@ export default function Macros({ user, onAjuda }) {
     return acc
   }, {})
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando seus macros... 🍽️</div>
 
   return (
     <div className="macros-section">

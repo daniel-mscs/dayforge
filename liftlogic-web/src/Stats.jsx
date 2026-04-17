@@ -122,7 +122,7 @@ export default function Stats({ user }) {
 
   const tooltipStyle = { background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc', fontSize: 12 }
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando seus stats... 📊</div>
 
   return (
     <div className="stats-section">

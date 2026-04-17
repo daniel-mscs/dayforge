@@ -58,7 +58,7 @@ export default function Suplementos({ user, compact = false, minimode = false, o
 
   const concluidosHoje = lista.filter(s => checks[s.id]?.concluido).length
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 20 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 20 }}>Carregando seus suplementos... 💊</div>
 
 if (minimode) {
     return (

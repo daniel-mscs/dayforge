@@ -3018,9 +3018,9 @@ input::-webkit-inner-spin-button {
   -webkit-text-fill-color: #f8fafc !important;
   border: 1px solid #ffffff0d !important;
   transition: background-color 5000s ease-in-out 0s;
+  }
 
-
-.home-frase-autor {
+  .home-frase-autor {
   display: block;
   font-size: 11px;
   color: #475569;
@@ -3345,4 +3345,106 @@ input::-webkit-inner-spin-button {
   padding: 10px;
   background: #24282d;
   border-radius: 10px;
+}
+
+.dieta-btn-sugestao {
+  width: 100%;
+  background: #6366f115;
+  border: 1px dashed #6366f144;
+  border-radius: 12px;
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: all 0.15s;
+}
+.dieta-btn-sugestao:hover { background: #6366f122; }
+
+.dieta-sugestao-card {
+  background: #1a1d21;
+  border: 1px solid #ffffff0d;
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dieta-sugestao-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.dieta-sugestao-group { display: flex; flex-direction: column; gap: 8px; }
+.dieta-sugestao-label { font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.08em; }
+.dieta-sugestao-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.dieta-sugestao-opt {
+  background: #24282d;
+  border: 1px solid #ffffff0d;
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dieta-sugestao-opt:hover { border-color: #6366f144; color: #f8fafc; }
+.dieta-sugestao-opt.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+.dieta-btn-aplicar {
+  background: #6366f1;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.dieta-btn-aplicar:hover { opacity: 0.85; }
+
+.dieta-sugestao-opt {
+  background: #24282d !important;
+  border: 1px solid #ffffff0d !important;
+  border-radius: 8px !important;
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+}
+.dieta-sugestao-opt:hover { border-color: #6366f144 !important; color: #f8fafc !important; }
+.dieta-sugestao-opt.active { background: #6366f1 !important; border-color: #6366f1 !important; color: #fff !important; }
+
+.dieta-sugestao-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+}
+
+.dieta-sugestao-label {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #64748b !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.dieta-btn-aplicar {
+  background: #6366f1 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  padding: 12px !important;
+  cursor: pointer !important;
 }

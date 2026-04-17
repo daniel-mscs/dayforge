@@ -110,7 +110,7 @@ export default function Habitos({ user, compact = false }) {
   const habitosHoje = registros[hoje] || {}
   const concluidosHoje = todosHabitos.filter(h => habitosHoje[h.id]).length
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 20 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 20 }}>Forjando seus hábitos... 🧱</div>
 
   // MODO COMPACTO
   if (compact) {

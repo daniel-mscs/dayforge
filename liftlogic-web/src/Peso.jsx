@@ -117,7 +117,7 @@ export default function Peso({ user, onAjuda }) {
     return { min: (22 * h * h).toFixed(1), max: (24 * h * h).toFixed(1) }
   })() : null
 
-  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando...</div>
+  if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando seu peso... ⚖️</div>
 
   return (
     <div className="peso-section">
