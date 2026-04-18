@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from 'recharts'
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset()
@@ -194,26 +195,37 @@ export default function Agua({ user, onAjuda }) {
       </div>
 
       {/* Histórico 7 dias */}
-      <div className="agua-card">
-        <div className="agua-card-title">Últimos 7 dias</div>
-        <div className="agua-hist">
-          {ultimos7.map(data => {
-            const regs = historico[data] || []
-            const total = regs.reduce((s, r) => s + r.ml, 0)
-            const p = Math.min(100, Math.round((total / meta) * 100))
-            const d = new Date(data + 'T00:00:00')
-            return (
-              <div key={data} className="agua-hist-item">
-                <span className="agua-hist-data">{d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
-                <div className="agua-hist-bar-bg">
-                  <div className="agua-hist-bar-fill" style={{ width: `${p}%`, background: p >= 100 ? '#10b981' : '#3b82f6' }} />
-                </div>
-                <span className="agua-hist-val">{total > 0 ? `${(total/1000).toFixed(1)}L` : '—'}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+            <div className="agua-card">
+              <div className="agua-card-title">Últimos 7 dias</div>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={ultimos7.map(data => {
+                  const regs = historico[data] || []
+                  const total = regs.reduce((s, r) => s + r.ml, 0)
+                  const d = new Date(data + 'T00:00:00')
+                  return { name: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), ml: total }
+                })}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                  <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={v => `${(v/1000).toFixed(1)}L`} />
+                  <Tooltip
+                    contentStyle={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc', fontSize: 12 }}
+                    formatter={v => [`${(v/1000).toFixed(1)}L`]}
+                  />
+                  <ReferenceLine y={meta} stroke="#10b98166" strokeDasharray="4 4" />
+                  <Bar dataKey="ml" radius={[4,4,0,0]}
+                    fill="#3b82f6"
+                    label={false}
+                  >
+                    {ultimos7.map((data, i) => {
+                      const regs = historico[data] || []
+                      const total = regs.reduce((s, r) => s + r.ml, 0)
+                      return <Cell key={i} fill={total >= meta ? '#10b981' : '#3b82f6'} />
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ fontSize: 11, color: '#10b981', marginTop: 4 }}>— meta: {(meta/1000).toFixed(1)}L</div>
+            </div>
 
     </div>
   )

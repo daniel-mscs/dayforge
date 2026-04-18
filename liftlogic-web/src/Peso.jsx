@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts'
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset()
@@ -34,6 +34,7 @@ export default function Peso({ user, onAjuda }) {
   const [metaInput, setMetaInput]     = useState('')
   const [meta, setMeta]               = useState(null)
   const [editandoMeta, setEditandoMeta] = useState(false)
+  const [periodoGrafico, setPeriodoGrafico] = useState(14)
   const [carregando, setCarregando]   = useState(true)
 
   const hoje = formatarData(new Date())
@@ -100,10 +101,22 @@ export default function Peso({ user, onAjuda }) {
     return (ultimos7.reduce((s, r) => s + Number(r.peso), 0) / ultimos7.length).toFixed(1)
   }
 
-  const dadosGrafico = [...registros].reverse().slice(-14).map(r => ({
-    data: new Date(r.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-    peso: Number(r.peso)
-  }))
+  const dadosGrafico = [...registros].reverse().slice(-periodoGrafico).map(r => ({
+      data: new Date(r.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      peso: Number(r.peso)
+    }))
+
+    const tendencia = (() => {
+      if (dadosGrafico.length < 3) return []
+      const n = dadosGrafico.length
+      const sumX = dadosGrafico.reduce((s, _, i) => s + i, 0)
+      const sumY = dadosGrafico.reduce((s, d) => s + d.peso, 0)
+      const sumXY = dadosGrafico.reduce((s, d, i) => s + i * d.peso, 0)
+      const sumX2 = dadosGrafico.reduce((s, _, i) => s + i * i, 0)
+      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+      const intercept = (sumY - slope * sumX) / n
+      return dadosGrafico.map((d, i) => ({ ...d, tend: parseFloat((slope * i + intercept).toFixed(1)) }))
+    })()
 
   const ultimo    = registros[0] || null
   const penultimo = registros[1] || null
@@ -156,45 +169,80 @@ export default function Peso({ user, onAjuda }) {
 
       {/* Gráfico */}
       {dadosGrafico.length >= 2 && (
-        <div className="peso-card">
-          <div className="peso-card-title">EVOLUÇÃO DO PESO</div>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={dadosGrafico}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
-              <XAxis dataKey="data" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis
-                tick={{ fill: '#64748b', fontSize: 10 }}
-                domain={['auto', 'auto']}
-                tickFormatter={v => `${v}kg`}
-              />
-              <Tooltip
-                contentStyle={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc' }}
-                formatter={v => [`${v} kg`]}
-              />
-              <Line
-                type="monotone"
-                dataKey="peso"
-                stroke="#6366f1"
-                strokeWidth={2}
-                dot={{ fill: '#6366f1', r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              {meta && (
-                <Line
-                  type="monotone"
-                  dataKey={() => meta}
-                  stroke="#10b98166"
-                  strokeWidth={1}
-                  strokeDasharray="4 4"
-                  dot={false}
-                  name="Meta"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-          {meta && <div style={{ fontSize: 11, color: '#10b981', textAlign: 'right', marginTop: 4 }}>— — Meta: {meta} kg</div>}
-        </div>
-      )}
+              <div className="peso-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div className="peso-card-title" style={{ margin: 0 }}>EVOLUÇÃO DO PESO</div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {[7, 14, 30, 90].map(d => (
+                      <button key={d} onClick={() => setPeriodoGrafico(d)} style={{
+                        background: periodoGrafico === d ? '#6366f1' : '#24282d',
+                        border: '1px solid #ffffff0d', borderRadius: 6,
+                        color: periodoGrafico === d ? '#fff' : '#64748b',
+                        fontSize: 10, fontWeight: 700, padding: '3px 8px', cursor: 'pointer'
+                      }}>{d}d</button>
+                    ))}
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={dadosGrafico}>
+                    <defs>
+                      <linearGradient id="pesoGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                    <XAxis dataKey="data" tick={{ fill: '#64748b', fontSize: 10 }} />
+                    <YAxis
+                      tick={{ fill: '#64748b', fontSize: 10 }}
+                      domain={['auto', 'auto']}
+                      tickFormatter={v => `${v}kg`}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc' }}
+                      formatter={v => [`${v} kg`]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="peso"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      dot={{ fill: '#6366f1', r: 4 }}
+                      activeDot={{ r: 6 }}
+                      fill="url(#pesoGrad)"
+                    />
+                    {tendencia.length >= 2 && (
+                      <Line
+                        type="monotone"
+                        data={tendencia}
+                        dataKey="tend"
+                        stroke="#f59e0b"
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        dot={false}
+                        name="Tendência"
+                      />
+                    )}
+                    {meta && (
+                      <Line
+                        type="monotone"
+                        dataKey={() => meta}
+                        stroke="#10b98166"
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        dot={false}
+                        name="Meta"
+                      />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+                <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: 11 }}>
+                  <span style={{ color: '#6366f1' }}>— Peso</span>
+                  <span style={{ color: '#f59e0b' }}>- - Tendência</span>
+                  {meta && <span style={{ color: '#10b981' }}>- - Meta: {meta} kg</span>}
+                </div>
+              </div>
+            )}
 
       {/* Barra IMC */}
       {imc && (

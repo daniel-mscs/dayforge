@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from 'recharts'
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset()
@@ -205,37 +206,34 @@ export default function Passos({ user, onAjuda }) {
       )}
 
       {/* Histórico 7 dias */}
-      <div className="passos-card">
-        <div className="passos-card-title">ÚLTIMOS 7 DIAS</div>
-        <div className="passos-hist">
-          {ultimos7.map(data => {
-            const reg = registros.find(r => r.data === data)
-            const val = reg?.passos || 0
-            const p = Math.min(100, Math.round((val / meta) * 100))
-            const d = new Date(data + 'T00:00:00')
-            const isHoje = data === hoje
-            return (
-              <div key={data} className="passos-hist-item">
-                <div className="passos-hist-top">
-                  <span className="passos-hist-data" style={{ color: isHoje ? '#6366f1' : '#64748b' }}>
-                    {d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
-                  </span>
-                  <span className="passos-hist-val">{val > 0 ? val.toLocaleString('pt-BR') : '—'}</span>
-                  {reg && (
-                    <button className="agua-log-del" onClick={() => deletarRegistro(reg.id)}>✕</button>
-                  )}
-                </div>
-                <div className="passos-hist-bar-bg">
-                  <div className="passos-hist-bar-fill" style={{
-                    width: `${p}%`,
-                    background: p >= 100 ? '#10b981' : p >= 50 ? '#6366f1' : '#f97316'
-                  }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+            <div className="passos-card">
+              <div className="passos-card-title">ÚLTIMOS 7 DIAS</div>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={ultimos7.map(data => {
+                  const reg = registros.find(r => r.data === data)
+                  const val = reg?.passos || 0
+                  const d = new Date(data + 'T00:00:00')
+                  return { name: d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }), passos: val }
+                })}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                  <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip
+                    contentStyle={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc', fontSize: 12 }}
+                    formatter={v => [`${v.toLocaleString('pt-BR')} passos`]}
+                  />
+                  <ReferenceLine y={meta} stroke="#6366f166" strokeDasharray="4 4" />
+                  <Bar dataKey="passos" radius={[4,4,0,0]}>
+                    {ultimos7.map((data, i) => {
+                      const reg = registros.find(r => r.data === data)
+                      const val = reg?.passos || 0
+                      return <Cell key={i} fill={val >= meta ? '#10b981' : val >= meta * 0.5 ? '#6366f1' : '#f97316'} />
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>— meta: {meta.toLocaleString('pt-BR')} passos</div>
+            </div>
     </div>
   )
 }

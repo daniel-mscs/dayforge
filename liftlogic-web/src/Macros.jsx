@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, Cell } from 'recharts'
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset()
@@ -36,6 +37,7 @@ export default function Macros({ user, onAjuda }) {
   const [customFoods, setCustomFoods]     = useState([])
   const [perfil, setPerfil]               = useState(null)
   const [kcalGasto, setKcalGasto] = useState({ passos: 0, treino: 0 })
+  const [historicoKcal, setHistoricoKcal] = useState([])
   const [query, setQuery]                 = useState('')
   const [sugestoes, setSugestoes]         = useState([])
   const [foodSel, setFoodSel]             = useState(null)
@@ -73,8 +75,20 @@ export default function Macros({ user, onAjuda }) {
         const kcalPassos = Math.round((passosHoje?.passos || 0) * 0.04)
         const kcalTreino = treinoHoje?.kcal || 0
         setKcalGasto({ passos: kcalPassos, treino: kcalTreino })
+        const ultimos7 = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(); d.setDate(d.getDate() - (6 - i))
+          const offset = d.getTimezoneOffset()
+          return new Date(d.getTime() - offset * 60000).toISOString().split('T')[0]
+        })
+        const inicio = ultimos7[0]
+        const { data: histData } = await supabase.from('macros_registro').select('data,kcal').eq('user_id', user.id).gte('data', inicio)
+        const hist = ultimos7.map(data => ({
+          name: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          kcal: Math.round((histData || []).filter(r => r.data === data).reduce((s, r) => s + r.kcal, 0))
+        }))
+        setHistoricoKcal(hist)
         setCarregando(false)
-  }, [user.id])
+          }, [user.id])
 
   useEffect(() => { buscarTudo() }, [buscarTudo])
 
@@ -251,6 +265,32 @@ export default function Macros({ user, onAjuda }) {
               })()}
         </div>
       )}
+
+       {/* Gráfico kcal 7 dias */}
+             {historicoKcal.some(d => d.kcal > 0) && (
+               <div className="macros-card">
+                 <div className="macros-card-title">KCAL ÚLTIMOS 7 DIAS</div>
+                 <ResponsiveContainer width="100%" height={140}>
+                   <BarChart data={historicoKcal}>
+                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                     <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} />
+                     <YAxis tick={{ fill: '#64748b', fontSize: 10 }} />
+                     <Tooltip
+                       contentStyle={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc', fontSize: 12 }}
+                       formatter={v => [`${v} kcal`]}
+                     />
+                     <ReferenceLine y={meta} stroke="#f59e0b66" strokeDasharray="4 4" />
+                     <Bar dataKey="kcal" radius={[4,4,0,0]}>
+                       {historicoKcal.map((d, i) => (
+                         <Cell key={i} fill={d.kcal >= meta ? '#10b981' : d.kcal > 0 ? '#f59e0b' : '#24282d'} />
+                       ))}
+                     </Bar>
+                   </BarChart>
+                 </ResponsiveContainer>
+                 <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>— meta: {meta.toLocaleString('pt-BR')} kcal</div>
+               </div>
+             )}
+
 
       {/* TMB */}
       {tmb && (
