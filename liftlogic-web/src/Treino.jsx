@@ -119,7 +119,8 @@ function Treino({ logout, user }) {
   const [salvandoPerfil, setSalvandoPerfil] = useState(false)
   const [perfilMsg, setPerfilMsg] = useState('')
   const [dashData, setDashData] = useState({ historico: [], exercicioSelecionado: null, evolucao: [] })
-
+  const [cardioRegistros, setCardioRegistros] = useState([])
+  const [cardioForm, setCardioForm] = useState({ tipo: 'Corrida', duracao: '', kcal: '', observacao: '' })
   const timerRef = useRef(null)
   const descansoRef = useRef(null)
   const alertaAtivoRef = useRef(false)
@@ -214,6 +215,13 @@ function Treino({ logout, user }) {
         }
     setSalvandoPerfil(false)
     setTimeout(() => setPerfilMsg(''), 3000)
+  }
+
+const buscarCardio = async () => {
+    const hoje = new Date()
+    const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0]
+    const { data } = await supabase.from('cardio_registro').select('*').eq('user_id', user.id).gte('data', inicio).order('created_at', { ascending: false })
+    setCardioRegistros(data || [])
   }
 
 const buscarDashboard = async () => {
@@ -552,9 +560,13 @@ const buscarDashboard = async () => {
             onClick={() => { setSubAbaTreino('stats'); buscarDashboard() }}
           >📊 Stats</button>
           <button
-            className={subAbaTreino === 'historico' ? 'treino-subnav-btn active' : 'treino-subnav-btn'}
-            onClick={() => { setSubAbaTreino('historico'); buscarHistorico() }}
-          >📜 Histórico</button>
+                      className={subAbaTreino === 'historico' ? 'treino-subnav-btn active' : 'treino-subnav-btn'}
+                      onClick={() => { setSubAbaTreino('historico'); buscarHistorico() }}
+                    >📜 Histórico</button>
+                    <button
+                      className={subAbaTreino === 'cardio' ? 'treino-subnav-btn active' : 'treino-subnav-btn'}
+                      onClick={() => { setSubAbaTreino('cardio'); buscarCardio() }}
+                    >🏃 Cardio</button>
         </div>
 
         {/* Exercícios */}
@@ -731,6 +743,121 @@ const buscarDashboard = async () => {
             </div>
           </div>
         )}
+
+    {/* Cardio */}
+            {subAbaTreino === 'cardio' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 80 }}>
+                <h2 className="title-divisao">🏃 Cardio</h2>
+
+                {/* Formulário */}
+                <div style={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 16, padding: 18 }}>
+                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 14 }}>REGISTRAR CARDIO</div>
+
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>TIPO</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {['Corrida', 'Caminhada', 'Bike', 'Natação', 'Pular Corda', 'Elíptico', 'Esteira', 'HIIT', 'Outro'].map(t => (
+                        <button key={t} onClick={() => setCardioForm(p => ({ ...p, tipo: t }))} style={{
+                          background: cardioForm.tipo === t ? '#6366f1' : '#24282d',
+                          border: `1px solid ${cardioForm.tipo === t ? '#6366f1' : '#ffffff0d'}`,
+                          borderRadius: 8, color: cardioForm.tipo === t ? '#fff' : '#64748b',
+                          fontSize: 12, fontWeight: 600, padding: '6px 12px', cursor: 'pointer'
+                        }}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>DURAÇÃO (min)</div>
+                      <input type="number" placeholder="Ex: 30" value={cardioForm.duracao}
+                        onChange={e => setCardioForm(p => ({ ...p, duracao: e.target.value }))}
+                        style={{ width: '100%' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>KCAL (opcional)</div>
+                      <input type="number" placeholder="Ex: 300" value={cardioForm.kcal}
+                        onChange={e => setCardioForm(p => ({ ...p, kcal: e.target.value }))}
+                        style={{ width: '100%' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>OBSERVAÇÃO (opcional)</div>
+                    <input type="text" placeholder="Ex: 5km no parque" value={cardioForm.observacao}
+                      onChange={e => setCardioForm(p => ({ ...p, observacao: e.target.value }))}
+                      style={{ width: '100%' }} />
+                  </div>
+
+                  <button onClick={async () => {
+                    if (!cardioForm.duracao) { alert('Informe a duração!'); return }
+                    const hoje = new Date()
+                    const offset = hoje.getTimezoneOffset()
+                    const data = new Date(hoje.getTime() - offset * 60000).toISOString().split('T')[0]
+                    const kcalEstimado = cardioForm.kcal ? parseInt(cardioForm.kcal) : Math.round(parseInt(cardioForm.duracao) * 7)
+                    const { data: novo, error } = await supabase.from('cardio_registro').insert([{
+                      user_id: user.id, data, tipo: cardioForm.tipo,
+                      duracao_min: parseInt(cardioForm.duracao),
+                      kcal: kcalEstimado,
+                      observacao: cardioForm.observacao || null
+                    }]).select()
+                    if (error) { alert(error.message); return }
+                    setCardioRegistros(prev => [novo[0], ...prev])
+                    setCardioForm(p => ({ ...p, duracao: '', kcal: '', observacao: '' }))
+                    await ganharXP(user.id, 'treino_finalizado')
+                  }} style={{
+                    width: '100%', background: '#6366f1', border: 'none', borderRadius: 10,
+                    color: '#fff', fontSize: 14, fontWeight: 700, padding: 12, cursor: 'pointer'
+                  }}>+ Registrar Cardio</button>
+                </div>
+
+                {/* Resumo do mês */}
+                {cardioRegistros.length > 0 && (() => {
+                  const totalMin = cardioRegistros.reduce((s, r) => s + r.duracao_min, 0)
+                  const totalKcal = cardioRegistros.reduce((s, r) => s + (r.kcal || 0), 0)
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                      {[
+                        { label: 'SESSÕES', val: cardioRegistros.length, color: '#6366f1' },
+                        { label: 'MINUTOS', val: totalMin, color: '#10b981' },
+                        { label: 'KCAL', val: totalKcal, color: '#f59e0b' },
+                      ].map((c, i) => (
+                        <div key={i} style={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 12, padding: 12, textAlign: 'center' }}>
+                          <div style={{ fontSize: 9, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em' }}>{c.label}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
+
+                {/* Lista */}
+                {cardioRegistros.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#475569', fontSize: 13 }}>Nenhum cardio registrado este mês. Bora se mover! 🏃</p>
+                ) : cardioRegistros.map(r => (
+                  <div key={r.id} style={{
+                    background: '#1a1d21', border: '1px solid #ffffff0d',
+                    borderLeft: '3px solid #10b981', borderRadius: 12, padding: '12px 14px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#f8fafc' }}>🏃 {r.tipo}</div>
+                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                        {r.duracao_min} min · {r.kcal} kcal
+                        {r.observacao ? ` · ${r.observacao}` : ''}
+                      </div>
+                      <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                        {new Date(r.data + 'T00:00:00').toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                    <button onClick={async () => {
+                      await supabase.from('cardio_registro').delete().eq('id', r.id)
+                      setCardioRegistros(prev => prev.filter(x => x.id !== r.id))
+                    }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.4, fontSize: 16 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
 
         {/* Histórico */}
         {subAbaTreino === 'historico' && (

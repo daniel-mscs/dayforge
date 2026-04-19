@@ -37,7 +37,7 @@ export default function Macros({ user, onAjuda }) {
   const [alimentosBase, setAlimentosBase] = useState([])
   const [customFoods, setCustomFoods]     = useState([])
   const [perfil, setPerfil]               = useState(null)
-  const [kcalGasto, setKcalGasto] = useState({ passos: 0, treino: 0 })
+  const [kcalGasto, setKcalGasto] = useState({ passos: 0, treino: 0, cardio: 0 })
   const [historicoKcal, setHistoricoKcal] = useState([])
   const [query, setQuery]                 = useState('')
   const [sugestoes, setSugestoes]         = useState([])
@@ -59,8 +59,9 @@ export default function Macros({ user, onAjuda }) {
       { data: base },
       { data: perfilData },
             { data: passosHoje },
-            { data: treinoHoje },
-          ] = await Promise.all([
+                        { data: treinoHoje },
+                        { data: cardioHoje },
+                      ] = await Promise.all([
       supabase.from('macros_registro').select('*').eq('user_id', user.id).eq('data', hoje).order('created_at', { ascending: true }),
       supabase.from('macros_meta').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('alimentos_custom').select('*').eq('user_id', user.id),
@@ -68,15 +69,17 @@ export default function Macros({ user, onAjuda }) {
       supabase.from('perfil').select('*').eq('user_id', user.id).single(),
       supabase.from('passos_registro').select('passos').eq('user_id', user.id).eq('data', hoje).single(),
       supabase.from('treinos_finalizados').select('kcal').eq('user_id', user.id).gte('created_at', hoje).single(),
-    ])
+            supabase.from('cardio_registro').select('kcal').eq('user_id', user.id).eq('data', hoje),
+          ])
     setRegistros(regs || [])
     if (metaData) setMeta(metaData.meta_kcal)
     setCustomFoods(customs || [])
     setAlimentosBase(base || [])
     if (perfilData) setPerfil(perfilData)
         const kcalPassos = Math.round((passosHoje?.passos || 0) * 0.04)
-        const kcalTreino = treinoHoje?.kcal || 0
-        setKcalGasto({ passos: kcalPassos, treino: kcalTreino })
+                const kcalTreino = treinoHoje?.kcal || 0
+                const kcalCardio = (cardioHoje || []).reduce((s, r) => s + (r.kcal || 0), 0)
+                setKcalGasto({ passos: kcalPassos, treino: kcalTreino, cardio: kcalCardio })
         const ultimos7 = Array.from({ length: 7 }, (_, i) => {
           const d = new Date(); d.setDate(d.getDate() - (6 - i))
           const offset = d.getTimezoneOffset()
@@ -234,15 +237,16 @@ export default function Macros({ user, onAjuda }) {
         <div className="macros-card">
           <div className="macros-card-title">SALDO CALÓRICO DO DIA</div>
               {(() => {
-                const gastoTotal = meta + kcalGasto.treino + kcalGasto.passos
-                const saldo = total.kcal - gastoTotal
-                const maxVal = Math.max(gastoTotal, total.kcal, 1)
-                const linhas = [
-                  { label: 'Meta base', val: meta, extra: '', color: '#6366f1' },
-                  { label: '+ Treino', val: kcalGasto.treino, extra: '', color: '#10b981' },
-                  { label: '+ Passos', val: kcalGasto.passos, extra: '', color: '#10b981' },
-                  { label: 'Ingerido', val: total.kcal, extra: '', color: total.kcal > gastoTotal ? '#ef4444' : '#f59e0b' },
-                ]
+                const gastoTotal = meta + kcalGasto.treino + kcalGasto.passos + kcalGasto.cardio
+                                const saldo = total.kcal - gastoTotal
+                                const maxVal = Math.max(gastoTotal, total.kcal, 1)
+                                const linhas = [
+                                  { label: 'Meta base', val: meta, color: '#6366f1' },
+                                  { label: '+ Treino', val: kcalGasto.treino, color: '#10b981' },
+                                  { label: '+ Passos', val: kcalGasto.passos, color: '#10b981' },
+                                  { label: '+ Cardio', val: kcalGasto.cardio, color: '#3b82f6' },
+                                  { label: 'Ingerido', val: total.kcal, color: total.kcal > gastoTotal ? '#ef4444' : '#f59e0b' },
+                                ]
                 return (
                   <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
