@@ -24,104 +24,165 @@ function getNivel(xp) {
   return NIVEIS.slice().reverse().find(n => xp >= n.xpMin) || NIVEIS[0]
 }
 
-function Personagem2D({ cor, itens, nivel }) {
+const CORES_PELE = ['#FFDBB4', '#F5CBA7', '#E8A87C', '#C68642', '#8D5524', '#4A2912', '#FFE0BD', '#D4A574']
+
+function Personagem2D({ cor, pele, itens }) {
   const temEspada = itens.includes('espada')
   const temEscudo = itens.includes('escudo')
   const temCapacete = itens.includes('capacete')
   const temCapa = itens.includes('capa')
   const temCoroa = itens.includes('coroa')
   const temAsas = itens.includes('asas')
-
-  const corEscuro = cor + 'cc'
+  const corRoupa = cor
+  const corRoupaDark = cor + 'bb'
+  const corPele = pele || '#FFDBB4'
+  const corPeleDark = pele ? pele + 'cc' : '#E8A87C'
 
   return (
-    <svg viewBox="0 0 300 320" width="100%" style={{ maxHeight: 320 }}>
-      {/* Sombra */}
-      <ellipse cx="150" cy="305" rx="55" ry="8" fill="#00000033"/>
+    <svg viewBox="0 0 300 360" width="100%" style={{ maxHeight: 360 }}>
+      <ellipse cx="150" cy="350" rx="65" ry="9" fill="#00000033"/>
 
-      {/* Asas */}
-      {temAsas && <>
-        <path d="M95 160 Q60 140 55 180 Q60 210 95 200Z" fill="#e2e8f0" opacity="0.9"/>
-        <path d="M205 160 Q240 140 245 180 Q240 210 205 200Z" fill="#e2e8f0" opacity="0.9"/>
-      </>}
+      {/* ASAS de anjo — abertas com penas caindo */}
+            {temAsas && <>
+              {/* Asa esquerda — corpo principal */}
+              <path d="M105 185 Q80 175 40 140 Q20 120 15 160 Q20 195 60 205 Q85 210 105 200Z" fill="#f8fafc" opacity="0.95" stroke="#e2e8f0" strokeWidth="1"/>
+              <path d="M105 185 Q75 170 45 120 Q30 100 22 140 Q28 175 65 192 Q88 200 105 195Z" fill="#f1f5f9" opacity="0.8"/>
+              <path d="M105 185 Q82 168 58 108 Q46 88 38 128 Q45 162 75 182 Q92 192 105 190Z" fill="#e2e8f0" opacity="0.6"/>
+              {/* Penas caindo para baixo esquerda */}
+                      <path d="M45 198 Q28 222 22 265 Q38 242 48 210Z" fill="#f8fafc" opacity="0.95"/>
+                      <path d="M58 205 Q42 232 38 278 Q54 252 62 218Z" fill="#f8fafc" opacity="0.9"/>
+                      <path d="M70 210 Q56 240 54 285 Q68 258 76 222Z" fill="#f1f5f9" opacity="0.9"/>
+                      <path d="M82 213 Q70 245 70 290 Q82 262 88 224Z" fill="#f1f5f9" opacity="0.85"/>
+                      <path d="M94 214 Q84 248 86 292 Q96 265 100 226Z" fill="#e2e8f0" opacity="0.8"/>
+                      <path d="M63 208 Q48 235 45 275 Q60 252 67 220Z" fill="#ffffff" opacity="0.4"/>
+                      <path d="M78 212 Q65 240 63 282 Q76 258 82 224Z" fill="#ffffff" opacity="0.4"/>
 
-      {/* Capa */}
+              {/* Asa direita — corpo principal */}
+              <path d="M195 185 Q220 175 260 140 Q280 120 285 160 Q280 195 240 205 Q215 210 195 200Z" fill="#f8fafc" opacity="0.95" stroke="#e2e8f0" strokeWidth="1"/>
+              <path d="M195 185 Q225 170 255 120 Q270 100 278 140 Q272 175 235 192 Q212 200 195 195Z" fill="#f1f5f9" opacity="0.8"/>
+              <path d="M195 185 Q218 168 242 108 Q254 88 262 128 Q255 162 225 182 Q208 192 195 190Z" fill="#e2e8f0" opacity="0.6"/>
+              {/* Penas caindo para baixo direita */}
+                      <path d="M255 198 Q272 222 278 265 Q262 242 252 210Z" fill="#f8fafc" opacity="0.95"/>
+                      <path d="M242 205 Q258 232 262 278 Q246 252 238 218Z" fill="#f8fafc" opacity="0.9"/>
+                      <path d="M230 210 Q244 240 246 285 Q232 258 224 222Z" fill="#f1f5f9" opacity="0.9"/>
+                      <path d="M218 213 Q230 245 230 290 Q218 262 212 224Z" fill="#f1f5f9" opacity="0.85"/>
+                      <path d="M206 214 Q216 248 214 292 Q204 265 200 226Z" fill="#e2e8f0" opacity="0.8"/>
+                      <path d="M237 208 Q252 235 255 275 Q240 252 233 220Z" fill="#ffffff" opacity="0.4"/>
+                      <path d="M222 212 Q235 240 237 282 Q224 258 218 224Z" fill="#ffffff" opacity="0.4"/>
+            </>}
+
+      {/* CAPA — atrás, apenas atrás do corpo */}
       {temCapa && (
-        <path d="M110 145 L85 250 Q150 265 215 250 L190 145 Q150 158 110 145Z" fill={cor} opacity="0.85"/>
+        <path d="M115 168 L90 310 Q150 325 210 310 L185 168 Q150 180 115 168Z" fill={corRoupaDark}/>
       )}
 
-      {/* Pernas */}
-      <rect x="118" y="235" width="26" height="55" rx="8" fill={corEscuro}/>
-      <rect x="156" y="235" width="26" height="55" rx="8" fill={corEscuro}/>
+      {/* PERNAS */}
+      <rect x="116" y="255" width="28" height="68" rx="9" fill={corRoupaDark}/>
+      <rect x="156" y="255" width="28" height="68" rx="9" fill={corRoupaDark}/>
+      <rect x="109" y="314" width="37" height="14" rx="7" fill="#1e293b"/>
+      <rect x="153" y="314" width="37" height="14" rx="7" fill="#1e293b"/>
 
-      {/* Sapatos */}
-      <rect x="113" y="283" width="33" height="13" rx="6" fill="#1e293b"/>
-      <rect x="153" y="283" width="33" height="13" rx="6" fill="#1e293b"/>
+      {/* CORPO / ARMADURA */}
+      <rect x="106" y="162" width="88" height="98" rx="16" fill={corRoupa}/>
+      {/* Placa da armadura */}
+      <rect x="118" y="168" width="64" height="86" rx="10" fill={corRoupaDark}/>
+      {/* Detalhes armadura */}
+      <rect x="126" y="176" width="48" height="6" rx="3" fill={corRoupa}/>
+      <rect x="130" y="188" width="40" height="4" rx="2" fill={corRoupa} opacity="0.6"/>
+      <rect x="130" y="198" width="40" height="4" rx="2" fill={corRoupa} opacity="0.6"/>
+      <rect x="130" y="208" width="40" height="4" rx="2" fill={corRoupa} opacity="0.6"/>
+      {/* Divisor central armadura */}
+      <rect x="148" y="176" width="4" height="78" rx="2" fill={corRoupa} opacity="0.4"/>
+      {/* Ombros */}
+      <ellipse cx="106" cy="175" rx="16" ry="12" fill={corRoupaDark}/>
+      <ellipse cx="194" cy="175" rx="16" ry="12" fill={corRoupaDark}/>
 
-      {/* Corpo */}
-      <rect x="108" y="148" width="84" height="92" rx="14" fill={cor}/>
+      {/* BRAÇO ESQUERDO */}
+      <rect x="72" y="170" width="34" height="72" rx="12" fill={corRoupa}/>
+      <rect x="74" y="234" width="30" height="20" rx="10" fill={corPele}/>
 
-      {/* Detalhe peito */}
-      <rect x="135" y="165" width="30" height="42" rx="6" fill={corEscuro}/>
-      <rect x="140" y="170" width="20" height="3" rx="2" fill="#ffffff44"/>
-      <rect x="140" y="177" width="20" height="3" rx="2" fill="#ffffff44"/>
-      <rect x="140" y="184" width="20" height="3" rx="2" fill="#ffffff44"/>
-
-      {/* Braço esquerdo */}
-      <rect x="78" y="153" width="30" height="70" rx="10" fill={cor}/>
-      <rect x="78" y="217" width="30" height="20" rx="8" fill="#fbbf24"/>
-
-      {/* Escudo */}
+      {/* ESCUDO — colado na mão esquerda */}
       {temEscudo && (
-        <path d="M60 155 Q44 155 42 170 L42 210 Q42 228 60 238 Q78 228 78 210 L78 170 Q76 155 60 155Z" fill="#1d4ed8" stroke="#3b82f6" stroke-width="1.5"/>
+        <g transform="translate(46, 236)">
+          <path d="M18 0 Q2 0 0 15 L0 48 Q0 66 18 75 Q36 66 36 48 L36 15 Q34 0 18 0Z" fill="#1d4ed8" stroke="#3b82f6" strokeWidth="2"/>
+          <path d="M18 8 Q8 8 6 20 L6 46 Q6 60 18 68 Q30 60 30 46 L30 20 Q28 8 18 8Z" fill="#2563eb" opacity="0.5"/>
+          <path d="M18 18 L22 30 L18 26 L14 30Z" fill="#93c5fd"/>
+        </g>
       )}
 
-      {/* Braço direito */}
-      <rect x="192" y="153" width="30" height="70" rx="10" fill={cor}/>
-      <rect x="192" y="217" width="30" height="20" rx="8" fill="#fbbf24"/>
+      {/* BRAÇO DIREITO */}
+      <rect x="194" y="170" width="34" height="72" rx="12" fill={corRoupa}/>
+      <rect x="196" y="234" width="30" height="20" rx="10" fill={corPele}/>
 
-      {/* Espada */}
+      {/* ESPADA — na mão direita */}
       {temEspada && <>
-        <rect x="220" y="108" width="7" height="100" rx="3" fill="#c0c0c0"/>
-        <rect x="212" y="195" width="23" height="7" rx="3" fill="#fbbf24"/>
-        <polygon points="223.5,104 219,122 228,122" fill="#e5e7eb"/>
+        <rect x="207" y="222" width="10" height="22" rx="4" fill="#92400e"/>
+        <rect x="197" y="219" width="30" height="6" rx="3" fill="#fbbf24"/>
+        <rect x="209" y="115" width="7" height="107" rx="3" fill="#d1d5db"/>
+        <rect x="211" y="118" width="2" height="94" rx="1" fill="#ffffff88"/>
+        <polygon points="212.5,109 208,122 217,122" fill="#f1f5f9"/>
       </>}
 
-      {/* Pescoço */}
-      <rect x="135" y="133" width="30" height="18" rx="4" fill="#fbbf24"/>
+      {/* PESCOÇO */}
+      <rect x="133" y="148" width="34" height="20" rx="5" fill={corPele}/>
 
-      {/* Cabeça */}
-      <rect x="110" y="72" width="80" height="68" rx="18" fill="#fbbf24"/>
+      {/* CABEÇA */}
+      <rect x="108" y="76" width="84" height="76" rx="20" fill={corPele}/>
 
-      {/* Capacete */}
+      {/* ORELHAS */}
+      {!temCapacete && <>
+        <rect x="100" y="104" width="12" height="22" rx="7" fill={corPele}/>
+        <rect x="188" y="104" width="12" height="22" rx="7" fill={corPeleDark}/>
+      </>}
+
+      {/* CAPACETE */}
       {temCapacete && <>
-        <path d="M108 100 Q108 65 150 62 Q192 65 192 100 L185 100 Q185 75 150 72 Q115 75 115 100Z" fill="#6b7280"/>
-        <rect x="106" y="97" width="88" height="9" rx="4" fill="#4b5563"/>
+        <path d="M108 154 L108 108 Q108 70 150 66 Q192 70 192 108 L192 154 Q175 150 150 150 Q125 150 108 154Z" fill="#475569"/>
+        <rect x="108" y="116" width="84" height="12" rx="3" fill="#1e293b"/>
+        <rect x="108" y="128" width="32" height="30" rx="6" fill="#475569"/>
+        <rect x="160" y="128" width="32" height="30" rx="6" fill="#475569"/>
+        <rect x="140" y="128" width="20" height="30" rx="3" fill="#334155"/>
+        <rect x="146" y="62" width="8" height="20" rx="3" fill="#94a3b8"/>
+        <rect x="127" y="80" width="3" height="26" rx="2" fill="#ffffff22"/>
+        <rect x="170" y="80" width="3" height="26" rx="2" fill="#ffffff22"/>
       </>}
 
-      {/* Coroa */}
+      {/* COROA */}
       {temCoroa && (
-        <path d="M115 72 L125 52 L137 68 L150 48 L163 68 L175 52 L185 72Z" fill="#ffd700" stroke="#f59e0b" stroke-width="1.5"/>
+        <g transform={temCapacete ? "translate(0, 46)" : "translate(0, 0)"}>
+          <rect x="115" y="76" width="70" height="8" rx="3" fill="#f59e0b"/>
+          <path d="M115 76 L125 56 L138 72 L150 50 L162 72 L175 56 L185 76Z" fill="#ffd700" stroke="#f59e0b" strokeWidth="1.5"/>
+          <circle cx="125" cy="56" r="4" fill="#ef4444"/>
+          <circle cx="150" cy="50" r="4" fill="#3b82f6"/>
+          <circle cx="175" cy="56" r="4" fill="#10b981"/>
+        </g>
       )}
 
-      {/* Olhos */}
-      <rect x="126" y="97" width="14" height="10" rx="5" fill="#1e1b4b"/>
-      <rect x="160" y="97" width="14" height="10" rx="5" fill="#1e1b4b"/>
-      <circle cx="131" cy="101" r="3" fill="#fff"/>
-      <circle cx="165" cy="101" r="3" fill="#fff"/>
+      {/* OLHOS */}
+      <rect x="122" y="104" width="17" height="13" rx="7" fill="#1e293b"/>
+      <rect x="161" y="104" width="17" height="13" rx="7" fill="#1e293b"/>
+      <circle cx="129" cy="110" r="4" fill="#fff"/>
+      <circle cx="169" cy="110" r="4" fill="#fff"/>
+      <circle cx="130" cy="109" r="2" fill="#1e293b"/>
+      <circle cx="170" cy="109" r="2" fill="#1e293b"/>
 
-      {/* Sorriso */}
-      <path d="M136 122 Q150 130 164 122" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round"/>
+      {/* SOBRANCELHAS */}
+      <path d="M119 101 Q130 96 139 101" stroke="#78350f" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <path d="M161 101 Q170 96 181 101" stroke="#78350f" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+
+      {/* SORRISO */}
+      <path d="M133 130 Q150 142 167 130" stroke="#78350f" strokeWidth="3" fill="none" strokeLinecap="round"/>
     </svg>
   )
 }
 
-export default function RPG({ user, xpExterno }) {
+     export default function RPG({ user, xpExterno }) {
   const [rpg, setRpg] = useState(null)
   const [log, setLog] = useState([])
   const [ranking, setRanking] = useState([])
   const [aba, setAba] = useState('personagem')
   const [corSel, setCorSel] = useState('#6366f1')
+  const [peleSel, setPeleSel] = useState('#fbbf24')
   const [itensSel, setItensSel] = useState([])
   const [carregando, setCarregando] = useState(true)
 
@@ -136,6 +197,7 @@ export default function RPG({ user, xpExterno }) {
     if (rpgData) {
       setRpg(rpgData)
       setCorSel(rpgData.avatar_cor || '#6366f1')
+      setPeleSel(rpgData.avatar_pele || '#fbbf24')
       setItensSel(rpgData.itens_equipados || [])
     } else {
       const { data: novo } = await supabase.from('rpg_perfil').insert([{
@@ -170,18 +232,23 @@ export default function RPG({ user, xpExterno }) {
 
   const salvarPersonagem = async () => {
     await supabase.from('rpg_perfil').update({
-      avatar_cor: corSel,
-      itens_equipados: itensSel,
-    }).eq('user_id', user.id)
-    setRpg(prev => ({ ...prev, avatar_cor: corSel, itens_equipados: itensSel }))
+          avatar_cor: corSel,
+          avatar_pele: peleSel,
+          itens_equipados: itensSel,
+        }).eq('user_id', user.id)
+        setRpg(prev => ({ ...prev, avatar_cor: corSel, avatar_pele: peleSel, itens_equipados: itensSel }))
     alert('Personagem salvo! ✅')
   }
 
   const toggleItem = (itemId) => {
-    setItensSel(prev =>
-      prev.includes(itemId) ? prev.filter(i => i !== itemId) : [...prev, itemId]
-    )
-  }
+      setItensSel(prev => {
+        if (prev.includes(itemId)) return prev.filter(i => i !== itemId)
+        // coroa e capacete se excluem
+        if (itemId === 'coroa') return [...prev.filter(i => i !== 'capacete'), itemId]
+        if (itemId === 'capacete') return [...prev.filter(i => i !== 'coroa'), itemId]
+        return [...prev, itemId]
+      })
+    }
 
   if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 40 }}>Carregando RPG... ⚔️</div>
 
@@ -239,18 +306,26 @@ export default function RPG({ user, xpExterno }) {
       {aba === 'personagem' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 16, overflow: 'hidden' }}>
-            <Personagem2D cor={corSel} itens={itensSel} nivel={nivelAtual.nivel} />
+            <Personagem2D cor={corSel} pele={peleSel} itens={itensSel} nivel={nivelAtual.nivel} />
           </div>
 
           <div style={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 16, padding: 16 }}>
-            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 12 }}>COR DO PERSONAGEM</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {CORES.map(c => (
-                <button key={c} onClick={() => setCorSel(c)} style={{
-                  width: 36, height: 36, borderRadius: '50%', background: c, border: corSel === c ? '3px solid #fff' : '3px solid transparent', cursor: 'pointer'
-                }} />
-              ))}
-            </div>
+            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 12 }}>COR DA ROUPA</div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                          {CORES.map(c => (
+                            <button key={c} onClick={() => setCorSel(c)} style={{
+                              width: 36, height: 36, borderRadius: '50%', background: c, border: corSel === c ? '3px solid #fff' : '3px solid transparent', cursor: 'pointer'
+                            }} />
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 12 }}>COR DE PELE</div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {CORES_PELE.map(c => (
+                            <button key={c} onClick={() => setPeleSel(c)} style={{
+                              width: 36, height: 36, borderRadius: '50%', background: c, border: peleSel === c ? '3px solid #fff' : '3px solid transparent', cursor: 'pointer'
+                            }} />
+                          ))}
+                        </div>
           </div>
 
           <div style={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 16, padding: 16 }}>
