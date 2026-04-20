@@ -2024,8 +2024,11 @@ input::-webkit-inner-spin-button {
 .dieta-card.atual { border-color: #10b98144; background: #10b98108; }
 
 .dieta-card-header {
-  display: flex; align-items: center;
-  gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .dieta-card-label {

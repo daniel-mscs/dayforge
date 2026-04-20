@@ -231,10 +231,12 @@ export default function Dieta({ user, compact = false, onAjuda }) {
         return (
           <div key={r.id} className={`dieta-card ${isAtual ? 'atual' : ''}`}>
             <div className="dieta-card-header">
-              <div className="dieta-card-label">{r.label}</div>
-              {isAtual && <span className="dieta-card-badge">Agora</span>}
-              <div className="dieta-card-horario">{r.horaDe}h – {r.horeAte}h</div>
-            </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div className="dieta-card-label">{r.label}</div>
+                            {isAtual && <span className="dieta-card-badge">Agora</span>}
+                          </div>
+                          <div className="dieta-card-horario">{r.horaDe}h – {r.horeAte}h</div>
+                        </div>
             <textarea
               className="dieta-textarea"
               placeholder={r.placeholder}
