@@ -189,7 +189,25 @@ export default function Macros({ user, onAjuda }) {
   }), { kcal: 0, prot: 0, carb: 0, gord: 0 })
 
   const pct = Math.min(100, Math.round((total.kcal / meta) * 100))
-  const tmb = calcTMB(perfil)
+    const tmb = calcTMB(perfil)
+
+    const metasMacro = (() => {
+      if (!perfil?.peso) return null
+      const p = Number(perfil.peso)
+      const obj = perfil.objetivo || 'manter'
+      const tabela = {
+        emagrecer: { prot: 2.2, carb: 2.0, gord: 0.8 },
+        manter:    { prot: 1.8, carb: 3.0, gord: 1.0 },
+        ganhar:    { prot: 2.0, carb: 4.0, gord: 1.2 },
+      }
+      const t = tabela[obj]
+      return {
+        prot: Math.round(t.prot * p),
+        carb: Math.round(t.carb * p),
+        gord: Math.round(t.gord * p),
+        obj,
+      }
+    })()
 
   // Saldo calórico
   const calcSaldo = () => {
@@ -227,10 +245,35 @@ export default function Macros({ user, onAjuda }) {
           <div className="macros-bar-fill" style={{ width: `${pct}%`, background: pct >= 100 ? '#10b981' : '#f59e0b' }} />
         </div>
         <div className="macros-grid-mini">
-          <div className="macros-mini-item"><span>🥩 Prot</span><strong>{total.prot}g</strong></div>
-          <div className="macros-mini-item"><span>🍞 Carb</span><strong>{total.carb}g</strong></div>
-          <div className="macros-mini-item"><span>🧈 Gord</span><strong>{total.gord}g</strong></div>
-        </div>
+                  <div className="macros-mini-item"><span>🥩 Prot</span><strong>{total.prot}g</strong></div>
+                  <div className="macros-mini-item"><span>🍞 Carb</span><strong>{total.carb}g</strong></div>
+                  <div className="macros-mini-item"><span>🧈 Gord</span><strong>{total.gord}g</strong></div>
+                </div>
+                {metasMacro && (
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
+                      METAS DE MACRO — {metasMacro.obj === 'emagrecer' ? '🔥 Emagrecer' : metasMacro.obj === 'ganhar' ? '💪 Ganhar massa' : '⚖️ Manter'}
+                    </div>
+                    {[
+                      { label: '🥩 Proteína', val: total.prot, meta: metasMacro.prot, cor: '#10b981' },
+                      { label: '🍞 Carboidrato', val: total.carb, meta: metasMacro.carb, cor: '#6366f1' },
+                      { label: '🧈 Gordura', val: total.gord, meta: metasMacro.gord, cor: '#f59e0b' },
+                    ].map(m => {
+                      const pctM = Math.min(100, Math.round((m.val / m.meta) * 100))
+                      return (
+                        <div key={m.label}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, color: '#94a3b8' }}>{m.label}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: m.cor }}>{m.val}g <span style={{ color: '#475569', fontWeight: 400 }}>/ {m.meta}g</span></span>
+                          </div>
+                          <div className="macros-bar-bg">
+                            <div style={{ height: 6, borderRadius: 99, background: m.cor, width: `${pctM}%`, transition: 'width 0.4s' }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
       </div>
 
       {tmb && (

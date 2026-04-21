@@ -185,6 +185,7 @@ function Personagem2D({ cor, pele, itens }) {
   const [peleSel, setPeleSel] = useState('#fbbf24')
   const [itensSel, setItensSel] = useState([])
   const [carregando, setCarregando] = useState(true)
+    const [missoesConcluidas, setMissoesConcluidas] = useState([])
 
   const buscarTudo = useCallback(async () => {
     setCarregando(true)
@@ -225,8 +226,17 @@ function Personagem2D({ cor, pele, itens }) {
       return { ...r, nome: p?.nome || 'Anônimo' }
     }))
     setRanking(rankComPerfil)
-    setCarregando(false)
-  }, [user.id])
+    const hoje = new Date()
+        const offset = hoje.getTimezoneOffset()
+        const hojeStr = new Date(hoje.getTime() - offset * 60000).toISOString().split('T')[0]
+        const { data: missoesData } = await supabase
+          .from('rpg_missoes_log')
+          .select('missao_id')
+          .eq('user_id', user.id)
+          .eq('data', hojeStr)
+        setMissoesConcluidas((missoesData || []).map(m => m.missao_id))
+        setCarregando(false)
+      }, [user.id])
 
   useEffect(() => { buscarTudo() }, [buscarTudo])
 
@@ -281,18 +291,24 @@ function Personagem2D({ cor, pele, itens }) {
           <div style={{ height: 8, width: `${pctNivel}%`, background: nivelAtual.cor, borderRadius: 99, transition: 'width 0.4s' }} />
         </div>
         {proximoNivel && (
-          <div style={{ fontSize: 11, color: '#64748b' }}>
-            Faltam {xpParaProximo} XP para {proximoNivel.emoji} {proximoNivel.nome}
-          </div>
-        )}
+                  <div style={{ fontSize: 11, color: '#64748b' }}>
+                    Faltam {xpParaProximo} XP para {proximoNivel.emoji} {proximoNivel.nome}
+                  </div>
+                )}
+                {(rpg?.streak || 0) > 0 && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: '#f97316', fontWeight: 700 }}>
+                    🔥 Streak: {rpg.streak} dia{rpg.streak > 1 ? 's' : ''} consecutivo{rpg.streak > 1 ? 's' : ''} · +{Math.min(rpg.streak * 5, 50)} XP/dia
+                  </div>
+                )}
       </div>
 
       {/* Abas */}
       <div style={{ display: 'flex', gap: 6, background: '#1a1d21', padding: 5, borderRadius: 12 }}>
         {[
           { id: 'personagem', label: '🧙 Personagem' },
-          { id: 'ranking', label: '🏆 Ranking' },
-          { id: 'log', label: '📜 Histórico XP' },
+                    { id: 'missoes', label: '🎯 Missões' },
+                    { id: 'ranking', label: '🏆 Ranking' },
+                    { id: 'log', label: '📜 Histórico XP' },
         ].map(a => (
           <button key={a.id} onClick={() => setAba(a.id)} style={{
             flex: 1, background: aba === a.id ? '#24282d' : 'transparent',
@@ -370,8 +386,67 @@ function Personagem2D({ cor, pele, itens }) {
         </div>
       )}
 
-      {/* ABA RANKING */}
-      {aba === 'ranking' && (
+      {/* ABA MISSÕES */}
+            {aba === 'missoes' && (() => {
+              const hoje = new Date()
+              const offset = hoje.getTimezoneOffset()
+              const hojeStr = new Date(hoje.getTime() - offset * 60000).toISOString().split('T')[0]
+
+              const MISSOES = [
+                { id: 'registrar_peso', emoji: '⚖️', nome: 'Pesar hoje', desc: 'Registre seu peso do dia', xp: 10 },
+                { id: 'beber_agua', emoji: '💧', nome: 'Meta de água', desc: 'Atinja sua meta de hidratação', xp: 15 },
+                { id: 'treino_finalizado', emoji: '🏋️', nome: 'Completar treino', desc: 'Finalize um treino hoje', xp: 30 },
+                { id: 'macros_registrado', emoji: '🍽️', nome: 'Registrar refeição', desc: 'Adicione ao menos uma refeição', xp: 10 },
+                { id: 'habito_concluido', emoji: '✅', nome: 'Completar hábito', desc: 'Marque ao menos um hábito do dia', xp: 10 },
+                { id: 'passos_registrado', emoji: '👟', nome: 'Registrar passos', desc: 'Registre seus passos do dia', xp: 10 },
+                { id: 'cardio_registrado', emoji: '🏃', nome: 'Fazer cardio', desc: 'Registre uma atividade de cardio', xp: 20 },
+                { id: 'medidas_registradas', emoji: '📏', nome: 'Medir corpo', desc: 'Registre suas medidas corporais', xp: 15 },
+              ]
+
+              const totalXPMissoes = MISSOES.reduce((s, m) => s + (missoesConcluidas.includes(m.id) ? m.xp : 0), 0)
+              const totalPossivel = MISSOES.reduce((s, m) => s + m.xp, 0)
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 14, padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, color: '#94a3b8' }}>XP de missões hoje</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: nivelAtual.cor }}>{totalXPMissoes} / {totalPossivel} XP</span>
+                    </div>
+                    <div style={{ height: 6, background: '#ffffff0d', borderRadius: 99, overflow: 'hidden' }}>
+                      <div style={{ height: 6, width: `${Math.round((totalXPMissoes / totalPossivel) * 100)}%`, background: nivelAtual.cor, borderRadius: 99, transition: 'width 0.4s' }} />
+                    </div>
+                  </div>
+
+                  {MISSOES.map(m => {
+                    const concluida = missoesConcluidas.includes(m.id)
+                    return (
+                      <div key={m.id} style={{
+                        background: concluida ? '#10b98110' : '#1a1d21',
+                        border: `1px solid ${concluida ? '#10b98133' : '#ffffff0d'}`,
+                        borderRadius: 12, padding: '12px 14px',
+                        display: 'flex', alignItems: 'center', gap: 12
+                      }}>
+                        <span style={{ fontSize: 24 }}>{concluida ? '✅' : m.emoji}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: concluida ? '#10b981' : '#f8fafc' }}>{m.nome}</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>{m.desc}</div>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: concluida ? '#10b981' : '#475569' }}>
+                          +{m.xp} XP
+                        </span>
+                      </div>
+                    )
+                  })}
+                  <p style={{ textAlign: 'center', color: '#475569', fontSize: 11, marginTop: 4 }}>
+                    As missões são concluídas automaticamente ao realizar as ações no app. Resetam à meia-noite.
+                  </p>
+                </div>
+              )
+            })()}
+
+            {/* ABA RANKING */}
+            {aba === 'ranking' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>TOP 10 — GLOBAL</div>
           {ranking.map((r, i) => {

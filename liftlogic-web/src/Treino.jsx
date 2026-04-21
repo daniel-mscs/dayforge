@@ -206,13 +206,14 @@ function Treino({ logout, user }) {
     setSalvandoPerfil(true)
     setPerfilMsg('')
     const payload = {
-      user_id: user.id,
-      nome: perfil.nome,
-      peso: Number(perfil.peso),
-      altura: Number(perfil.altura),
-      idade: Number(perfil.idade),
-      sexo: perfil.sexo,
-    }
+          user_id: user.id,
+          nome: perfil.nome,
+          peso: Number(perfil.peso),
+          altura: Number(perfil.altura),
+          idade: Number(perfil.idade),
+          sexo: perfil.sexo,
+          objetivo: perfil.objetivo || 'manter',
+        }
     const { error } = await supabase.from('perfil').upsert(payload, { onConflict: 'user_id' })
     if (error) setPerfilMsg('Erro ao salvar: ' + error.message)
         else {
@@ -923,15 +924,24 @@ const buscarDashboard = async () => {
                   <input type="number" placeholder="Idade" value={perfil.idade} onChange={e => { setPerfil({ ...perfil, idade: e.target.value }); setPerfilEditado(true) }} disabled={!perfilEditado} style={{ opacity: perfilEditado ? 1 : 0.6 }} />
                 </div>
                 {perfilEditado ? (
-                        <div className="sexo-selector">
-                          <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
-                          <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 13, color: '#64748b', padding: '4px 0' }}>
-                          {perfil.sexo === 'M' ? '♂ Masculino' : '♀ Feminino'}
-                        </div>
-                      )}
+                                  <>
+                                    <div className="sexo-selector">
+                                      <button type="button" className={perfil.sexo === 'M' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'M' })}>♂ Masculino</button>
+                                      <button type="button" className={perfil.sexo === 'F' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, sexo: 'F' })}>♀ Feminino</button>
+                                    </div>
+                                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, marginTop: 8 }}>OBJETIVO</div>
+                                    <div className="sexo-selector">
+                                      <button type="button" className={perfil.objetivo === 'emagrecer' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, objetivo: 'emagrecer' })}>🔥 Emagrecer</button>
+                                      <button type="button" className={perfil.objetivo === 'manter' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, objetivo: 'manter' })}>⚖️ Manter</button>
+                                      <button type="button" className={perfil.objetivo === 'ganhar' ? 'sexo-btn active' : 'sexo-btn'} onClick={() => setPerfil({ ...perfil, objetivo: 'ganhar' })}>💪 Ganhar</button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div style={{ fontSize: 13, color: '#64748b', padding: '4px 0', display: 'flex', gap: 12 }}>
+                                    <span>{perfil.sexo === 'M' ? '♂ Masculino' : '♀ Feminino'}</span>
+                                    <span>{perfil.objetivo === 'emagrecer' ? '🔥 Emagrecer' : perfil.objetivo === 'ganhar' ? '💪 Ganhar massa' : '⚖️ Manter'}</span>
+                                  </div>
+                                )}
                 {perfilEditado && (
                   <button type="submit" disabled={salvandoPerfil}>{salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}</button>
                 )}
