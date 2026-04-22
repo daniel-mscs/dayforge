@@ -46,6 +46,7 @@ export default function Macros({ user, onAjuda }) {
   const [refeicaoSel, setRefeicaoSel]     = useState('cafe')
   const [showCustomForm, setShowCustomForm] = useState(false)
   const [showCustomSection, setShowCustomSection] = useState(false)
+    const [objetivoSel, setObjetivoSel] = useState(null)
   const [novoAlimento, setNovoAlimento]   = useState({ nome: '', kcal: '', prot: '', carb: '', gord: '' })
 
   const hoje = formatarData(new Date())
@@ -194,7 +195,7 @@ export default function Macros({ user, onAjuda }) {
     const metasMacro = (() => {
       if (!perfil?.peso) return null
       const p = Number(perfil.peso)
-      const obj = perfil.objetivo || 'manter'
+      const obj = objetivoSel || perfil.objetivo || 'manter'
       const tabela = {
         emagrecer: { prot: 2.2, carb: 2.0, gord: 0.8 },
         manter:    { prot: 1.8, carb: 3.0, gord: 1.0 },
@@ -251,9 +252,20 @@ export default function Macros({ user, onAjuda }) {
                 </div>
                 {metasMacro && (
                   <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
-                      METAS DE MACRO — {metasMacro.obj === 'emagrecer' ? '🔥 Emagrecer' : metasMacro.obj === 'ganhar' ? '💪 Ganhar massa' : '⚖️ Manter'}
-                    </div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                                          {[
+                                            { id: 'emagrecer', label: '🔥 Emagrecer' },
+                                            { id: 'manter', label: '⚖️ Manter' },
+                                            { id: 'ganhar', label: '💪 Ganhar' },
+                                          ].map(o => (
+                                            <button key={o.id} onClick={() => setObjetivoSel(o.id)} style={{
+                                              flex: 1, background: metasMacro.obj === o.id ? '#6366f1' : '#24282d',
+                                              border: `1px solid ${metasMacro.obj === o.id ? '#6366f1' : '#ffffff0d'}`,
+                                              borderRadius: 8, color: metasMacro.obj === o.id ? '#fff' : '#64748b',
+                                              fontSize: 11, fontWeight: 700, padding: '5px 4px', cursor: 'pointer'
+                                            }}>{o.label}</button>
+                                          ))}
+                                        </div>
                     {[
                       { label: '🥩 Proteína', val: total.prot, meta: metasMacro.prot, cor: '#10b981' },
                       { label: '🍞 Carboidrato', val: total.carb, meta: metasMacro.carb, cor: '#6366f1' },
