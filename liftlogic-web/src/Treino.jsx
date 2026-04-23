@@ -819,18 +819,16 @@ const buscarDashboard = async () => {
                   <div style={{ fontSize: 10, color: '#64748b', fontWeight: 800, letterSpacing: '0.08em', marginBottom: 14 }}>REGISTRAR CARDIO</div>
 
                   <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>TIPO</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {['Corrida', 'Caminhada', 'Bike', 'Natação', 'Elíptico', 'Esteira', 'HIIT', 'Funcional', 'Remo', 'Outro'].map(t => (
-                        <button key={t} onClick={() => setCardioForm(p => ({ ...p, tipo: t }))} style={{
-                          background: cardioForm.tipo === t ? '#6366f1' : '#24282d',
-                          border: `1px solid ${cardioForm.tipo === t ? '#6366f1' : '#ffffff0d'}`,
-                          borderRadius: 8, color: cardioForm.tipo === t ? '#fff' : '#64748b',
-                          fontSize: 12, fontWeight: 600, padding: '6px 12px', cursor: 'pointer'
-                        }}>{t}</button>
-                      ))}
-                    </div>
-                  </div>
+                                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>TIPO</div>
+                                      <select value={cardioForm.tipo} onChange={e => setCardioForm(p => ({ ...p, tipo: e.target.value }))} style={{
+                                        width: '100%', background: '#24282d', border: '1px solid #ffffff0d',
+                                        borderRadius: 8, color: '#f8fafc', fontSize: 13, padding: '10px 12px', cursor: 'pointer'
+                                      }}>
+                                        {['Corrida', 'Caminhada', 'Bike', 'Natação', 'Elíptico', 'Esteira', 'HIIT', 'Funcional', 'Remo', 'Pular Corda', 'Escalada', 'Surf', 'Lutas', 'Outro'].map(t => (
+                                          <option key={t} value={t}>{t}</option>
+                                        ))}
+                                      </select>
+                                    </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                     <div>
