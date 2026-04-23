@@ -271,7 +271,7 @@ const buscarDashboard = async () => {
 
   useEffect(() => { buscarExercicios(); buscarPerfil() }, [])
   useEffect(() => { if (divisao) localStorage.setItem('divisao', divisao) }, [divisao])
-  useEffect(() => { if (abaPrincipal === 'historico') buscarHistorico() }, [abaPrincipal])
+  useEffect(() => { if (subAbaTreino === 'historico') buscarHistorico() }, [])
   useEffect(() => { if (abaPrincipal === 'perfil') buscarPerfil() }, [abaPrincipal])
   useEffect(() => { if (abaPrincipal === 'dashboard') buscarDashboard() }, [abaPrincipal])
 
@@ -589,7 +589,7 @@ const buscarDashboard = async () => {
           >📊 Stats</button>
           <button
                       className={subAbaTreino === 'historico' ? 'treino-subnav-btn active' : 'treino-subnav-btn'}
-                      onClick={() => { setSubAbaTreino('historico'); buscarHistorico() }}
+                      onClick={() => setSubAbaTreino('historico')}
                     >📜 Histórico</button>
                     <button
                       className={subAbaTreino === 'cardio' ? 'treino-subnav-btn active' : 'treino-subnav-btn'}
@@ -938,9 +938,22 @@ const buscarDashboard = async () => {
                     <span className="hist-date">{t.created_at ? new Date(t.created_at).toLocaleDateString('pt-BR') : '-'}</span>
                   </div>
                   <div className="hist-stats">
-                    <div className="hist-stat-item"><span>TEMPO</span><strong>{formatarTempo(t.tempo_segundos)}</strong></div>
-                    <div className="hist-stat-item"><span>🔥 KCAL</span><strong>{t.kcal || '—'}</strong></div>
-                  </div>
+                    <div className="hist-stat-item">
+                        <span>TEMPO</span>
+                            <strong>{formatarTempo(t.tempo_segundos)}</strong>
+                                <button onClick={() => {
+                                    const input = prompt('Novo tempo em minutos:', Math.round((t.tempo_segundos || 0) / 60))
+                                    if (!input) return
+                                    const mins = parseInt(input)
+                                    if (!mins || mins <= 0) { alert('Tempo inválido!'); return }
+                                          const novosSeg = mins * 60
+                                                                  const novaKcal = perfil.peso ? Math.round(5.0 * Number(perfil.peso) * (novosSeg / 3600)) : t.kcal
+                                                                  setHistorico(prev => prev.map(h => h.id === t.id ? { ...h, tempo_segundos: novosSeg, kcal: novaKcal } : h))
+                                                                                          supabase.from('treinos_finalizados').update({ tempo_segundos: novosSeg, kcal: novaKcal }).eq('id', t.id)
+                                      }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 11, marginLeft: 4 }}>✏️</button>
+                    </div>
+                  <div className="hist-stat-item"><span>🔥 KCAL</span><strong>{t.kcal || '—'}</strong></div>
+                   </div>
                 </div>
               ))
             )}

@@ -46,7 +46,7 @@ export default function Macros({ user, onAjuda }) {
   const [refeicaoSel, setRefeicaoSel]     = useState('cafe')
   const [showCustomForm, setShowCustomForm] = useState(false)
   const [showCustomSection, setShowCustomSection] = useState(false)
-    const [objetivoSel, setObjetivoSel] = useState(null)
+  const [objetivoSel, setObjetivoSel] = useState(null)
   const [novoAlimento, setNovoAlimento]   = useState({ nome: '', kcal: '', prot: '', carb: '', gord: '' })
 
   const hoje = formatarData(new Date())
@@ -76,7 +76,7 @@ export default function Macros({ user, onAjuda }) {
     if (metaData) setMeta(metaData.meta_kcal)
     setCustomFoods(customs || [])
     setAlimentosBase(base || [])
-    if (perfilData) setPerfil(perfilData)
+    if (perfilData) { setPerfil(perfilData); setObjetivoSel(perfilData.objetivo || 'manter') }
         const kcalPassos = Math.round((passosHoje?.passos || 0) * 0.04)
                 const kcalTreino = treinoHoje?.kcal || 0
                 const kcalCardio = (cardioHoje || []).reduce((s, r) => s + (r.kcal || 0), 0)
