@@ -946,8 +946,10 @@ const buscarDashboard = async () => {
                                     if (!mins || mins <= 0) { alert('Tempo inválido!'); return }
                                           const novosSeg = mins * 60
                                                                   const novaKcal = perfil.peso ? Math.round(5.0 * Number(perfil.peso) * (novosSeg / 3600)) : t.kcal
-                                                                  setHistorico(prev => prev.map(h => h.id === t.id ? { ...h, tempo_segundos: novosSeg, kcal: novaKcal } : h))
-                                                                                          supabase.from('treinos_finalizados').update({ tempo_segundos: novosSeg, kcal: novaKcal }).eq('id', t.id)
+                                                                  supabase.from('treinos_finalizados').update({ tempo_segundos: novosSeg, kcal: novaKcal }).eq('id', t.id).then(({ error }) => {
+                                                                    if (error) { alert('Erro ao salvar: ' + error.message); return }
+                                                                    setHistorico(prev => prev.map(h => h.id === t.id ? { ...h, tempo_segundos: novosSeg, kcal: novaKcal } : h))
+                                                                  })
                                       }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 11, marginLeft: 4 }}>✏️</button>
                     </div>
                   <div className="hist-stat-item"><span>🔥 KCAL</span><strong>{t.kcal || '—'}</strong></div>
