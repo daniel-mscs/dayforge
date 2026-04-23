@@ -271,7 +271,7 @@ const buscarDashboard = async () => {
 
   useEffect(() => { buscarExercicios(); buscarPerfil() }, [])
   useEffect(() => { if (divisao) localStorage.setItem('divisao', divisao) }, [divisao])
-  useEffect(() => { if (subAbaTreino === 'historico') buscarHistorico() }, [])
+  useEffect(() => { buscarHistorico() }, [])
   useEffect(() => { if (abaPrincipal === 'perfil') buscarPerfil() }, [abaPrincipal])
   useEffect(() => { if (abaPrincipal === 'dashboard') buscarDashboard() }, [abaPrincipal])
 
@@ -821,7 +821,7 @@ const buscarDashboard = async () => {
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>TIPO</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {['Corrida', 'Caminhada', 'Bike', 'Natação', 'Pular Corda', 'Elíptico', 'Esteira', 'HIIT', 'Outro'].map(t => (
+                      {['Corrida', 'Caminhada', 'Bike', 'Natação', 'Elíptico', 'Esteira', 'HIIT', 'Outro'].map(t => (
                         <button key={t} onClick={() => setCardioForm(p => ({ ...p, tipo: t }))} style={{
                           background: cardioForm.tipo === t ? '#6366f1' : '#24282d',
                           border: `1px solid ${cardioForm.tipo === t ? '#6366f1' : '#ffffff0d'}`,
