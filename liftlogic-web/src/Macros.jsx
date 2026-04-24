@@ -69,7 +69,7 @@ export default function Macros({ user, onAjuda }) {
       supabase.from('alimentos_base').select('*').order('nome', { ascending: true }),
       supabase.from('perfil').select('*').eq('user_id', user.id).single(),
       supabase.from('passos_registro').select('passos').eq('user_id', user.id).eq('data', hoje).single(),
-      supabase.from('treinos_finalizados').select('kcal').eq('user_id', user.id).gte('created_at', hoje + 'T00:00:00').lte('created_at', hoje + 'T23:59:59'),
+      supabase.from('treinos_finalizados').select('kcal, created_at').eq('user_id', user.id).gte('created_at', hoje + 'T03:00:00Z').lte('created_at', new Date(new Date(hoje).getTime() + 86400000).toISOString().split('T')[0] + 'T02:59:59Z'),
             supabase.from('cardio_registro').select('kcal').eq('user_id', user.id).eq('data', hoje),
           ])
     setRegistros(regs || [])
@@ -78,7 +78,11 @@ export default function Macros({ user, onAjuda }) {
     setAlimentosBase(base || [])
     if (perfilData) { setPerfil(perfilData); setObjetivoSel(perfilData.objetivo || 'manter') }
         const kcalPassos = Math.round((passosHoje?.passos || 0) * 0.04)
-                const kcalTreino = (treinoHoje || []).reduce((s, r) => s + (r.kcal || 0), 0)
+                const kcalTreino = (treinoHoje || []).filter(r => {
+                  const offset = new Date().getTimezoneOffset()
+                  const dataLocal = new Date(new Date(r.created_at).getTime() - offset * 60000).toISOString().split('T')[0]
+                  return dataLocal === hoje
+                }).reduce((s, r) => s + (r.kcal || 0), 0)
                 const kcalCardio = (cardioHoje || []).reduce((s, r) => s + (r.kcal || 0), 0)
                 setKcalGasto({ passos: kcalPassos, treino: kcalTreino, cardio: kcalCardio })
         const ultimos7 = Array.from({ length: 7 }, (_, i) => {
@@ -259,9 +263,9 @@ export default function Macros({ user, onAjuda }) {
                                             { id: 'ganhar', label: '💪 Ganhar' },
                                           ].map(o => (
                                             <button key={o.id} onClick={() => setObjetivoSel(o.id)} style={{
-                                              flex: 1, background: metasMacro.obj === o.id ? '#6366f1' : '#24282d',
-                                              border: `1px solid ${metasMacro.obj === o.id ? '#6366f1' : '#ffffff0d'}`,
-                                              borderRadius: 8, color: metasMacro.obj === o.id ? '#fff' : '#64748b',
+                                              flex: 1, background: (objetivoSel || perfil?.objetivo || 'manter') === o.id ? '#6366f1' : '#24282d',
+                                                       border: `1px solid ${(objetivoSel || perfil?.objetivo || 'manter') === o.id ? '#6366f1' : '#ffffff0d'}`,
+                                                       borderRadius: 8, color: (objetivoSel || perfil?.objetivo || 'manter') === o.id ? '#fff' : '#64748b',
                                               fontSize: 11, fontWeight: 700, padding: '5px 4px', cursor: 'pointer'
                                             }}>{o.label}</button>
                                           ))}
