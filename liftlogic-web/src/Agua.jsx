@@ -24,7 +24,8 @@ export default function Agua({ user, onAjuda }) {
   const [metaInput, setMetaInput]     = useState('')
   const [customMl, setCustomMl]       = useState('')
   const [carregando, setCarregando]   = useState(true)
-  const [perfil, setPerfil]           = useState(null)
+  const [perfil, setPerfil] = useState(null)
+  const [editandoMetaAgua, setEditandoMetaAgua] = useState(false)
 
   const hoje    = formatarData(new Date())
   const ultimos7 = getLast7Days()
@@ -124,38 +125,46 @@ export default function Agua({ user, onAjuda }) {
       </div>
 
       {/* Meta */}
-      <div className="agua-card">
-        <div className="agua-card-title">Ajustar meta diária</div>
-        {perfil?.peso && (
-          <div className="agua-sugestoes">
-            <button className="agua-sug-btn" onClick={() => sugerirMeta('sedentario')}>
-              <span>🧘 Sedentário</span>
-              <strong>{Math.round(perfil.peso * 35).toLocaleString('pt-BR')} ml</strong>
-              <small>peso × 35ml</small>
-            </button>
-            <button className="agua-sug-btn" onClick={() => sugerirMeta('ativo')}>
-              <span>🏋️ Ativo</span>
-              <strong>{Math.round(perfil.peso * 50).toLocaleString('pt-BR')} ml</strong>
-              <small>peso × 50ml</small>
-            </button>
-          </div>
-        )}
-        <div className="agua-meta-row">
-          <input
-            type="number"
-            placeholder="Meta personalizada (ml)"
-            value={metaInput}
-            onChange={e => setMetaInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') salvarMeta() }}
-          />
-          <button className="agua-btn-salvar" onClick={() => salvarMeta()}>Salvar</button>
-        </div>
-        {!perfil?.peso && (
-          <p style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
-            💡 Cadastre seu peso no Perfil para ver sugestões personalizadas.
-          </p>
-        )}
-      </div>
+            {(()  => (
+                        <div className="agua-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div className="agua-card-title" style={{ margin: 0 }}>Meta diária: {(meta/1000).toFixed(1)}L</div>
+                            {!editandoMetaAgua && (
+                              <button className="peso-btn-alterar" onClick={() => setEditandoMetaAgua(true)}>Alterar</button>
+                            )}
+                          </div>
+                          {editandoMetaAgua && (
+                            <>
+                              {perfil?.peso && (
+                                <div className="agua-sugestoes" style={{ marginTop: 12 }}>
+                                  <button className="agua-sug-btn" onClick={() => { sugerirMeta('sedentario'); setEditandoMetaAgua(false) }}>
+                                    <span>🧘 Sedentário</span>
+                                    <strong>{Math.round(perfil.peso * 35).toLocaleString('pt-BR')} ml</strong>
+                                    <small>peso × 35ml</small>
+                                  </button>
+                                  <button className="agua-sug-btn" onClick={() => { sugerirMeta('ativo'); setEditandoMetaAgua(false) }}>
+                                    <span>🏋️ Ativo</span>
+                                    <strong>{Math.round(perfil.peso * 50).toLocaleString('pt-BR')} ml</strong>
+                                    <small>peso × 50ml</small>
+                                  </button>
+                                </div>
+                              )}
+                              <div className="agua-meta-row" style={{ marginTop: 10 }}>
+                                <input
+                                  type="number"
+                                  placeholder="Meta personalizada (ml)"
+                                  value={metaInput}
+                                  onChange={e => setMetaInput(e.target.value)}
+                                  onKeyDown={e => { if (e.key === 'Enter') { salvarMeta(); setEditandoMetaAgua(false) } }}
+                                  autoFocus
+                                />
+                                <button className="agua-btn-salvar" onClick={() => { salvarMeta(); setEditandoMetaAgua(false) }}>Salvar</button>
+                                <button className="peso-btn-cancelar" onClick={() => { setEditandoMetaAgua(false); setMetaInput('') }}>✕</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))()}
 
       {/* Botões rápidos */}
       <div className="agua-card">
