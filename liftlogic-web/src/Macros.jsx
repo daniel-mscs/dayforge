@@ -52,6 +52,10 @@ export default function Macros({ user, onAjuda }) {
 
   // Clonar de dia passado
   const [showClonar, setShowClonar]           = useState(false)
+  const [showHistorico, setShowHistorico]     = useState(false)
+  const [dataHistorico, setDataHistorico]     = useState('')
+  const [registrosHistorico, setRegistrosHistorico] = useState([])
+  const [carregandoHist, setCarregandoHist]   = useState(false)
   const [dataClonar, setDataClonar]           = useState('')
   const [registrosClonar, setRegistrosClonar] = useState([])
   const [gramasClonar, setGramasClonar]       = useState({})
@@ -197,6 +201,17 @@ export default function Macros({ user, onAjuda }) {
     setCustomFoods(prev => [...prev, data[0]])
     setNovoAlimento({ nome: '', kcal: '', prot: '', carb: '', gord: '' })
     setShowCustomForm(false)
+  }
+
+  const buscarHistoricoDia = async (data) => {
+    if (!data) return
+    setCarregandoHist(true)
+    const { data: regs } = await supabase
+      .from('macros_registro').select('*')
+      .eq('user_id', user.id).eq('data', data)
+      .order('created_at', { ascending: true })
+    setRegistrosHistorico(regs || [])
+    setCarregandoHist(false)
   }
 
   const buscarRegistrosDia = async (data) => {
@@ -621,7 +636,81 @@ export default function Macros({ user, onAjuda }) {
         )}
       </div>
 
-      {/* TMB */}
+      {/* Histórico de dias anteriores */}
+            <div className="macros-card">
+              <div className="macros-card-title-row">
+                <div className="macros-card-title" style={{ margin: 0 }}>🔍 Ver dia anterior</div>
+                <button className="macros-btn-custom" onClick={() => setShowHistorico(p => !p)}>
+                  {showHistorico ? 'Ocultar' : 'Mostrar'}
+                </button>
+              </div>
+              {showHistorico && (
+                <>
+                  <div style={{ marginTop: 12, marginBottom: 12 }}>
+                    <input
+                      type="date"
+                      value={dataHistorico}
+                      max={new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0]}
+                      onChange={e => { setDataHistorico(e.target.value); buscarHistoricoDia(e.target.value) }}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  {carregandoHist && <p style={{ fontSize: 12, color: '#64748b' }}>Carregando...</p>}
+                  {!carregandoHist && dataHistorico && registrosHistorico.length === 0 && (
+                    <p style={{ fontSize: 12, color: '#475569' }}>Nenhum alimento registrado nesse dia.</p>
+                  )}
+                  {!carregandoHist && registrosHistorico.length > 0 && (() => {
+                    const totalHist = registrosHistorico.reduce((acc, r) => ({
+                      kcal: acc.kcal + r.kcal,
+                      prot: round1(acc.prot + Number(r.prot)),
+                      carb: round1(acc.carb + Number(r.carb)),
+                      gord: round1(acc.gord + Number(r.gord)),
+                    }), { kcal: 0, prot: 0, carb: 0, gord: 0 })
+                    const porRef = REFEICOES_OPTS.reduce((acc, r) => {
+                      const itens = registrosHistorico.filter(reg => reg.refeicao === r.id)
+                      if (itens.length > 0) acc[r.id] = { label: r.label, itens }
+                      return acc
+                    }, {})
+                    return (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #ffffff0d', marginBottom: 12 }}>
+                          <span style={{ fontSize: 12, color: '#94a3b8' }}>Total do dia</span>
+                          <div style={{ display: 'flex', gap: 10, fontSize: 12 }}>
+                            <span style={{ color: '#f59e0b', fontWeight: 700 }}>⚡ {totalHist.kcal}</span>
+                            <span style={{ color: '#10b981' }}>🥩 {totalHist.prot}g</span>
+                            <span style={{ color: '#6366f1' }}>🍞 {totalHist.carb}g</span>
+                            <span style={{ color: '#f97316' }}>🧈 {totalHist.gord}g</span>
+                          </div>
+                        </div>
+                        {Object.entries(porRef).map(([id, { label, itens }]) => (
+                          <div key={id} style={{ marginBottom: 12 }}>
+                            <div className="macros-ref-header">
+                              <span className="macros-ref-label">{label}</span>
+                              <span className="macros-ref-total">{itens.reduce((s, r) => s + r.kcal, 0)} kcal</span>
+                            </div>
+                            {itens.map(r => (
+                              <div key={r.id} className="macros-log-item">
+                                <div className="macros-log-top">
+                                  <span className="macros-log-nome">{r.nome} <span style={{ color: '#64748b', fontWeight: 400 }}>({r.gramas}g)</span></span>
+                                </div>
+                                <div className="macros-log-vals">
+                                  <span>⚡ {r.kcal}</span>
+                                  <span>🥩 {r.prot}g</span>
+                                  <span>🍞 {r.carb}g</span>
+                                  <span>🧈 {r.gord}g</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </>
+                    )
+                  })()}
+                </>
+              )}
+            </div>
+
+            {/* TMB */}
       {tmb && (
         <div className="macros-card">
           <div className="macros-card-title">TAXA METABÓLICA BASAL (TMB)</div>
