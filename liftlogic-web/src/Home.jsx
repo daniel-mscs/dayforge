@@ -58,6 +58,8 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
   const [kcalHoje, setKcalHoje] = useState(0)
   const [kcalMeta, setKcalMeta] = useState(2000)
   const [kcalGasto, setKcalGasto] = useState({ treino: 0, passos: 0 })
+  const [humor, setHumor] = useState(null)
+  const [salvandoHumor, setSalvandoHumor] = useState(false)
 
   const [editandoHome, setEditandoHome] = useState(false)
   const [blocos, setBlocos] = useState(() => {
@@ -70,6 +72,12 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         localStorage.removeItem('home_blocos')
         return null
       }
+      const temHumor = parsed.find(b => b.id === 'humor')
+      if (!temHumor) {
+        const novo = [...parsed, { id: 'humor', label: 'Humor + Energia', visivel: true }]
+        localStorage.setItem('home_blocos', JSON.stringify(novo))
+        return novo
+      }
       return parsed
     }
     return [
@@ -79,8 +87,9 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
       { id: 'refeicao',     label: 'Refeição',     visivel: true },
       { id: 'passos_supl',  label: 'Passos + Suplementos', visivel: true },
       { id: 'habitos',      label: 'Hábitos',      visivel: true },
-    ]
-  })
+      { id: 'humor',        label: 'Humor + Energia', visivel: true },
+      ]
+      })
 
   const hoje = formatarData(new Date())
   const buscarFrase = useCallback(async () => {
@@ -108,6 +117,7 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         { data: macrosData },
         { data: macrosMetaData },
               { data: treinoHoje },
+              { data: humorHoje },
               ] = await Promise.all([
         supabase.from('perfil').select('*').eq('user_id', user.id).single(),
         supabase.from('treinos_finalizados').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
@@ -120,6 +130,7 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
         supabase.from('macros_registro').select('kcal').eq('user_id', user.id).eq('data', hoje),
         supabase.from('macros_meta').select('meta_kcal').eq('user_id', user.id).single(),
         supabase.from('treinos_finalizados').select('kcal, created_at').eq('user_id', user.id).gte('created_at', hoje + 'T03:00:00Z').lte('created_at', new Date(new Date(hoje).getTime() + 86400000).toISOString().split('T')[0] + 'T02:59:59Z'),
+        supabase.from('humor_registro').select('*').eq('user_id', user.id).eq('data', hoje).single(),
       ])
     if (p) setPerfil(p)
     if (h) setHistorico(h)
@@ -154,8 +165,9 @@ export default function Home({ user, onIniciarTreino, treinando, treinoAtivo, di
       setRotina({ dia: diasData, tarefas: tarefasData || [] })
     }
 
+    if (humorHoje) setHumor(humorHoje)
     setCarregando(false)
-  }, [user.id])
+    }, [user.id])
 
   useEffect(() => { carregar() }, [carregar])
 
@@ -233,6 +245,22 @@ async function calcularStreak(userId) {
     : {}
   const temTarefas = Object.keys(tarefasPorPeriodo).length > 0
 
+
+
+  const salvarHumor = async (campo, val) => {
+    setSalvandoHumor(true)
+    const atual = humor || {}
+    const payload = {
+      user_id: user.id,
+      data: hoje,
+      humor: atual.humor || null,
+      energia: atual.energia || null,
+      [campo]: val,
+    }
+    const { data, error } = await supabase.from('humor_registro').upsert(payload, { onConflict: 'user_id,data' }).select().single()
+    if (!error && data) setHumor(data)
+    setSalvandoHumor(false)
+  }
   if (carregando) return <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 60 }}>Preparando seu ambiente... 🧱</div>
 
   return (
@@ -430,6 +458,42 @@ async function calcularStreak(userId) {
                                       </div>
                                     </div>
                                   )}
+
+                    {bloco.id === 'humor' && (
+                      <div className="home-card">
+                        <div className="home-section-title">🧠 COMO VOCÊ TÁ HOJE?</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
+                          {[
+                            { campo: 'humor', label: '😄 Humor', emojis: ['😞','😟','😐','😊','🤩'] },
+                            { campo: 'energia', label: '⚡ Energia', emojis: ['😴','🥱','😐','💪','🚀'] },
+                          ].map(({ campo, label, emojis }) => (
+                            <div key={campo}>
+                              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 8 }}>{label}</div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                {emojis.map((emoji, i) => {
+                                  const val = i + 1
+                                  const sel = humor?.[campo] === val
+                                  return (
+                                    <button key={val} onClick={() => !editandoHome && salvarHumor(campo, val)} style={{
+                                      flex: 1, background: sel ? '#6366f122' : '#24282d',
+                                      border: `1px solid ${sel ? '#6366f1' : '#ffffff0d'}`,
+                                      borderRadius: 10, fontSize: 20, padding: '8px 4px',
+                                      cursor: editandoHome ? 'default' : 'pointer',
+                                      transform: sel ? 'scale(1.1)' : 'scale(1)', transition: 'all 0.15s'
+                                    }}>{emoji}</button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                          {humor?.humor && humor?.energia && (
+                            <div style={{ fontSize: 11, color: '#475569', textAlign: 'center' }}>
+                              registrado hoje ✓
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {bloco.id === 'habitos' && (
                       <div className="home-card">
