@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
@@ -18,6 +18,20 @@ function getLast7Days() {
 
 function round1(n) { return Math.round(n * 10) / 10 }
 
+function calcularHoras(dormiu, acordou) {
+  if (!dormiu || !acordou) return null
+  const [hD, mD] = dormiu.split(':').map(Number)
+  const [hA, mA] = acordou.split(':').map(Number)
+  let minutos = (hA * 60 + mA) - (hD * 60 + mD)
+  if (minutos < 0) minutos += 24 * 60
+  return parseFloat((minutos / 60).toFixed(1))
+}
+
+function qualidadeLabel(q) {
+  const map = { 1: 'Péssimo', 2: 'Ruim', 3: 'Regular', 4: 'Bom', 5: 'Ótimo' }
+  return map[q] || '—'
+}
+
 export default function Stats({ user }) {
   const [treinos, setTreinos]       = useState([])
   const [agua, setAgua]             = useState([])
@@ -26,6 +40,7 @@ export default function Stats({ user }) {
   const [macros, setMacros]         = useState([])
   const [passos, setPassos]         = useState([])
   const [passosMeta, setPassosMeta] = useState(10000)
+  const [sono, setSono]             = useState([])
   const [carregando, setCarregando] = useState(true)
   const [rpg, setRpg]               = useState(null)
   const [perfil, setPerfil]         = useState(null)
@@ -37,8 +52,9 @@ export default function Stats({ user }) {
   const [aguaMes, setAguaMes]         = useState([])
   const [pesosMes, setPesosMes]       = useState([])
   const [passosMes, setPassosMes]     = useState([])
+  const [sonoMes, setSonoMes]         = useState([])
   const [carregandoMes, setCarregandoMes] = useState(false)
-  const [mesSel, setMesSel]           = useState(() => {
+  const [mesSel, setMesSel] = useState(() => {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
@@ -58,6 +74,7 @@ export default function Stats({ user }) {
       { data: passosMetaData },
       { data: rpgData },
       { data: perfilData },
+      { data: sonoData },
     ] = await Promise.all([
       supabase.from('treinos_finalizados').select('*').eq('user_id', user.id).gte('created_at', inicio).order('created_at', { ascending: true }),
       supabase.from('agua_registro').select('*').eq('user_id', user.id).gte('data', inicio),
@@ -68,6 +85,7 @@ export default function Stats({ user }) {
       supabase.from('passos_meta').select('meta_passos').eq('user_id', user.id).single(),
       supabase.from('rpg_perfil').select('xp, streak, nivel').eq('user_id', user.id).single(),
       supabase.from('perfil').select('nome, peso').eq('user_id', user.id).single(),
+      supabase.from('sono_registro').select('*').eq('user_id', user.id).gte('data', inicio),
     ])
     setTreinos(treinosData || [])
     setAgua(aguaData || [])
@@ -78,6 +96,7 @@ export default function Stats({ user }) {
     if (passosMetaData) setPassosMeta(passosMetaData.meta_passos)
     setRpg(rpgData || null)
     setPerfil(perfilData || null)
+    setSono(sonoData || [])
     setCarregando(false)
   }, [user.id])
 
@@ -87,29 +106,30 @@ export default function Stats({ user }) {
     const inicioMes = `${mes}-01`
     const fimMes = new Date(ano, m, 0)
     const fimMesStr = formatarData(fimMes)
-
     const [
       { data: treinosM },
       { data: aguaM },
       { data: pesosM },
       { data: passosM },
+      { data: sonoM },
     ] = await Promise.all([
       supabase.from('treinos_finalizados').select('*').eq('user_id', user.id).gte('created_at', inicioMes).lte('created_at', fimMesStr + 'T23:59:59'),
       supabase.from('agua_registro').select('*').eq('user_id', user.id).gte('data', inicioMes).lte('data', fimMesStr),
       supabase.from('peso_registro').select('*').eq('user_id', user.id).gte('data', inicioMes).lte('data', fimMesStr).order('data', { ascending: true }),
       supabase.from('passos_registro').select('*').eq('user_id', user.id).gte('data', inicioMes).lte('data', fimMesStr),
+      supabase.from('sono_registro').select('*').eq('user_id', user.id).gte('data', inicioMes).lte('data', fimMesStr),
     ])
     setTreinosMes(treinosM || [])
     setAguaMes(aguaM || [])
     setPesosMes(pesosM || [])
     setPassosMes(passosM || [])
+    setSonoMes(sonoM || [])
     setCarregandoMes(false)
   }, [user.id])
 
   useEffect(() => { buscarTudo() }, [buscarTudo])
   useEffect(() => { if (aba === 'mes') buscarMes(mesSel) }, [aba, mesSel, buscarMes])
 
-  // Stats semanais
   const totalTreinos = treinos.length
   const treinosLetras = [...new Set(treinos.map(t => t.treino))].sort().join(', ')
   const tempoTotal = treinos.reduce((s, t) => s + (t.tempo_segundos || 0), 0)
@@ -148,12 +168,8 @@ export default function Stats({ user }) {
     }
   })
   const diasComMacros = macrosPorDia.filter(d => d.kcal > 0)
-  const mediaKcal = diasComMacros.length > 0
-    ? Math.round(diasComMacros.reduce((s, d) => s + d.kcal, 0) / diasComMacros.length)
-    : 0
-  const mediaProt = diasComMacros.length > 0
-    ? round1(diasComMacros.reduce((s, d) => s + d.prot, 0) / diasComMacros.length)
-    : 0
+  const mediaKcal = diasComMacros.length > 0 ? Math.round(diasComMacros.reduce((s, d) => s + d.kcal, 0) / diasComMacros.length) : 0
+  const mediaProt = diasComMacros.length > 0 ? round1(diasComMacros.reduce((s, d) => s + d.prot, 0) / diasComMacros.length) : 0
 
   const passosPorDia = ultimos7.map(data => {
     const reg = passos.find(r => r.data === data)
@@ -162,6 +178,24 @@ export default function Stats({ user }) {
   const mediaPassos = Math.round(passosPorDia.reduce((s, d) => s + d.passos, 0) / 7)
   const diasMetaPassos = passosPorDia.filter(d => d.passos >= passosMeta).length
 
+  // Sono semanal
+  const sonoPorDia = ultimos7.map(data => {
+    const reg = sono.find(r => r.data === data)
+    return {
+      name: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }),
+      horas: reg ? calcularHoras(reg.dormiu, reg.acordou) : 0,
+      qualidade: reg?.qualidade || 0,
+    }
+  })
+  const sonoComRegistro = sono.filter(r => ultimos7.includes(r.data))
+  const mediaHorasSono = sonoComRegistro.length > 0
+    ? (sonoComRegistro.reduce((s, r) => s + calcularHoras(r.dormiu, r.acordou), 0) / sonoComRegistro.length).toFixed(1)
+    : null
+  const diasSono7h = sonoComRegistro.filter(r => calcularHoras(r.dormiu, r.acordou) >= 7).length
+  const mediaQualidadeSono = sonoComRegistro.length > 0
+    ? (sonoComRegistro.reduce((s, r) => s + r.qualidade, 0) / sonoComRegistro.length).toFixed(1)
+    : null
+
   const labelDia = (data) => new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })
   const tooltipStyle = { background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 8, color: '#f8fafc', fontSize: 12 }
 
@@ -169,31 +203,23 @@ export default function Stats({ user }) {
   const totalTreinosMes = treinosMes.length
   const tempoTotalMes = treinosMes.reduce((s, t) => s + (t.tempo_segundos || 0), 0)
   const kcalTotalMes = treinosMes.reduce((s, t) => s + (t.kcal || 0), 0)
-  const divisoesMes = treinosMes.reduce((acc, t) => {
-    acc[t.treino] = (acc[t.treino] || 0) + 1
-    return acc
-  }, {})
-
+  const divisoesMes = treinosMes.reduce((acc, t) => { acc[t.treino] = (acc[t.treino] || 0) + 1; return acc }, {})
   const [ano, m] = mesSel.split('-').map(Number)
   const diasNoMes = new Date(ano, m, 0).getDate()
-
-  const aguaPorDiaMes = (() => {
-    const map = {}
-    aguaMes.forEach(r => {
-      if (!map[r.data]) map[r.data] = 0
-      map[r.data] += r.ml
-    })
-    return map
-  })()
+  const aguaPorDiaMes = (() => { const map = {}; aguaMes.forEach(r => { if (!map[r.data]) map[r.data] = 0; map[r.data] += r.ml }); return map })()
   const diasMetaAguaMes = Object.values(aguaPorDiaMes).filter(v => v >= aguaMeta).length
-
   const diasMetaPassosMes = passosMes.filter(r => r.passos >= passosMeta).length
-
   const pesoInicioMes = pesosMes[0] ? Number(pesosMes[0].peso) : null
   const pesoFimMes = pesosMes.length > 0 ? Number(pesosMes[pesosMes.length - 1].peso) : null
   const variacaoPesoMes = pesoInicioMes && pesoFimMes ? round1(pesoFimMes - pesoInicioMes) : null
+  const mediaHorasSonoMes = sonoMes.length > 0
+    ? (sonoMes.reduce((s, r) => s + calcularHoras(r.dormiu, r.acordou), 0) / sonoMes.length).toFixed(1)
+    : null
+  const diasSono7hMes = sonoMes.filter(r => calcularHoras(r.dormiu, r.acordou) >= 7).length
+  const mediaQualidadeSonoMes = sonoMes.length > 0
+    ? (sonoMes.reduce((s, r) => s + r.qualidade, 0) / sonoMes.length).toFixed(1)
+    : null
 
-  // Opções de meses disponíveis (últimos 12)
   const mesesOpts = Array.from({ length: 12 }, (_, i) => {
     const d = new Date()
     d.setMonth(d.getMonth() - i)
@@ -208,7 +234,6 @@ export default function Stats({ user }) {
     <div className="stats-section">
       <h2 className="title-divisao">📊 Stats</h2>
 
-      {/* Seletor de aba */}
       <div style={{ display: 'flex', gap: 6, background: '#1a1d21', padding: 5, borderRadius: 12, marginBottom: 16 }}>
         {[{ id: 'semana', label: '📅 Semana' }, { id: 'mes', label: '📆 Mês' }].map(a => (
           <button key={a.id} onClick={() => setAba(a.id)} style={{
@@ -241,10 +266,7 @@ export default function Stats({ user }) {
                 </div>
                 <div style={{ marginTop: 16 }}>
                   <ResponsiveContainer width="100%" height={120}>
-                    <BarChart data={treinos.map(t => ({
-                      name: `${t.treino} ${new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`,
-                      min: Math.round((t.tempo_segundos || 0) / 60)
-                    }))}>
+                    <BarChart data={treinos.map(t => ({ name: `${t.treino} ${new Date(t.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`, min: Math.round((t.tempo_segundos || 0) / 60) }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
                       <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} />
                       <YAxis tick={{ fill: '#64748b', fontSize: 9 }} />
@@ -358,6 +380,44 @@ export default function Stats({ user }) {
             )}
           </div>
 
+          {/* SONO semanal */}
+          <div className="stats-card">
+            <div className="stats-card-title">😴 SONO</div>
+            {sonoComRegistro.length === 0 ? (
+              <p className="empty-msg" style={{ fontSize: 13 }}>Nenhum registro essa semana.</p>
+            ) : (
+              <>
+                <div className="stats-grid-2" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                  <div className="stats-item">
+                    <span>Média horas</span>
+                    <strong style={{ color: parseFloat(mediaHorasSono) >= 7 ? '#10b981' : '#f97316' }}>{mediaHorasSono}h</strong>
+                  </div>
+                  <div className="stats-item">
+                    <span>Dias ≥7h</span>
+                    <strong style={{ color: diasSono7h >= 5 ? '#10b981' : '#f97316' }}>{diasSono7h}/7</strong>
+                  </div>
+                  <div className="stats-item">
+                    <span>Qualidade</span>
+                    <strong style={{ color: parseFloat(mediaQualidadeSono) >= 4 ? '#10b981' : parseFloat(mediaQualidadeSono) >= 3 ? '#f59e0b' : '#ef4444' }}>
+                      {mediaQualidadeSono}/5
+                    </strong>
+                  </div>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <ResponsiveContainer width="100%" height={100}>
+                    <BarChart data={sonoPorDia}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                      <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 9 }} domain={[0, 10]} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [name === 'horas' ? `${v}h` : qualidadeLabel(v)]} />
+                      <Bar dataKey="horas" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Card compartilhável */}
           <div style={{ borderRadius: 20, overflow: 'hidden' }}>
             <div id="share-card" style={{
@@ -378,6 +438,7 @@ export default function Stats({ user }) {
                   { icon: '⚖️', label: 'Peso', val: pesoDados.length > 0 ? `${pesoDados[pesoDados.length-1].peso}kg` : '—', sub: variacaoPeso !== null ? `${variacaoPeso > 0 ? '+' : ''}${variacaoPeso}kg semana` : 'sem registro' },
                   { icon: '💧', label: 'Água', val: `${diasMetaAgua}/7`, sub: 'dias com meta' },
                   { icon: '👟', label: 'Passos', val: mediaPassos > 0 ? mediaPassos.toLocaleString('pt-BR') : '—', sub: 'média diária' },
+                  { icon: '😴', label: 'Sono', val: mediaHorasSono ? `${mediaHorasSono}h` : '—', sub: `${diasSono7h}/7 dias ≥7h` },
                   { icon: '🔥', label: 'Streak', val: `${rpg?.streak || 0} dias`, sub: 'consecutivos' },
                   { icon: '⭐', label: 'XP Total', val: (rpg?.xp || 0).toLocaleString('pt-BR'), sub: `Nível ${rpg?.nivel || 1}` },
                 ].map((item, i) => (
@@ -428,8 +489,7 @@ export default function Stats({ user }) {
                   await navigator.share({ title: 'Meu relatório semanal — DayForge', files: [new File([blob], 'dayforge.png', { type: 'image/png' })] })
                 } else {
                   const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url; a.download = 'dayforge-semana.png'; a.click()
+                  const a = document.createElement('a'); a.href = url; a.download = 'dayforge-semana.png'; a.click()
                   URL.revokeObjectURL(url)
                 }
               })
@@ -448,12 +508,10 @@ export default function Stats({ user }) {
       {/* ABA MÊS */}
       {aba === 'mes' && (
         <>
-          {/* Seletor de mês */}
-          <select
-            value={mesSel}
-            onChange={e => setMesSel(e.target.value)}
-            style={{ width: '100%', background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 10, color: '#f8fafc', fontSize: 13, padding: '10px 12px', marginBottom: 16 }}
-          >
+          <select value={mesSel} onChange={e => setMesSel(e.target.value)} style={{
+            width: '100%', background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 10,
+            color: '#f8fafc', fontSize: 13, padding: '10px 12px', marginBottom: 16
+          }}>
             {mesesOpts.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
           </select>
 
@@ -461,7 +519,6 @@ export default function Stats({ user }) {
             <div style={{ textAlign: 'center', color: '#64748b', paddingTop: 20 }}>Carregando... 📊</div>
           ) : (
             <>
-              {/* Resumo conquistas */}
               <div className="stats-card">
                 <div className="stats-card-title">🏆 RESUMO DO MÊS</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -471,6 +528,8 @@ export default function Stats({ user }) {
                     { icon: '💧', label: 'Meta de água', val: `${diasMetaAguaMes}/${diasNoMes}`, sub: 'dias atingidos' },
                     { icon: '👟', label: 'Meta de passos', val: `${diasMetaPassosMes}/${diasNoMes}`, sub: 'dias atingidos' },
                     { icon: '⚖️', label: 'Variação peso', val: variacaoPesoMes !== null ? `${variacaoPesoMes > 0 ? '+' : ''}${variacaoPesoMes} kg` : '—', sub: pesoInicioMes ? `${pesoInicioMes}kg → ${pesoFimMes}kg` : 'sem registro' },
+                    { icon: '😴', label: 'Sono médio', val: mediaHorasSonoMes ? `${mediaHorasSonoMes}h` : '—', sub: `${diasSono7hMes}/${diasNoMes} dias ≥7h` },
+                    { icon: '🌙', label: 'Qualidade sono', val: mediaQualidadeSonoMes ? `${mediaQualidadeSonoMes}/5` : '—', sub: sonoMes.length > 0 ? qualidadeLabel(Math.round(parseFloat(mediaQualidadeSonoMes))) : 'sem registro' },
                     { icon: '⭐', label: 'XP atual', val: (rpg?.xp || 0).toLocaleString('pt-BR'), sub: `Nível ${rpg?.nivel || 1}` },
                   ].map((item, i) => (
                     <div key={i} style={{ background: '#24282d', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -484,7 +543,6 @@ export default function Stats({ user }) {
                 </div>
               </div>
 
-              {/* Divisões do mês */}
               {Object.keys(divisoesMes).length > 0 && (
                 <div className="stats-card">
                   <div className="stats-card-title">🏋️ TREINOS POR DIVISÃO</div>
@@ -502,15 +560,11 @@ export default function Stats({ user }) {
                 </div>
               )}
 
-              {/* Evolução peso no mês */}
               {pesosMes.length >= 2 && (
                 <div className="stats-card">
                   <div className="stats-card-title">⚖️ EVOLUÇÃO DO PESO</div>
                   <ResponsiveContainer width="100%" height={120}>
-                    <LineChart data={pesosMes.map(p => ({
-                      name: new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-                      peso: Number(p.peso)
-                    }))}>
+                    <LineChart data={pesosMes.map(p => ({ name: new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), peso: Number(p.peso) }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
                       <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} />
                       <YAxis tick={{ fill: '#64748b', fontSize: 9 }} domain={['auto', 'auto']} />
@@ -521,7 +575,25 @@ export default function Stats({ user }) {
                 </div>
               )}
 
-              {totalTreinosMes === 0 && pesosMes.length === 0 && diasMetaAguaMes === 0 && (
+              {sonoMes.length >= 2 && (
+                <div className="stats-card">
+                  <div className="stats-card-title">😴 EVOLUÇÃO DO SONO</div>
+                  <ResponsiveContainer width="100%" height={120}>
+                    <BarChart data={sonoMes.map(r => ({
+                      name: new Date(r.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                      horas: calcularHoras(r.dormiu, r.acordou)
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                      <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 9 }} domain={[0, 10]} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={v => [`${v}h`]} />
+                      <Bar dataKey="horas" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {totalTreinosMes === 0 && pesosMes.length === 0 && diasMetaAguaMes === 0 && sonoMes.length === 0 && (
                 <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, paddingTop: 20 }}>
                   Nenhum dado registrado neste mês ainda.
                 </p>
