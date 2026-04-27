@@ -30,6 +30,7 @@ import Stats from './Stats'
 import HomeWP from './HomeWP'
 import SmartPocket from './SmartPocket'
 import RPG from './RPG'
+import Sono from './Sono'
 import { ganharXP } from './lib/rpg'
 import { NOTIFICACOES, agendarNotificacoes, cancelarNotificacoes, notificacoesSuportadas } from './lib/notifications'
 
@@ -493,16 +494,17 @@ const buscarDashboard = async () => {
           {showMore && (
             <div className="bottom-nav-more-menu">
               {[
-                { id: 'habitos', icon: '✅', label: 'Hábitos'         },
+                { id: 'habitos',     icon: '✅', label: 'Hábitos'     },
                 { id: 'agua',        icon: '💧', label: 'Água'        },
                 { id: 'peso',        icon: '⚖️', label: 'Peso'        },
                 { id: 'dieta',       icon: '🥗', label: 'Dieta'       },
                 { id: 'suplementos', icon: '💊', label: 'Suplementos' },
                 { id: 'macros',      icon: '🍽️', label: 'Macros'      },
-                { id: 'passos', icon: '👟', label: 'Passos' },
-                { id: 'stats', icon: '📊', label: 'Stats' },
+                { id: 'passos',      icon: '👟', label: 'Passos'      },
+                { id: 'sono',        icon: '😴', label: 'Sono'        },
+                { id: 'stats',       icon: '📊', label: 'Stats'       },
                 { id: 'smartpocket', icon: '💰', label: 'SmartPocket' },
-                { id: 'rpg', icon: '⚔️', label: 'RPG' },
+                { id: 'rpg',         icon: '⚔️', label: 'RPG'         },
 
               ].map(item => (
                 <button key={item.id} className={`more-menu-item ${abaPrincipal === item.id ? 'active' : ''}`}
@@ -574,6 +576,7 @@ const buscarDashboard = async () => {
         <SmartPocket user={user} />}
 
     {abaPrincipal === 'rpg' && <RPG user={user} />}
+    {abaPrincipal === 'sono' && <Sono user={user} />}
 
     {abaPrincipal === 'treino' && (
       <>
