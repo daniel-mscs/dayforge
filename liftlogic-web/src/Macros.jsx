@@ -472,34 +472,31 @@ export default function Macros({ user, onAjuda }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {registrosClonar.map(r => (
                   <div key={r.id} style={{
-                    background: '#24282d', borderRadius: 10, padding: '10px 14px',
-                    display: 'flex', alignItems: 'center', gap: 10
-                  }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#f8fafc' }}>{r.nome}</div>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>
-                        {REFEICOES_OPTS.find(o => o.id === r.refeicao)?.label || r.refeicao}
-                      </div>
-                    </div>
-                    <input
-                      type="number"
-                      value={gramasClonar[r.id] ?? r.gramas}
-                      onChange={e => setGramasClonar(p => ({ ...p, [r.id]: e.target.value }))}
-                      style={{ width: 60, textAlign: 'center', fontSize: 12 }}
-                    />
-                    <span style={{ fontSize: 11, color: '#64748b' }}>g</span>
+                                      background: '#24282d', borderRadius: 10, padding: '10px 14px',
+                                      display: 'flex', flexDirection: 'column', gap: 8
+                                    }}>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: '#f8fafc' }}>{r.nome}</div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <input
+                                          type="number"
+                                          value={gramasClonar[r.id] ?? r.gramas}
+                                          onChange={e => setGramasClonar(p => ({ ...p, [r.id]: e.target.value }))}
+                                          style={{ width: 70, textAlign: 'center', fontSize: 12, flexShrink: 0 }}
+                                        />
+                                        <span style={{ fontSize: 11, color: '#64748b', flexShrink: 0 }}>g</span>
                                         <select
                                           value={gramasClonar[r.id + '_ref'] ?? r.refeicao}
                                           onChange={e => setGramasClonar(p => ({ ...p, [r.id + '_ref']: e.target.value }))}
-                                          style={{ fontSize: 11, background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 6, color: '#f8fafc', padding: '4px 6px' }}
+                                          style={{ flex: 1, fontSize: 11, background: '#1a1d21', border: '1px solid #ffffff0d', borderRadius: 6, color: '#f8fafc', padding: '4px 6px' }}
                                         >
                                           {REFEICOES_OPTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                                         </select>
                                         <button onClick={() => clonarAlimento(r)} style={{
-                      background: '#6366f1', border: 'none', borderRadius: 8,
-                      color: '#fff', fontSize: 11, fontWeight: 700, padding: '5px 10px', cursor: 'pointer'
-                    }}>+ Clonar</button>
-                  </div>
+                                          background: '#6366f1', border: 'none', borderRadius: 8,
+                                          color: '#fff', fontSize: 11, fontWeight: 700, padding: '6px 12px', cursor: 'pointer', flexShrink: 0
+                                        }}>+ Clonar</button>
+                                      </div>
+                                    </div>
                 ))}
               </div>
             )}
