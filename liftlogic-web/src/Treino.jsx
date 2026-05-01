@@ -43,6 +43,8 @@ import RPG from "./RPG";
 import Sono from "./Sono";
 import { ganharXP } from "./lib/rpg";
 import { toast } from "./lib/toast";
+import Tour from "./lib/tour";
+import { useTour } from "./lib/useTour";
 import {
   NOTIFICACOES,
   agendarNotificacoes,
@@ -166,7 +168,9 @@ function Treino({ logout, user }) {
   const [subAbaTreino, setSubAbaTreino] = useState("exercicios");
   const [subAbaPerfil, setSubAbaPerfil] = useState("perfil");
   const [ajudaAncora, setAjudaAncora] = useState(null);
-  const [notifAtivas, setNotifAtivas] = useState(() => {
+  const { ativo: tourAtivo, fechar: fecharTour } = useTour();
+
+    const [notifAtivas, setNotifAtivas] = useState(() => {
     const salvo = localStorage.getItem("df_notif_ativas");
     return salvo ? JSON.parse(salvo) : NOTIFICACOES.map((n) => n.id);
   });
@@ -718,8 +722,16 @@ function Treino({ logout, user }) {
   const tmb = calcularTMB();
 
   return (
-    <div className="container">
-      {modalResumo && (
+      <div className="container">
+        {tourAtivo && <Tour onFechar={fecharTour} onNavegar={(aba) => {
+          if (aba === "perfil") {
+            setAbaPrincipal("perfil");
+            setSubAbaPerfil("ajuda");
+          } else {
+            setAbaPrincipal(aba);
+          }
+        }} />}
+        {modalResumo && (
         <div className="modal-overlay">
           <div
             className="modal-resumo"
