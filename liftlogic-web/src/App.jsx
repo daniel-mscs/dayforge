@@ -24,11 +24,11 @@ function App() {
       setSession(session);
       if (session) {
         const { data: perfil } = await supabase
-          .from("perfil")
-          .select("nome")
-          .eq("user_id", session.user.id)
-          .single();
-        if (!perfil?.nome) setPrecisaOnboarding(true);
+                  .from("perfil")
+                  .select("nome, data_nascimento")
+                  .eq("user_id", session.user.id)
+                  .single();
+                if (!perfil?.nome || !perfil?.data_nascimento) setPrecisaOnboarding(true);
       }
       setCarregando(false);
     });

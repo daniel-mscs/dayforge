@@ -5,13 +5,13 @@ export default function Onboarding({ user, onConcluir }) {
   const [etapa, setEtapa] = useState(1);
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState({
-    nome: "",
-    peso: "",
-    altura: "",
-    idade: "",
-    sexo: "M",
-    objetivo: "manter",
-  });
+      nome: "",
+      peso: "",
+      altura: "",
+      data_nascimento: "",
+      sexo: "M",
+      objetivo: "manter",
+    });
 
   const set = (campo, val) => setForm((p) => ({ ...p, [campo]: val }));
 
@@ -25,15 +25,18 @@ export default function Onboarding({ user, onConcluir }) {
     }
     setSalvando(true);
     const { error } = await supabase.from("perfil").upsert(
-      {
-        user_id: user.id,
-        nome: form.nome.trim(),
-        peso: form.peso ? parseFloat(form.peso) : null,
-        altura: form.altura ? parseFloat(form.altura) : null,
-        idade: form.idade ? parseInt(form.idade) : null,
-        sexo: form.sexo,
-        objetivo: form.objetivo,
-      },
+          {
+            user_id: user.id,
+            nome: form.nome.trim(),
+            peso: form.peso ? parseFloat(form.peso) : null,
+            altura: form.altura ? parseFloat(form.altura) : null,
+            idade: form.data_nascimento
+              ? new Date().getFullYear() - new Date(form.data_nascimento).getFullYear()
+              : null,
+            data_nascimento: form.data_nascimento || null,
+            sexo: form.sexo,
+            objetivo: form.objetivo,
+          },
       { onConflict: "user_id" },
     );
     if (error) {
@@ -213,26 +216,26 @@ export default function Onboarding({ user, onConcluir }) {
                   style={{ width: "100%" }}
                 />
               </div>
-              <div>
-                <label
-                  style={{
-                    fontSize: 11,
-                    color: "#64748b",
-                    fontWeight: 700,
-                    display: "block",
-                    marginBottom: 6,
-                  }}
-                >
-                  IDADE
-                </label>
-                <input
-                  type="number"
-                  placeholder="Ex: 25"
-                  value={form.idade}
-                  onChange={(e) => set("idade", e.target.value)}
-                  style={{ width: "100%" }}
-                />
-              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                              <label
+                                style={{
+                                  fontSize: 11,
+                                  color: "#64748b",
+                                  fontWeight: 700,
+                                  display: "block",
+                                  marginBottom: 6,
+                                }}
+                              >
+                                DATA DE NASCIMENTO
+                              </label>
+                              <input
+                                type="date"
+                                value={form.data_nascimento}
+                                max={new Date().toISOString().split("T")[0]}
+                                onChange={(e) => set("data_nascimento", e.target.value)}
+                                style={{ width: "100%", colorScheme: "dark" }}
+                              />
+                            </div>
               <div>
                 <label
                   style={{
