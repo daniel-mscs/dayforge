@@ -3,5 +3,8 @@
     "html2canvas": "^1.4.1",
     "recharts": "^3.8.1",
     "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3"
   }
 }
