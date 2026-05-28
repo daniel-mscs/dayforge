@@ -1,7 +1,5 @@
 import React from "react";
 import { toast } from "./lib/toast";
-import React from "react";
-import { toast } from "./lib/toast";
 import NotificacoesTab from "./NotificacoesTab";
 
 export default function PerfilTab({
