@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "./lib/toast";
 import {
+  NOTIFICACOES_PADRAO,
   getNotificacoes,
   salvarNotificacoes,
   resetarNotificacoes,
@@ -15,7 +16,9 @@ export default function NotificacoesTab({
   notifPermissao,
   setNotifPermissao,
 }) {
-  const [notifs, setNotifs] = useState(() => getNotificacoes());
+  const [notifs, setNotifs] = useState(() => {
+      try { return getNotificacoes(); } catch { return NOTIFICACOES_PADRAO; }
+    });
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({});
 
@@ -83,20 +86,19 @@ export default function NotificacoesTab({
       </div>
 
       {!notificacoesSuportadas() && (
-        <div
-          style={{
-            background: "#ef444415",
-            border: "1px solid #ef444433",
-            borderRadius: 12,
-            padding: 14,
-            fontSize: 13,
-            color: "#ef4444",
-          }}
-        >
-          ⚠️ Notificações só funcionam no app Android. No navegador não é
-          suportado.
-        </div>
-      )}
+              <div
+                style={{
+                  background: "#f59e0b15",
+                  border: "1px solid #f59e0b33",
+                  borderRadius: 12,
+                  padding: 14,
+                  fontSize: 13,
+                  color: "#f59e0b",
+                }}
+              >
+                ⚠️ Notificações ativas apenas no app Android. Você pode editar os horários aqui mesmo assim.
+              </div>
+            )}
 
       {notificacoesSuportadas() && notifPermissao === "denied" && (
         <div
