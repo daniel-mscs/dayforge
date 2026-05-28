@@ -1,115 +1,129 @@
-export const NOTIFICACOES = [
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { Capacitor } from "@capacitor/core";
+
+export const NOTIFICACOES_PADRAO = [
   {
-    id: "suplementos",
-    hora: 8,
+    id: 1,
+    hora: 7,
     minuto: 0,
-    titulo: "💊 Suplementos",
-    corpo: "Hora de tomar seus suplementos!",
+    titulo: "⚖️ Peso",
+    corpo: "Hora de se pesar em jejum!",
   },
   {
-    id: "agua",
+    id: 2,
+    hora: 7,
+    minuto: 30,
+    titulo: "☀️ Café + Água",
+    corpo: "Hora do café da manhã e hidratação!",
+  },
+  {
+    id: 3,
     hora: 10,
     minuto: 0,
     titulo: "💧 Hidratação",
-    corpo: "Você já bebeu água hoje?",
+    corpo: "Não esquece da água!",
   },
   {
-    id: "agua2",
+    id: 4,
+    hora: 12,
+    minuto: 0,
+    titulo: "🍽️ Almoço + Macros",
+    corpo: "Hora do almoço! Registra os macros.",
+  },
+  {
+    id: 5,
     hora: 14,
     minuto: 0,
     titulo: "💧 Hidratação",
-    corpo: "Não esquece da água da tarde!",
+    corpo: "Água da tarde!",
   },
   {
-    id: "treino",
-    hora: 17,
+    id: 6,
+    hora: 16,
     minuto: 0,
-    titulo: "🏋️ Treino",
-    corpo: "Bora treinar hoje?",
+    titulo: "☕ Café + Água",
+    corpo: "Café da tarde e hidratação!",
   },
   {
-    id: "macros",
-    hora: 20,
+    id: 7,
+    hora: 23,
     minuto: 0,
-    titulo: "🍽️ Macros",
-    corpo: "Registrou suas refeições hoje?",
-  },
-  {
-    id: "peso",
-    hora: 21,
-    minuto: 0,
-    titulo: "⚖️ Peso",
-    corpo: "Lembre de pesar amanhã cedo em jejum!",
-  },
-  {
-    id: "habitos",
-    hora: 22,
-    minuto: 0,
-    titulo: "✅ Hábitos",
-    corpo: "Completou seus hábitos hoje?",
+    titulo: "👟 Passos",
+    corpo: "Registrou seus passos hoje?",
   },
 ];
 
-export async function pedirPermissao() {
-  if (!("Notification" in window)) return false;
-  if (Notification.permission === "granted") return true;
-  const result = await Notification.requestPermission();
-  return result === "granted";
+const STORAGE_KEY = "df_notificacoes_custom";
+
+export function getNotificacoes() {
+  try {
+    const salvo = localStorage.getItem(STORAGE_KEY);
+    return salvo ? JSON.parse(salvo) : NOTIFICACOES_PADRAO;
+  } catch {
+    return NOTIFICACOES_PADRAO;
+  }
 }
 
-export async function agendarNotificacoes(notificacoesAtivas) {
-  const permitido = await pedirPermissao();
-  if (!permitido) return false;
+export function salvarNotificacoes(notifs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(notifs));
+}
 
-  // Cancela agendamentos antigos
-  cancelarNotificacoes();
+export function resetarNotificacoes() {
+  localStorage.removeItem(STORAGE_KEY);
+  return NOTIFICACOES_PADRAO;
+}
 
-  const agora = new Date();
+// Mantém compatibilidade com o código existente
+export const NOTIFICACOES = getNotificacoes();
 
-  notificacoesAtivas.forEach((notif) => {
+export function notificacoesSuportadas() {
+  return Capacitor.isNativePlatform();
+}
+
+export async function pedirPermissao() {
+  if (!Capacitor.isNativePlatform()) return false;
+  const { display } = await LocalNotifications.requestPermissions();
+  return display === "granted";
+}
+
+export async function agendarNotificacoes(idsAtivos) {
+  if (!Capacitor.isNativePlatform()) return false;
+
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return false;
+
+  await cancelarNotificacoes();
+
+  const todasNotifs = getNotificacoes();
+  const notifsFiltradas = todasNotifs.filter((n) => idsAtivos.includes(n.id));
+
+  const agendamentos = notifsFiltradas.map((n) => {
+    const agora = new Date();
     const alvo = new Date();
-    alvo.setHours(notif.hora, notif.minuto, 0, 0);
-
-    // Se já passou hoje, agenda pra amanhã
+    alvo.setHours(n.hora, n.minuto, 0, 0);
     if (alvo <= agora) alvo.setDate(alvo.getDate() + 1);
 
-    const delay = alvo.getTime() - agora.getTime();
-
-    const timerId = setTimeout(() => {
-      new Notification(notif.titulo, {
-        body: notif.corpo,
-        icon: "/pwa-192x192.png",
-        badge: "/pwa-192x192.png",
-        tag: notif.id,
-      });
-      // Reagenda pra próximo dia (24h)
-      const timer24h = setTimeout(
-        () => {
-          agendarNotificacoes(notificacoesAtivas);
-        },
-        24 * 60 * 60 * 1000,
-      );
-      salvarTimer(notif.id + "_24h", timer24h);
-    }, delay);
-
-    salvarTimer(notif.id, timerId);
+    return {
+      id: n.id,
+      title: n.titulo,
+      body: n.corpo,
+      smallIcon: "ic_launcher",
+      schedule: {
+        at: alvo,
+        repeats: true,
+        every: "day",
+      },
+    };
   });
 
+  await LocalNotifications.schedule({ notifications: agendamentos });
   return true;
 }
 
-function salvarTimer(id, timerId) {
-  const timers = JSON.parse(localStorage.getItem("df_notif_timers") || "{}");
-  timers[id] = timerId;
-  localStorage.setItem("df_notif_timers", JSON.stringify(timers));
-}
-
-export function cancelarNotificacoes() {
-  const timers = JSON.parse(localStorage.getItem("df_notif_timers") || "{}");
-  Object.values(timers).forEach((id) => clearTimeout(id));
-  localStorage.removeItem("df_notif_timers");
-}
-
-export function notificacoesSuportadas() {
-  return "Notification" in window;
+export async function cancelarNotificacoes() {
+  if (!Capacitor.isNativePlatform()) return;
+  const pending = await LocalNotifications.getPending();
+  if (pending.notifications.length > 0) {
+    await LocalNotifications.cancel({ notifications: pending.notifications });
+  }
 }
