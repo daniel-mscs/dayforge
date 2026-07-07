@@ -11,6 +11,18 @@ function App() {
   const [precisaOnboarding, setPrecisaOnboarding] = useState(false);
 
   useEffect(() => {
+    import("./lib/notifications").then(
+      ({ agendarNotificacoes, NOTIFICACOES_PADRAO }) => {
+        const salvo = localStorage.getItem("df_notif_ativas");
+        const notifAtivas = salvo
+          ? JSON.parse(salvo)
+          : NOTIFICACOES_PADRAO.map((n) => n.id);
+        agendarNotificacoes(notifAtivas);
+      },
+    );
+  }, []);
+
+  useEffect(() => {
     // Listener primeiro — captura qualquer mudança incluindo login
     const {
       data: { subscription },

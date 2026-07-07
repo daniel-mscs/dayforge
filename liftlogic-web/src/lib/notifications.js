@@ -1,4 +1,4 @@
-import { LocalNotifications } from "@capacitor/local-notifications";
+'import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 
 export const NOTIFICACOES_PADRAO = [
@@ -94,7 +94,9 @@ export async function agendarNotificacoes(idsAtivos) {
 
   await cancelarNotificacoes();
 
-  const todasNotifs = getNotificacoes();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const todasNotifs = getNotificacoes();
   const notifsFiltradas = todasNotifs.filter((n) => idsAtivos.includes(n.id));
 
   const agendamentos = notifsFiltradas.map((n) => {
@@ -112,12 +114,15 @@ export async function agendarNotificacoes(idsAtivos) {
         at: alvo,
         repeats: true,
         every: "day",
+        allowWhileIdle: true,
       },
     };
   });
 
-  await LocalNotifications.schedule({ notifications: agendamentos });
-  return true;
+  const resultado = await LocalNotifications.schedule({ notifications: agendamentos });
+    console.log("DayForge agendamentos:", JSON.stringify(agendamentos));
+    console.log("DayForge resultado:", JSON.stringify(resultado));
+    return true;
 }
 
 export async function cancelarNotificacoes() {
@@ -127,3 +132,4 @@ export async function cancelarNotificacoes() {
     await LocalNotifications.cancel({ notifications: pending.notifications });
   }
 }
+'

@@ -17,8 +17,12 @@ export default function NotificacoesTab({
   setNotifPermissao,
 }) {
   const [notifs, setNotifs] = useState(() => {
-      try { return getNotificacoes(); } catch { return NOTIFICACOES_PADRAO; }
-    });
+    try {
+      return getNotificacoes();
+    } catch {
+      return NOTIFICACOES_PADRAO;
+    }
+  });
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState({});
 
@@ -47,12 +51,14 @@ export default function NotificacoesTab({
     setNotifs(atualizadas);
     salvarNotificacoes(atualizadas);
     setEditando(null);
+    agendarNotificacoes(notifAtivas);
     toast("Notificação atualizada!", "success");
   };
 
   const resetar = () => {
     const padrao = resetarNotificacoes();
     setNotifs(padrao);
+    agendarNotificacoes(notifAtivas);
     toast("Notificações resetadas!", "info");
   };
 
@@ -86,19 +92,20 @@ export default function NotificacoesTab({
       </div>
 
       {!notificacoesSuportadas() && (
-              <div
-                style={{
-                  background: "#f59e0b15",
-                  border: "1px solid #f59e0b33",
-                  borderRadius: 12,
-                  padding: 14,
-                  fontSize: 13,
-                  color: "#f59e0b",
-                }}
-              >
-                ⚠️ Notificações ativas apenas no app Android. Você pode editar os horários aqui mesmo assim.
-              </div>
-            )}
+        <div
+          style={{
+            background: "#f59e0b15",
+            border: "1px solid #f59e0b33",
+            borderRadius: 12,
+            padding: 14,
+            fontSize: 13,
+            color: "#f59e0b",
+          }}
+        >
+          ⚠️ Notificações ativas apenas no app Android. Você pode editar os
+          horários aqui mesmo assim.
+        </div>
+      )}
 
       {notificacoesSuportadas() && notifPermissao === "denied" && (
         <div
@@ -306,6 +313,7 @@ export default function NotificacoesTab({
                             "df_notif_ativas",
                             JSON.stringify(novo),
                           );
+                          agendarNotificacoes(novo);
                         }}
                         style={{
                           width: 40,
