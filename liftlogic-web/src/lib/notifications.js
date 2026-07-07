@@ -1,4 +1,4 @@
-'import { LocalNotifications } from "@capacitor/local-notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 
 export const NOTIFICACOES_PADRAO = [
@@ -132,4 +132,3 @@ export async function cancelarNotificacoes() {
     await LocalNotifications.cancel({ notifications: pending.notifications });
   }
 }
-'
