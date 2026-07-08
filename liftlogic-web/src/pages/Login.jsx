@@ -125,7 +125,7 @@ export default function Login({ onLoginSuccess }) {
                 left: 0,
                 width: 100,
                 height: 200,
-                transformOrigin: "65px 0px",
+                transformOrigin: "66px 0px",
                 animation:
                   "hammerSwing 1.2s cubic-bezier(0.4,0,0.2,1) infinite",
               }}
