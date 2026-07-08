@@ -340,13 +340,108 @@ export default function Onboarding({ user, onConcluir }) {
                   >
                     DATA DE NASCIMENTO
                   </label>
-                  <input
-                    type="date"
-                    value={form.data_nascimento}
-                    max={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => set("data_nascimento", e.target.value)}
-                    style={{ width: "100%", colorScheme: "dark" }}
-                  />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 2fr 1fr",
+                      gap: 8,
+                    }}
+                  >
+                    <select
+                      value={
+                        form.data_nascimento
+                          ? form.data_nascimento.split("-")[2]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const parts = (form.data_nascimento || "--").split("-");
+                        const ano = parts[0] || new Date().getFullYear();
+                        const mes = parts[1] || "01";
+                        set(
+                          "data_nascimento",
+                          e.target.value
+                            ? `${ano}-${mes}-${e.target.value.padStart(2, "0")}`
+                            : "",
+                        );
+                      }}
+                      style={{ textAlign: "center", colorScheme: "dark" }}
+                    >
+                      <option value="">Dia</option>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                        <option key={d} value={String(d).padStart(2, "0")}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={
+                        form.data_nascimento
+                          ? form.data_nascimento.split("-")[1]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const parts = (form.data_nascimento || "--").split("-");
+                        const ano = parts[0] || new Date().getFullYear();
+                        const dia = parts[2] || "01";
+                        set(
+                          "data_nascimento",
+                          e.target.value
+                            ? `${ano}-${e.target.value}-${dia}`
+                            : "",
+                        );
+                      }}
+                      style={{ colorScheme: "dark" }}
+                    >
+                      <option value="">Mês</option>
+                      {[
+                        "Janeiro",
+                        "Fevereiro",
+                        "Março",
+                        "Abril",
+                        "Maio",
+                        "Junho",
+                        "Julho",
+                        "Agosto",
+                        "Setembro",
+                        "Outubro",
+                        "Novembro",
+                        "Dezembro",
+                      ].map((m, i) => (
+                        <option key={i} value={String(i + 1).padStart(2, "0")}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={
+                        form.data_nascimento
+                          ? form.data_nascimento.split("-")[0]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const parts = (form.data_nascimento || "--").split("-");
+                        const mes = parts[1] || "01";
+                        const dia = parts[2] || "01";
+                        set(
+                          "data_nascimento",
+                          e.target.value
+                            ? `${e.target.value}-${mes}-${dia}`
+                            : "",
+                        );
+                      }}
+                      style={{ textAlign: "center", colorScheme: "dark" }}
+                    >
+                      <option value="">Ano</option>
+                      {Array.from(
+                        { length: 100 },
+                        (_, i) => new Date().getFullYear() - i,
+                      ).map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
                   <label

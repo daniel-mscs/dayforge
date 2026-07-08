@@ -4645,3 +4645,10 @@ input::-webkit-inner-spin-button {
 .birthday-star:nth-child(4) {
   animation-delay: 0.9s;
 }
+
+@keyframes hammerSwing {
+  0%   { transform: rotate(-40deg); }
+  42%  { transform: rotate(10deg); }
+  48%  { transform: rotate(10deg); }
+  100% { transform: rotate(-40deg); }
+}

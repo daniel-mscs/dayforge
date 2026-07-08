@@ -183,7 +183,7 @@ export default function Habitos({ user, compact = false, onAjuda }) {
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 20 }}>
-        Forjando seus hábitos... 🧱
+        Forjando seus hábitos...
       </div>
     );
 

@@ -104,14 +104,75 @@ export default function Login({ onLoginSuccess }) {
 
       <div className="login-card">
         <div className="login-logo-wrap">
-          <div className="login-logo">🧱</div>
+          <div
+            className="login-logo"
+            style={{
+              position: "relative",
+              width: 100,
+              height: 120,
+              margin: "0 auto",
+            }}
+          >
+            <img
+              src="/anvil.png"
+              alt="bigorna"
+              style={{ position: "absolute", bottom: 0, left: 0, width: 100 }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 100,
+                height: 200,
+                transformOrigin: "65px 0px",
+                animation:
+                  "hammerSwing 1.2s cubic-bezier(0.4,0,0.2,1) infinite",
+              }}
+            >
+              <svg width="50" height="100" viewBox="0 0 100 120">
+                <rect
+                  x="42"
+                  y="22"
+                  width="9"
+                  height="36"
+                  rx="3"
+                  fill="#92400e"
+                />
+                <rect
+                  x="22"
+                  y="4"
+                  width="54"
+                  height="22"
+                  rx="4"
+                  fill="#e2e8f0"
+                />
+                <rect
+                  x="22"
+                  y="4"
+                  width="54"
+                  height="9"
+                  rx="3"
+                  fill="#f8fafc"
+                />
+                <rect
+                  x="22"
+                  y="20"
+                  width="54"
+                  height="7"
+                  rx="2"
+                  fill="#cbd5e1"
+                />
+              </svg>
+            </div>
+          </div>
           <div className="login-logo-ring" />
         </div>
 
         <h1 className="login-title">DayForge</h1>
         <p className="login-subtitle">
           {modo === "login"
-            ? "Forje seu dia. Um tijolo por vez."
+            ? "Forje a melhor versão de você."
             : "Crie sua conta e comece a construir."}
         </p>
 

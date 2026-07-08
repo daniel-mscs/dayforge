@@ -94,9 +94,9 @@ export async function agendarNotificacoes(idsAtivos) {
 
   await cancelarNotificacoes();
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
+  await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const todasNotifs = getNotificacoes();
+  const todasNotifs = getNotificacoes();
   const notifsFiltradas = todasNotifs.filter((n) => idsAtivos.includes(n.id));
 
   const agendamentos = notifsFiltradas.map((n) => {
@@ -119,10 +119,12 @@ export async function agendarNotificacoes(idsAtivos) {
     };
   });
 
-  const resultado = await LocalNotifications.schedule({ notifications: agendamentos });
-    console.log("DayForge agendamentos:", JSON.stringify(agendamentos));
-    console.log("DayForge resultado:", JSON.stringify(resultado));
-    return true;
+  const resultado = await LocalNotifications.schedule({
+    notifications: agendamentos,
+  });
+  console.log("DayForge agendamentos:", JSON.stringify(agendamentos));
+  console.log("DayForge resultado:", JSON.stringify(resultado));
+  return true;
 }
 
 export async function cancelarNotificacoes() {

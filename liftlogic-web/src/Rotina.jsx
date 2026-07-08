@@ -159,8 +159,8 @@ export default function Rotina({ user }) {
   const [dias, setDias] = useState([]);
   const [tarefas, setTarefas] = useState({});
   const [carregando, setCarregando] = useState(true);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate] = useState("");
+  const [endDate] = useState("");
   const [gerando, setGerando] = useState(false);
   const [novasTarefas, setNovasTarefas] = useState({});
   const [editando, setEditando] = useState(null);
@@ -171,6 +171,11 @@ export default function Rotina({ user }) {
     const h = new Date();
     return { ano: h.getFullYear(), mes: h.getMonth() };
   });
+  const [mesClone, setMesClone] = useState(() => {
+    const h = new Date();
+    return { ano: h.getFullYear(), mes: h.getMonth() };
+  });
+  const [diasSelecionadosClone, setDiasSelecionadosClone] = useState([]);
 
   const hoje = formatarData(new Date());
 
@@ -189,11 +194,50 @@ export default function Rotina({ user }) {
       .eq("user_id", user.id)
       .order("data", { ascending: true });
 
+    const anoAtual = new Date().getFullYear();
+    const fimAno = `${anoAtual}-12-31`;
+
     if (!diasData || diasData.length === 0) {
-      setDias([]);
+      const inicioHoje = formatarData(new Date());
+      const datas = [];
+      let cur = new Date(inicioHoje + "T00:00:00");
+      const fim = new Date(fimAno + "T00:00:00");
+      while (cur <= fim) {
+        datas.push(formatarData(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      await supabase
+        .from("rotina_dias")
+        .insert(datas.map((data) => ({ user_id: user.id, data })));
+      const { data: diasNovos } = await supabase
+        .from("rotina_dias")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("data", { ascending: true });
+      setDias(diasNovos || []);
       setTarefas({});
+      const diaHoje = (diasNovos || []).find((d) => d.data === hoje);
+      if (diaHoje) setDiaSelecionado(diaHoje.id);
+      const h = new Date();
+      setMesAtual({ ano: h.getFullYear(), mes: h.getMonth() });
       setCarregando(false);
       return;
+    }
+
+    const ultimoDia = diasData[diasData.length - 1].data;
+    if (ultimoDia < fimAno) {
+      const proximoDia = new Date(ultimoDia + "T00:00:00");
+      proximoDia.setDate(proximoDia.getDate() + 1);
+      const datas = [];
+      let cur = new Date(formatarData(proximoDia) + "T00:00:00");
+      const fim = new Date(fimAno + "T00:00:00");
+      while (cur <= fim) {
+        datas.push(formatarData(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      await supabase
+        .from("rotina_dias")
+        .insert(datas.map((data) => ({ user_id: user.id, data })));
     }
 
     setDias(diasData);
@@ -400,11 +444,18 @@ export default function Rotina({ user }) {
     toast("Rotina resetada!", "info");
   };
 
-  const confirmarClone = async (diaDestinoId) => {
-    if (clonando) return;
+  const toggleDiaClone = (diaId) => {
+    setDiasSelecionadosClone((prev) =>
+      prev.includes(diaId)
+        ? prev.filter((id) => id !== diaId)
+        : [...prev, diaId],
+    );
+  };
+
+  const confirmarClone = async () => {
+    if (clonando || diasSelecionadosClone.length === 0) return;
     setClonando(true);
     const diaOrigemId = modalClone;
-    setModalClone(null);
     const tarefasOrigem = PERIODOS.flatMap((p) =>
       (tarefas[diaOrigemId]?.[p] || []).map((t) => ({ ...t, periodo: p })),
     );
@@ -413,14 +464,21 @@ export default function Rotina({ user }) {
       setClonando(false);
       return;
     }
-    const novas = tarefasOrigem.map((t) => ({
-      user_id: user.id,
-      dia_id: diaDestinoId,
-      periodo: t.periodo,
-      texto: t.texto,
-      concluida: false,
-      ordem: tarefas[diaDestinoId]?.[t.periodo]?.length || 0,
-    }));
+    await supabase
+      .from("rotina_tarefas")
+      .delete()
+      .in("dia_id", diasSelecionadosClone);
+
+    const novas = diasSelecionadosClone.flatMap((diaDestinoId) =>
+      tarefasOrigem.map((t, i) => ({
+        user_id: user.id,
+        dia_id: diaDestinoId,
+        periodo: t.periodo,
+        texto: t.texto,
+        concluida: false,
+        ordem: i,
+      })),
+    );
     const { data, error } = await supabase
       .from("rotina_tarefas")
       .insert(novas)
@@ -432,6 +490,9 @@ export default function Rotina({ user }) {
     }
     setTarefas((prev) => {
       const novo = { ...prev };
+      diasSelecionadosClone.forEach((diaId) => {
+        novo[diaId] = {};
+      });
       data.forEach((t) => {
         if (!novo[t.dia_id]) novo[t.dia_id] = {};
         if (!novo[t.dia_id][t.periodo]) novo[t.dia_id][t.periodo] = [];
@@ -439,8 +500,14 @@ export default function Rotina({ user }) {
       });
       return novo;
     });
+    setDiasSelecionadosClone([]);
+    setModalClone(null);
     setClonando(false);
-    toast(`${data.length} tarefa(s) clonada(s)!`, "success");
+    toast(
+      `Tarefas clonadas para ${diasSelecionadosClone.length} dia(s)!`,
+      "success",
+    );
+    buscarRotina();
   };
 
   const handleDragEnd = async (diaId, periodo, event) => {
@@ -472,143 +539,295 @@ export default function Rotina({ user }) {
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 40 }}>
-        Forjando sua rotina... 🧱
+        Forjando sua rotina...
       </div>
     );
 
   return (
     <div className="rotina-section">
       {/* Modal clone */}
-      {modalClone && (
-        <div className="modal-overlay" onClick={() => setModalClone(null)}>
-          <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontSize: "1rem", marginBottom: 16 }}>
-              ⧉ Clonar tarefas para...
-            </h2>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                maxHeight: 360,
-                overflowY: "auto",
-              }}
-            >
-              {dias
-                .filter((d) => d.id !== modalClone)
-                .map((d) => (
+      {modalClone &&
+        (() => {
+          const mesIdxClone = mesesDisponiveis.findIndex(
+            (m) => m.ano === mesClone.ano && m.mes === mesClone.mes,
+          );
+          const podePrevClone = mesIdxClone > 0;
+          const podeNextClone = mesIdxClone < mesesDisponiveis.length - 1;
+          const diasDoMesClone = dias.filter((d) => {
+            const dt = new Date(d.data + "T00:00:00");
+            return (
+              dt.getFullYear() === mesClone.ano &&
+              dt.getMonth() === mesClone.mes
+            );
+          });
+          const primeiroDiaClone = new Date(
+            mesClone.ano,
+            mesClone.mes,
+            1,
+          ).getDay();
+          const diasNoMesClone = new Date(
+            mesClone.ano,
+            mesClone.mes + 1,
+            0,
+          ).getDate();
+          const todasDatasClone = Array.from(
+            { length: diasNoMesClone },
+            (_, i) => {
+              const d = new Date(mesClone.ano, mesClone.mes, i + 1);
+              return formatarData(d);
+            },
+          );
+          const cellsClone = [
+            ...Array.from({ length: primeiroDiaClone }, (_, i) => ({
+              vazio: true,
+              key: `pre-${i}`,
+            })),
+            ...todasDatasClone.map((data) => {
+              const diaObj = diasDoMesClone.find((d) => d.data === data);
+              return { vazio: false, data, diaObj };
+            }),
+          ];
+          const restoClone = cellsClone.length % 7;
+          if (restoClone !== 0)
+            for (let i = 0; i < 7 - restoClone; i++)
+              cellsClone.push({ vazio: true, key: `pos-${i}` });
+          const semanasClone = chunkArray(cellsClone, 7);
+
+          return (
+            <div className="modal-overlay" onClick={() => setModalClone(null)}>
+              <div
+                className="modal-resumo"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 style={{ fontSize: "1rem", marginBottom: 14 }}>
+                  ⧉ Clonar para...
+                </h2>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                  }}
+                >
                   <button
-                    key={d.id}
-                    onClick={() => {
-                      if (!clonando) confirmarClone(d.id);
-                    }}
+                    onClick={() =>
+                      podePrevClone &&
+                      setMesClone(mesesDisponiveis[mesIdxClone - 1])
+                    }
+                    disabled={!podePrevClone}
                     style={{
-                      background: "#24282d",
-                      border: "1px solid #ffffff0d",
-                      color: "#f8fafc",
-                      borderRadius: 10,
-                      padding: "12px 16px",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      fontSize: 14,
+                      background: "none",
+                      border: "none",
+                      color: podePrevClone ? "#6366f1" : "#334155",
+                      fontSize: 20,
+                      cursor: podePrevClone ? "pointer" : "default",
+                      padding: "0 8px",
                     }}
                   >
-                    <span
+                    ‹
+                  </button>
+                  <div style={{ textAlign: "center" }}>
+                    <div
                       style={{
-                        color: "#6366f1",
+                        fontSize: 15,
                         fontWeight: 700,
-                        marginRight: 8,
+                        color: "#f8fafc",
                       }}
                     >
-                      {labelData(d.data)}
-                    </span>
-                    {new Date(d.data + "T00:00:00").toLocaleDateString(
-                      "pt-BR",
-                      { weekday: "long", day: "2-digit", month: "2-digit" },
-                    )}
+                      {MESES[mesClone.mes]}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                      {mesClone.ano}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      podeNextClone &&
+                      setMesClone(mesesDisponiveis[mesIdxClone + 1])
+                    }
+                    disabled={!podeNextClone}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: podeNextClone ? "#6366f1" : "#334155",
+                      fontSize: 20,
+                      cursor: podeNextClone ? "pointer" : "default",
+                      padding: "0 8px",
+                    }}
+                  >
+                    ›
                   </button>
-                ))}
-            </div>
-            <button
-              onClick={() => setModalClone(null)}
-              style={{
-                marginTop: 14,
-                background: "transparent",
-                border: "1px solid #ffffff0d",
-                color: "#64748b",
-                borderRadius: 8,
-                padding: "10px",
-                cursor: "pointer",
-                width: "100%",
-              }}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+                </div>
 
-      {/* Config de datas */}
-      <div className="rotina-config">
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-            marginBottom: 14,
-          }}
-        >
-          <DatePicker
-            label="DATA INICIAL"
-            value={startDate}
-            onChange={setStartDate}
-          />
-          <DatePicker
-            label="DATA FINAL"
-            value={endDate}
-            onChange={setEndDate}
-            minDate={startDate}
-          />
-        </div>
-        <div className="rotina-config-btns">
-          <button
-            className="rotina-btn-gerar"
-            onClick={gerarDias}
-            disabled={gerando}
-          >
-            {gerando ? "Gerando..." : "+ Gerar Rotina"}
-          </button>
-          {dias.length > 0 && (
-            <button className="rotina-btn-reset" onClick={resetarRotina}>
-              Resetar
-            </button>
-          )}
-        </div>
-        {dias.length > 0 && (
-          <div style={{ fontSize: 11, color: "#475569", marginTop: 8 }}>
-            📋 {dias.length} dias ·{" "}
-            {new Date(dias[0].data + "T00:00:00").toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "short",
-            })}{" "}
-            →{" "}
-            {new Date(
-              dias[dias.length - 1].data + "T00:00:00",
-            ).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </div>
-        )}
-      </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: 2,
+                    marginBottom: 4,
+                  }}
+                >
+                  {DOW.map((d) => (
+                    <div
+                      key={d}
+                      style={{
+                        textAlign: "center",
+                        fontSize: 10,
+                        color: "#475569",
+                        fontWeight: 700,
+                        padding: "2px 0",
+                      }}
+                    >
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 2 }}
+                >
+                  {semanasClone.map((semana, si) => (
+                    <div
+                      key={si}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(7, 1fr)",
+                        gap: 2,
+                      }}
+                    >
+                      {semana.map((cell, ci) => {
+                        if (cell.vazio)
+                          return <div key={cell.key || `${si}-${ci}`} />;
+                        const { data, diaObj } = cell;
+                        const isOrigem = diaObj?.id === modalClone;
+                        const isHoje = data === hoje;
+                        const fora = !diaObj;
+                        const dayNum = new Date(data + "T00:00:00").getDate();
+                        return (
+                          <button
+                            key={data}
+                            disabled={fora || isOrigem || clonando}
+                            onClick={() => {
+                              if (diaObj && !isOrigem)
+                                toggleDiaClone(diaObj.id);
+                            }}
+                            style={{
+                              background: diasSelecionadosClone.includes(
+                                diaObj?.id,
+                              )
+                                ? "#6366f1"
+                                : isOrigem
+                                  ? "#334155"
+                                  : isHoje
+                                    ? "#6366f122"
+                                    : "#24282d",
+                              border: isHoje
+                                ? "1px solid #6366f1"
+                                : "1px solid #ffffff0d",
+                              borderRadius: 6,
+                              color: fora
+                                ? "#334155"
+                                : isOrigem
+                                  ? "#475569"
+                                  : "#f8fafc",
+                              fontSize: 12,
+                              fontWeight: diasSelecionadosClone.includes(
+                                diaObj?.id,
+                              )
+                                ? 700
+                                : 400,
+                              padding: "6px 0",
+                              cursor: fora || isOrigem ? "default" : "pointer",
+                              opacity: fora ? 0.3 : 1,
+                              textAlign: "center",
+                            }}
+                          >
+                            {dayNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                  <button
+                    onClick={confirmarClone}
+                    disabled={diasSelecionadosClone.length === 0 || clonando}
+                    style={{
+                      flex: 1,
+                      background:
+                        diasSelecionadosClone.length > 0
+                          ? "#6366f1"
+                          : "#1e293b",
+                      border: "none",
+                      color:
+                        diasSelecionadosClone.length > 0 ? "#fff" : "#475569",
+                      borderRadius: 8,
+                      padding: "11px 0",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      cursor:
+                        diasSelecionadosClone.length > 0
+                          ? "pointer"
+                          : "default",
+                    }}
+                  >
+                    {clonando
+                      ? "Clonando..."
+                      : diasSelecionadosClone.length > 0
+                        ? `Clonar para ${diasSelecionadosClone.length} dia(s)`
+                        : "Selecione os dias"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setModalClone(null);
+                      setDiasSelecionadosClone([]);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: "transparent",
+                      border: "1px solid #ffffff0d",
+                      color: "#64748b",
+                      borderRadius: 8,
+                      padding: "11px 0",
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       {dias.length === 0 ? (
         <p className="empty-msg" style={{ marginTop: 40 }}>
-          Nenhuma rotina gerada ainda. Selecione as datas acima! 📋
+          {gerando ? "Gerando sua rotina..." : "Carregando..."}
         </p>
       ) : (
         <>
+          {/* Resetar rotina */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginBottom: 8,
+            }}
+          >
+            <button
+              className="rotina-btn-reset"
+              onClick={resetarRotina}
+              style={{ fontSize: 12 }}
+            >
+              Resetar rotina
+            </button>
+          </div>
+
           {/* Navegação de mês */}
           <div
             style={{

@@ -88,6 +88,16 @@ export default function Home({
   const [showConfetti, setShowConfetti] = useState(false);
   const [statsAniversario, setStatsAniversario] = useState(null);
 
+  const isNatal = (() => {
+    const hoje = new Date();
+    return hoje.getDate() === 25 && hoje.getMonth() === 11;
+  })();
+
+  const isAnoNovo = (() => {
+    const hoje = new Date();
+    return hoje.getDate() === 1 && hoje.getMonth() === 0;
+  })();
+
   const isAniversario = (() => {
     if (!perfil?.data_nascimento) return false;
     const nasc = new Date(perfil.data_nascimento + "T00:00:00");
@@ -116,7 +126,11 @@ export default function Home({
       setTimeout(() => setShowConfetti(false), 8000);
       buscarStatsAniversario();
     }
-  }, [isAniversario]);
+    if (isNatal || isAnoNovo) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 8000);
+    }
+  }, [isAniversario, isNatal, isAnoNovo]);
 
   const buscarStatsAniversario = async () => {
     const anoAtual = new Date().getFullYear();
@@ -792,6 +806,94 @@ export default function Home({
           >
             "Que cada treino, cada hábito e cada conquista deste novo ano seja
             mais forte que o anterior. Bora forjar mais um ano incrível!"
+          </div>
+        </div>
+      )}
+
+      {/* Card Natal */}
+      {isNatal && (
+        <div
+          style={{
+            background: "#1a1d21",
+            border: "1px solid #10b98155",
+            borderRadius: 16,
+            padding: "20px",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 44, marginBottom: 8 }}>🎄</div>
+          <div
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              color: "#f8fafc",
+              marginBottom: 6,
+            }}
+          >
+            Feliz Natal, {nome}!
+          </div>
+          <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 14 }}>
+            Que esse dia seja de descanso, família e muita energia pra continuar
+            forjando! 🎁
+          </div>
+          <div
+            style={{
+              background: "#10b98115",
+              border: "1px solid #10b98133",
+              borderRadius: 10,
+              padding: "12px 14px",
+              fontSize: 13,
+              color: "#10b981",
+              fontStyle: "italic",
+              lineHeight: 1.6,
+            }}
+          >
+            "O descanso faz parte do processo. Aproveita o Natal — amanhã a
+            bigorna te espera."
+          </div>
+        </div>
+      )}
+
+      {/* Card Ano Novo */}
+      {isAnoNovo && (
+        <div
+          style={{
+            background: "#1a1d21",
+            border: "1px solid #6366f155",
+            borderRadius: 16,
+            padding: "20px",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 44, marginBottom: 8 }}>🎆</div>
+          <div
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              color: "#f8fafc",
+              marginBottom: 6,
+            }}
+          >
+            Feliz {new Date().getFullYear()}, {nome}!
+          </div>
+          <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 14 }}>
+            Novo ano, nova rotina, novos recordes. Bora forjar mais um ano
+            incrível! 🔥
+          </div>
+          <div
+            style={{
+              background: "#6366f115",
+              border: "1px solid #6366f133",
+              borderRadius: 10,
+              padding: "12px 14px",
+              fontSize: 13,
+              color: "#6366f1",
+              fontStyle: "italic",
+              lineHeight: 1.6,
+            }}
+          >
+            "Cada dia 1 de janeiro é uma bigorna nova. O que você vai forjar
+            nesse ano?"
           </div>
         </div>
       )}

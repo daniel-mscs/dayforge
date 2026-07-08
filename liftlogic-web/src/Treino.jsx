@@ -189,7 +189,7 @@ function ExercicioCard({
   );
 }
 
-function Treino({ logout, user }) {
+function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const TREINO_START_KEY = "liftlogic_treino_inicio";
   const TREINO_ATIVO_KEY = "liftlogic_treino_ativo";
   const MAX_TREINO_SEG = 5 * 60 * 60;
@@ -476,6 +476,14 @@ function Treino({ logout, user }) {
     buscarExercicios();
     buscarPerfil();
   }, []);
+
+  useEffect(() => {
+    if (abrirPerfil) {
+      setAbaPrincipal("perfil");
+      setPerfilEditado(true);
+      onAbrirPerfilConcluido?.();
+    }
+  }, [abrirPerfil]);
   useEffect(() => {
     if (divisao) localStorage.setItem("divisao", divisao);
   }, [divisao]);
@@ -1857,7 +1865,7 @@ function Treino({ logout, user }) {
 
                   <div className="lista-exercicios">
                     {carregando && (
-                      <p className="empty-msg">Forjando seu treino... 🧱</p>
+                      <p className="empty-msg">Forjando seu treino...</p>
                     )}
                     {!carregando && exerciciosFiltrados.length === 0 && (
                       <p className="empty-msg">
