@@ -29,7 +29,7 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setTimeout(() => setCarregando(false), 30000);
+      setCarregando(false);
     });
 
     // Depois verifica sessão existente

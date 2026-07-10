@@ -176,6 +176,7 @@ export default function Rotina({ user }) {
     return { ano: h.getFullYear(), mes: h.getMonth() };
   });
   const [diasSelecionadosClone, setDiasSelecionadosClone] = useState([]);
+  const [adicionando, setAdicionando] = useState(false);
 
   const hoje = formatarData(new Date());
 
@@ -342,9 +343,11 @@ export default function Rotina({ user }) {
   };
 
   const adicionarTarefa = async (diaId, periodo) => {
+    if (adicionando) return;
     const key = `${diaId}_${periodo}`;
     const texto = (novasTarefas[key] || "").trim();
     if (!texto) return;
+    setAdicionando(true);
     const tarefasDoPeriodo = tarefas[diaId]?.[periodo] || [];
     const { data, error } = await supabase
       .from("rotina_tarefas")
@@ -371,6 +374,7 @@ export default function Rotina({ user }) {
       },
     }));
     setNovasTarefas((prev) => ({ ...prev, [key]: "" }));
+    setAdicionando(false);
   };
 
   const toggleTarefa = async (diaId, periodo, tarefa) => {
@@ -1093,6 +1097,7 @@ export default function Rotina({ user }) {
                       <button
                         className="rotina-add-btn"
                         onClick={() => adicionarTarefa(diaSel.id, periodo)}
+                        disabled={!novasTarefas[key]?.trim()}
                       >
                         +
                       </button>

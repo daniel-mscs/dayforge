@@ -109,7 +109,7 @@ export async function agendarNotificacoes(idsAtivos) {
       id: n.id,
       title: n.titulo,
       body: n.corpo,
-      smallIcon: "ic_launcher",
+      smallIcon: "ic_notification",
       schedule: {
         at: alvo,
         repeats: true,
