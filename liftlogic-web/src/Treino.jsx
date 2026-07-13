@@ -63,6 +63,7 @@ function ExercicioCard({
   atualizarExercicio,
   deletarExercicio,
   onEditar,
+  onVincular,
 }) {
   const {
     attributes,
@@ -91,13 +92,26 @@ function ExercicioCard({
             ☰
           </span>
           {!treinando && (
-            <button
-              className="btn-delete-mini"
-              onClick={() => onEditar(ex)}
-              style={{ color: "#818cf8", marginRight: 2 }}
-            >
-              ✏️
-            </button>
+            <>
+              <button
+                className="btn-delete-mini"
+                onClick={() => onEditar(ex)}
+                style={{ color: "#818cf8", marginRight: 2 }}
+              >
+                ✏️
+              </button>
+              <button
+                className="btn-delete-mini"
+                onClick={() => onVincular(ex)}
+                style={{
+                  color: ex.superset_id ? "#f97316" : "#64748b",
+                  marginRight: 2,
+                }}
+                title="Superset"
+              >
+                🔗
+              </button>
+            </>
           )}
           <button
             className="btn-delete-mini"
@@ -145,6 +159,21 @@ function ExercicioCard({
         )}
         <div className="exercise-details">
           <h3>{ex.nome}</h3>
+          {ex.superset_id && (
+            <div
+              style={{
+                fontSize: 11,
+                color: "#f97316",
+                fontWeight: 600,
+                marginBottom: 4,
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              🔗 Superset
+            </div>
+          )}
           <div className="edit-stats-row">
             <input
               type="number"
@@ -259,6 +288,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     evolucao: [],
   });
   const [prs, setPrs] = useState({});
+  const [modalSuperset, setModalSuperset] = useState(null);
 
   const timerRef = useRef(null);
   const descansoRef = useRef(null);
@@ -783,16 +813,46 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     const ex = exercicios.find((e) => e.id === id);
     if (!ex) return;
     if (concluidos[id]) return;
+    const supersetGrupo = ex.superset_id
+      ? exerciciosFiltrados.filter((e) => e.superset_id === ex.superset_id)
+      : null;
     setModalDescanso({
-      exId: id,
+      exId: ex.id,
       nomeEx: ex.nome,
-      serieAtual: seriesFeitas[id] || 0,
+      serieAtual: seriesFeitas[ex.id] || 0,
       totalSeries: Number(ex.series),
       descansoSeg: Number(ex.descanso_segundos) || 90,
       carga: ex.carga,
       repeticoes: ex.repeticoes,
+      supersetExs: supersetGrupo,
+      supersetIdx: supersetGrupo
+        ? supersetGrupo.findIndex((e) => e.id === ex.id)
+        : 0,
     });
     cancelarDescanso();
+  };
+
+  const vincularSuperset = async (exOrigem, exDestino) => {
+    const supersetId = exOrigem.superset_id || crypto.randomUUID();
+    await supabase
+      .from("exercicio")
+      .update({ superset_id: supersetId })
+      .eq("id", exOrigem.id);
+    await supabase
+      .from("exercicio")
+      .update({ superset_id: supersetId })
+      .eq("id", exDestino.id);
+    buscarExercicios();
+    setModalSuperset(null);
+  };
+
+  const desvincularSuperset = async (ex) => {
+    await supabase
+      .from("exercicio")
+      .update({ superset_id: null })
+      .eq("superset_id", ex.superset_id)
+      .eq("user_id", user.id);
+    buscarExercicios();
   };
 
   const abrirAjuda = (ancora) => {
@@ -941,6 +1001,130 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         setSeriesFeitas={setSeriesFeitas}
         setConcluidos={setConcluidos}
       />
+
+      {/* ── Modal superset ── */}
+      {modalSuperset && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9992,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModalSuperset(null)}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "90%",
+              maxWidth: 380,
+              border: "1px solid #1e1e1e",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 6,
+              }}
+            >
+              🔗 Vincular ao superset
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
+              Escolha o exercício que vem em seguida:
+            </div>
+            {modalSuperset.superset_id && (
+              <button
+                onClick={() => {
+                  desvincularSuperset(modalSuperset);
+                  setModalSuperset(null);
+                }}
+                style={{
+                  width: "100%",
+                  background: "#ef444415",
+                  border: "1px solid #ef444433",
+                  borderRadius: 10,
+                  color: "#ef4444",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "10px 0",
+                  cursor: "pointer",
+                  marginBottom: 12,
+                }}
+              >
+                🔓 Remover do superset
+              </button>
+            )}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                maxHeight: 300,
+                overflowY: "auto",
+              }}
+            >
+              {exercicios
+                .filter(
+                  (e) => e.treino === treinoAtivo && e.id !== modalSuperset.id,
+                )
+                .map((e) => (
+                  <button
+                    key={e.id}
+                    onClick={() => vincularSuperset(modalSuperset, e)}
+                    style={{
+                      background: "#24282d",
+                      border: "1px solid #ffffff0d",
+                      borderRadius: 10,
+                      color: "#f8fafc",
+                      fontSize: 14,
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
+                    {e.superset_id &&
+                      e.superset_id === modalSuperset.superset_id && (
+                        <span style={{ color: "#f97316" }}>🔗</span>
+                      )}
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{e.nome}</div>
+                      <div style={{ fontSize: 11, color: "#64748b" }}>
+                        {e.series}x{e.repeticoes} · {e.carga}kg
+                      </div>
+                    </div>
+                  </button>
+                ))}
+            </div>
+            <button
+              onClick={() => setModalSuperset(null)}
+              style={{
+                marginTop: 14,
+                width: "100%",
+                background: "transparent",
+                border: "1px solid #ffffff0d",
+                borderRadius: 8,
+                color: "#64748b",
+                fontSize: 13,
+                padding: "10px 0",
+                cursor: "pointer",
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal editar exercício ── */}
       {modalEditEx && (
@@ -1543,6 +1727,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                                 descanso_segundos: ex.descanso_segundos || 90,
                               })
                             }
+                            onVincular={(ex) => setModalSuperset(ex)}
                           />
                         ))}
                       </SortableContext>

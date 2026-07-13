@@ -18,6 +18,12 @@ export default function ModalDescanso({
 }) {
   if (!modalDescanso) return null;
 
+  const supersetExs = modalDescanso.supersetExs || null;
+  const supersetIdx = modalDescanso.supersetIdx ?? 0;
+  const emSuperset = supersetExs && supersetExs.length > 1;
+  const exAtual = emSuperset ? supersetExs[supersetIdx] : null;
+  const ultimoDoSuperset = emSuperset && supersetIdx === supersetExs.length - 1;
+
   return (
     <div
       style={{
@@ -50,20 +56,63 @@ export default function ModalDescanso({
         <div
           style={{
             display: "inline-block",
-            background: "rgba(99,102,241,0.12)",
-            border: "1px solid rgba(99,102,241,0.25)",
+            background: emSuperset
+              ? "rgba(249,115,22,0.12)"
+              : "rgba(99,102,241,0.12)",
+            border: `1px solid ${emSuperset ? "rgba(249,115,22,0.25)" : "rgba(99,102,241,0.25)"}`,
             borderRadius: 99,
             padding: "4px 14px",
             fontSize: 10,
             fontWeight: 800,
             letterSpacing: "0.12em",
-            color: "#818cf8",
+            color: emSuperset ? "#f97316" : "#818cf8",
             marginBottom: 10,
             textTransform: "uppercase",
           }}
         >
-          Exercício em andamento
+          {emSuperset
+            ? `🔗 Superset ${supersetIdx + 1}/${supersetExs.length}`
+            : "Exercício em andamento"}
         </div>
+
+        {emSuperset && (
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              justifyContent: "center",
+              marginBottom: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            {supersetExs.map((e, i) => (
+              <div
+                key={e.id}
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "4px 10px",
+                  borderRadius: 8,
+                  background:
+                    i === supersetIdx
+                      ? "#f97316"
+                      : i < supersetIdx
+                        ? "#f9731633"
+                        : "#1e293b",
+                  color:
+                    i === supersetIdx
+                      ? "#fff"
+                      : i < supersetIdx
+                        ? "#f97316"
+                        : "#475569",
+                  border: `1px solid ${i === supersetIdx ? "#f97316" : "#ffffff0d"}`,
+                }}
+              >
+                {e.nome}
+              </div>
+            ))}
+          </div>
+        )}
         <div
           style={{
             fontSize: 20,
@@ -303,11 +352,35 @@ export default function ModalDescanso({
                   ...prev,
                   [modalDescanso.exId]: true,
                 }));
-              cancelarDescanso();
-              setModalDescanso((prev) => ({
-                ...prev,
-                serieAtual: novasSeries,
-              }));
+
+              if (emSuperset && !ultimoDoSuperset) {
+                const proximo = supersetExs[supersetIdx + 1];
+                setModalDescanso((prev) => ({
+                  ...prev,
+                  exId: proximo.id,
+                  nomeEx: proximo.nome,
+                  carga: proximo.carga,
+                  repeticoes: proximo.repeticoes,
+                  totalSeries: Number(proximo.series),
+                  serieAtual: seriesFeitas[proximo.id] || 0,
+                  supersetIdx: supersetIdx + 1,
+                }));
+              } else {
+                cancelarDescanso();
+                setModalDescanso((prev) => ({
+                  ...prev,
+                  serieAtual: novasSeries,
+                  ...(emSuperset && {
+                    exId: supersetExs[0].id,
+                    nomeEx: supersetExs[0].nome,
+                    carga: supersetExs[0].carga,
+                    repeticoes: supersetExs[0].repeticoes,
+                    totalSeries: Number(supersetExs[0].series),
+                    serieAtual: novasSeries,
+                    supersetIdx: 0,
+                  }),
+                }));
+              }
             }}
             style={{
               width: "100%",
