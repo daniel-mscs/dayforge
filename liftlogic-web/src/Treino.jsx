@@ -306,6 +306,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/pause.wav",
     ),
   );
+  const nomeExercicioRef = useRef(null);
 
   const [novoExercicio, setNovoExercicio] = useState({
     nome: "",
@@ -782,6 +783,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         treino: treinoAtivo,
         equipamento: "maquina",
       });
+      nomeExercicioRef.current?.focus();
     }
     setCarregando(false);
   };
@@ -1581,6 +1583,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   {!treinando && (
                     <form className="form-cadastro" onSubmit={salvarExercicio}>
                       <input
+                        ref={nomeExercicioRef}
                         type="text"
                         placeholder="Nome do Exercício (ex: Supino Reto)"
                         value={novoExercicio.nome}
