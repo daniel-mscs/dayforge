@@ -768,10 +768,19 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       setMostrarSugestoes(false);
       return;
     }
-    const termo = texto.trim().toLowerCase();
+    const normalizar = (str) =>
+      str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    const termo = normalizar(texto.trim());
     const encontrados = exerciciosPreset
-      .filter((ex) => ex.nome.toLowerCase().includes(termo))
-      .slice(0, 6);
+      .filter(
+        (ex) =>
+          normalizar(ex.nome).includes(termo) ||
+          normalizar(ex.grupo_muscular).includes(termo),
+      )
+      .slice(0, 8);
     setSugestoesExercicio(encontrados);
     setMostrarSugestoes(encontrados.length > 0);
   };
