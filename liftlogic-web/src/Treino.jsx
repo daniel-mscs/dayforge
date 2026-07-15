@@ -318,6 +318,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     equipamento: "maquina",
     descanso_segundos: "90",
   });
+  const [sugestoesExercicio, setSugestoesExercicio] = useState([]);
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
+  const [exerciciosPreset, setExerciciosPreset] = useState([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -507,6 +510,13 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   useEffect(() => {
     buscarExercicios();
     buscarPerfil();
+    supabase
+      .from("exercicios_preset")
+      .select("nome, grupo_muscular")
+      .then(({ data, error }) => {
+        if (error) console.error("Erro ao buscar presets:", error.message);
+        else setExerciciosPreset(data || []);
+      });
   }, []);
 
   useEffect(() => {
@@ -749,6 +759,31 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setXpGanho(50);
     setCelebrando(true);
     setTimeout(() => setCelebrando(false), 3500);
+  };
+
+  const buscarSugestoesExercicio = (texto) => {
+    setNovoExercicio({ ...novoExercicio, nome: texto });
+    if (texto.trim().length < 2) {
+      setSugestoesExercicio([]);
+      setMostrarSugestoes(false);
+      return;
+    }
+    const termo = texto.trim().toLowerCase();
+    const encontrados = exerciciosPreset
+      .filter((ex) => ex.nome.toLowerCase().includes(termo))
+      .slice(0, 6);
+    setSugestoesExercicio(encontrados);
+    setMostrarSugestoes(encontrados.length > 0);
+  };
+
+  const selecionarExercicioPreset = (preset) => {
+    setNovoExercicio({
+      ...novoExercicio,
+      nome: preset.nome,
+      grupo_muscular: preset.grupo_muscular,
+    });
+    setSugestoesExercicio([]);
+    setMostrarSugestoes(false);
   };
 
   const salvarExercicio = async (e) => {
@@ -1582,19 +1617,71 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
 
                   {!treinando && (
                     <form className="form-cadastro" onSubmit={salvarExercicio}>
-                      <input
-                        ref={nomeExercicioRef}
-                        type="text"
-                        placeholder="Nome do Exercício (ex: Supino Reto)"
-                        value={novoExercicio.nome}
-                        onChange={(e) =>
-                          setNovoExercicio({
-                            ...novoExercicio,
-                            nome: e.target.value,
-                          })
-                        }
-                        required
-                      />
+                      <div style={{ position: "relative" }}>
+                        <input
+                          ref={nomeExercicioRef}
+                          type="text"
+                          placeholder="Nome do Exercício (ex: Supino Reto)"
+                          value={novoExercicio.nome}
+                          onChange={(e) =>
+                            buscarSugestoesExercicio(e.target.value)
+                          }
+                          onFocus={() =>
+                            sugestoesExercicio.length > 0 &&
+                            setMostrarSugestoes(true)
+                          }
+                          onBlur={() =>
+                            setTimeout(() => setMostrarSugestoes(false), 150)
+                          }
+                          required
+                        />
+                        {mostrarSugestoes && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              zIndex: 20,
+                              background: "#1a1d21",
+                              border: "1px solid #ffffff0d",
+                              borderRadius: 10,
+                              marginTop: 4,
+                              overflow: "hidden",
+                            }}
+                          >
+                            {sugestoesExercicio.map((preset) => (
+                              <button
+                                key={preset.nome}
+                                type="button"
+                                onClick={() =>
+                                  selecionarExercicioPreset(preset)
+                                }
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  width: "100%",
+                                  background: "transparent",
+                                  border: "none",
+                                  borderBottom: "1px solid #ffffff0d",
+                                  color: "#f8fafc",
+                                  fontSize: 13,
+                                  padding: "10px 12px",
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                }}
+                              >
+                                <span>{preset.nome}</span>
+                                <span
+                                  style={{ color: "#64748b", fontSize: 11 }}
+                                >
+                                  {preset.grupo_muscular}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <input
                         type="text"
                         placeholder="Grupo Muscular (ex: Peitoral)"
