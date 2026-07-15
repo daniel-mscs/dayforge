@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "html2canvas": "^1.4.1",
     "react-confetti": "^6.4.0",
     "recharts": "^3.8.1",

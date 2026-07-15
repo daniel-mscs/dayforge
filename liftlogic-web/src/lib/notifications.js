@@ -100,24 +100,20 @@ export async function agendarNotificacoes(idsAtivos) {
   const notifsFiltradas = todasNotifs.filter((n) => idsAtivos.includes(n.id));
 
   const agendamentos = notifsFiltradas.map((n) => {
-    const agora = new Date();
-    const alvo = new Date();
-    alvo.setHours(n.hora, n.minuto, 0, 0);
-    if (alvo <= agora) alvo.setDate(alvo.getDate() + 1);
-
-    return {
-      id: n.id,
-      title: n.titulo,
-      body: n.corpo,
-      smallIcon: "ic_notification",
-      schedule: {
-        at: alvo,
-        repeats: true,
-        every: "day",
-        allowWhileIdle: true,
-      },
-    };
-  });
+      return {
+        id: n.id,
+        title: n.titulo,
+        body: n.corpo,
+        smallIcon: "ic_notification",
+        schedule: {
+          on: {
+            hour: n.hora,
+            minute: n.minuto,
+          },
+          allowWhileIdle: true,
+        },
+      };
+    });
 
   const resultado = await LocalNotifications.schedule({
     notifications: agendamentos,

@@ -183,13 +183,17 @@ VITE_ANTHROPIC_API_KEY=sua_chave
 ## Roadmap
 
 - [ ] Integração com API Java/Spring Boot própria
-- [ ] App nativo com Capacitor
 - [ ] Notificações push de descanso entre séries
 - [ ] Templates de treino prontos
 - [ ] Exportar dados (CSV/PDF)
+- [ ] Publicar na Google Play Store
+- [x] App nativo com Capacitor (Android)
+- [x] Notificações locais editáveis
 - [x] Sistema de XP e níveis (RPG)
 - [x] Controle financeiro (SmartPocket)
 - [x] Coach IA com relatório semanal
+- [x] RLS completo no banco de dados
+- [x] Tooltips de ajuda em todas as abas
 
 ---
 
