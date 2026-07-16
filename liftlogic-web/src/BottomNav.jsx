@@ -7,6 +7,7 @@ const CATEGORIAS = [
       { id: "habitos", icon: "✅", label: "Hábitos" },
       { id: "passos", icon: "👟", label: "Passos" },
       { id: "cardio", icon: "🏃", label: "Cardio" },
+      { id: "roundtimer", icon: "🥊", label: "Round Timer" },
       { id: "rotina", icon: "📋", label: "Rotina" },
     ],
   },

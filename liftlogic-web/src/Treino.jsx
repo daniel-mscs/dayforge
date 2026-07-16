@@ -43,6 +43,7 @@ import SmartPocket from "./SmartPocket";
 import RPG from "./RPG";
 import Sono from "./Sono";
 import Cardio from "./Cardio";
+import RoundTimer from "./RoundTimer";
 import Coach from "./Coach";
 import BottomNav from "./BottomNav";
 import ModalResumo from "./ModalResumo";
@@ -1402,6 +1403,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       {abaPrincipal === "rpg" && <RPG user={user} />}
       {abaPrincipal === "sono" && <Sono user={user} onAjuda={abrirAjuda} />}
       {abaPrincipal === "cardio" && <Cardio user={user} />}
+      {abaPrincipal === "roundtimer" && <RoundTimer user={user} />}
       {abaPrincipal === "coach" && <Coach user={user} />}
 
       {abaPrincipal === "treino" && (
