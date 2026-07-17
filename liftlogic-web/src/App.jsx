@@ -11,11 +11,28 @@ function App() {
   const [carregando, setCarregando] = useState(true);
   const [precisaOnboarding, setPrecisaOnboarding] = useState(false);
   const [abrirPerfil, setAbrirPerfil] = useState(false);
-  const [modoRecuperacao, setModoRecuperacao] = useState(
-    () =>
-      window.location.hash.includes("type=recovery") ||
-      window.location.pathname.includes("reset-password"),
-  );
+  const [modoRecuperacao, setModoRecuperacao] = useState(false);
+
+  useEffect(() => {
+    const processarLinkRecuperacao = async () => {
+      const hash = window.location.hash;
+      if (!hash.includes("type=recovery")) return;
+      const params = new URLSearchParams(hash.substring(1));
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      if (!access_token) return;
+      const { error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (!error) setModoRecuperacao(true);
+    };
+
+    processarLinkRecuperacao();
+    window.addEventListener("hashchange", processarLinkRecuperacao);
+    return () =>
+      window.removeEventListener("hashchange", processarLinkRecuperacao);
+  }, []);
 
   useEffect(() => {
     import("./lib/notifications").then(
@@ -129,18 +146,18 @@ function App() {
   }
 
   if (modoRecuperacao) {
-      return (
-        <RedefinirSenha
-          onConcluido={() => {
-            setModoRecuperacao(false);
-          }}
-        />
-      );
-    }
+    return (
+      <RedefinirSenha
+        onConcluido={() => {
+          setModoRecuperacao(false);
+        }}
+      />
+    );
+  }
 
-    if (!session) {
-      return <Login onLoginSuccess={setSession} />;
-    }
+  if (!session) {
+    return <Login onLoginSuccess={setSession} />;
+  }
 
   if (precisaOnboarding) {
     return (
