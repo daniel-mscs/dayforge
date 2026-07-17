@@ -42,18 +42,26 @@
 }
 
 .ct-app-wrapper {
-  min-height: 100vh;
   width: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
+  border-radius: 16px;
   overflow: hidden;
   background: var(--ct-bg-deep);
   transition: background 0.3s;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.ct-app-wrapper input {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .ct-noise-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
@@ -133,10 +141,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 24px 20px 32px;
   gap: 0;
   width: 100%;
+  min-height: 520px;
 }
 
 .ct-round-indicator {
@@ -315,67 +324,6 @@
   color: var(--ct-red);
 }
 
-.ct-inline-config {
-  width: 100%;
-  max-width: 400px;
-  background: var(--ct-bg-card);
-  border: 1px solid var(--ct-bg-border);
-  border-top: 2px solid var(--ct-red);
-  border-radius: 4px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-  animation: ct-slide-down 0.2s ease;
-}
-
-@keyframes ct-slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.ct-inline-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.ct-inline-label {
-  font-family: var(--ct-font-display);
-  font-size: 10px;
-  font-weight: 300;
-  letter-spacing: 3px;
-  color: var(--ct-text-dim);
-  white-space: nowrap;
-}
-
-.ct-inline-apply {
-  font-family: var(--ct-font-display);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 4px;
-  padding: 12px;
-  width: 100%;
-  background: var(--ct-red);
-  border: none;
-  color: white;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.ct-inline-apply:hover {
-  background: #ff3030;
-}
-
 .ct-config-summary {
   font-family: var(--ct-font-mono);
   font-size: 11px;
@@ -383,24 +331,6 @@
   color: var(--ct-text-faint);
   margin-top: 8px;
   text-align: center;
-}
-
-.ct-rounds-input {
-  font-family: var(--ct-font-mono);
-  font-size: 20px;
-  color: var(--ct-text-main);
-  background: var(--ct-bg-card);
-  border: 1px solid var(--ct-bg-border);
-  border-radius: 3px;
-  width: 70px;
-  padding: 8px;
-  text-align: center;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.ct-rounds-input:focus {
-  border-color: var(--ct-red);
 }
 
 .ct-time-inputs {
@@ -539,6 +469,193 @@
 .ct-warning-btn:hover {
   border-color: var(--ct-text-dim);
   color: var(--ct-text-main);
+}
+
+/* ============ CONFIG MODAL ============ */
+
+.ct-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+  padding: 0;
+}
+
+.ct-modal-box {
+  background: var(--ct-bg-dark);
+  border: 1px solid var(--ct-bg-border);
+  border-top: 2px solid var(--ct-red);
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ct-modal-box.ct-sparring {
+  border-top-color: var(--ct-gold);
+}
+
+.ct-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--ct-bg-border);
+  flex-shrink: 0;
+}
+
+.ct-modal-title {
+  font-family: var(--ct-font-display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 5px;
+  color: var(--ct-text-main);
+}
+
+.ct-modal-close {
+  background: none;
+  border: none;
+  color: var(--ct-text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+.ct-modal-close:hover {
+  color: var(--ct-text-main);
+}
+
+.ct-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.ct-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ct-config-label {
+  font-family: var(--ct-font-display);
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--ct-text-dim);
+  white-space: nowrap;
+}
+
+.ct-stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--ct-bg-border);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ct-stepper button {
+  background: var(--ct-bg-card);
+  border: none;
+  color: var(--ct-text-main);
+  font-size: 18px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ct-stepper button:hover {
+  background: var(--ct-bg-border);
+}
+
+.ct-stepper span {
+  font-family: var(--ct-font-mono);
+  font-size: 18px;
+  color: var(--ct-text-main);
+  width: 44px;
+  text-align: center;
+  border-left: 1px solid var(--ct-bg-border);
+  border-right: 1px solid var(--ct-bg-border);
+  line-height: 40px;
+}
+
+.ct-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px 32px;
+  flex-shrink: 0;
+}
+
+.ct-btn-cancel {
+  flex: 1;
+  font-family: var(--ct-font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 4px;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--ct-bg-border);
+  color: var(--ct-text-dim);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ct-btn-cancel:hover {
+  color: var(--ct-text-main);
+  border-color: var(--ct-text-dim);
+}
+
+.ct-btn-save {
+  flex: 2;
+  font-family: var(--ct-font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 4px;
+  padding: 14px;
+  background: var(--ct-red);
+  border: none;
+  color: white;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ct-btn-save:hover {
+  background: #ff3030;
+  box-shadow: 0 0 20px var(--ct-red-glow);
+}
+
+.ct-modal-box.ct-sparring .ct-btn-save {
+  background: #b8860b;
+}
+.ct-modal-box.ct-sparring .ct-btn-save:hover {
+  background: #d4a017;
+}
+
+@media (min-width: 600px) {
+  .ct-modal-overlay {
+    align-items: center;
+    padding: 20px;
+  }
+
+  .ct-modal-box {
+    border-radius: 4px;
+    max-width: 420px;
+  }
+
+  .ct-modal-footer {
+    padding-bottom: 24px;
+  }
 }
 
 @media (min-width: 600px) {

@@ -23,26 +23,167 @@ function carregarConfig() {
   }
 }
 
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function ConfigModal({ config, mode, onSave, onClose }) {
+  const [rounds, setRounds] = useState(config.rounds);
+  const [roundMin, setRoundMin] = useState(
+    Math.floor(config.round_duration / 60),
+  );
+  const [roundSec, setRoundSec] = useState(config.round_duration % 60);
+  const [restMin, setRestMin] = useState(Math.floor(config.rest_duration / 60));
+  const [restSec, setRestSec] = useState(config.rest_duration % 60);
+  const [warningTime, setWarningTime] = useState(config.warning_time || 10);
+
+  const handleSave = () => {
+    onSave({
+      rounds,
+      round_duration: roundMin * 60 + roundSec,
+      rest_duration: restMin * 60 + restSec,
+      warning_time: warningTime,
+    });
+  };
+
+  return (
+    <div className="ct-modal-overlay" onClick={onClose}>
+      <div
+        className={`ct-modal-box ${mode === "sparring" ? "ct-sparring" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="ct-modal-header">
+          <span className="ct-modal-title">⚙ CONFIGURAÇÕES</span>
+          <button className="ct-modal-close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <div className="ct-modal-body">
+          <div className="ct-config-row">
+            <label className="ct-config-label">Número de rounds</label>
+            <div className="ct-stepper">
+              <button onClick={() => setRounds((r) => Math.max(1, r - 1))}>
+                −
+              </button>
+              <span>{rounds}</span>
+              <button onClick={() => setRounds((r) => Math.min(30, r + 1))}>
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="ct-config-row">
+            <label className="ct-config-label">Duração do round</label>
+            <div className="ct-time-inputs">
+              <div className="ct-time-field">
+                <input
+                  type="number"
+                  min="0"
+                  max="9"
+                  value={roundMin}
+                  onChange={(e) => setRoundMin(Number(e.target.value) || 0)}
+                />
+                <span className="ct-time-unit">min</span>
+              </div>
+              <span className="ct-time-sep">:</span>
+              <div className="ct-time-field">
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={String(roundSec).padStart(2, "0")}
+                  onChange={(e) =>
+                    setRoundSec(Math.min(59, Number(e.target.value) || 0))
+                  }
+                />
+                <span className="ct-time-unit">seg</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ct-config-row">
+            <label className="ct-config-label">Tempo de descanso</label>
+            <div className="ct-time-inputs">
+              <div className="ct-time-field">
+                <input
+                  type="number"
+                  min="0"
+                  max="9"
+                  value={restMin}
+                  onChange={(e) => setRestMin(Number(e.target.value) || 0)}
+                />
+                <span className="ct-time-unit">min</span>
+              </div>
+              <span className="ct-time-sep">:</span>
+              <div className="ct-time-field">
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={String(restSec).padStart(2, "0")}
+                  onChange={(e) =>
+                    setRestSec(Math.min(59, Number(e.target.value) || 0))
+                  }
+                />
+                <span className="ct-time-unit">seg</span>
+              </div>
+            </div>
+          </div>
+
+          {mode === "sparring" && (
+            <div className="ct-config-row">
+              <label className="ct-config-label">Aviso sonoro faltando</label>
+              <div className="ct-warning-options">
+                {[10, 20, 30].map((val) => (
+                  <button
+                    key={val}
+                    className={`ct-warning-btn ${warningTime === val ? "ct-active" : ""}`}
+                    onClick={() => setWarningTime(val)}
+                  >
+                    {val}s
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="ct-modal-footer">
+          <button className="ct-btn-cancel" onClick={onClose}>
+            CANCELAR
+          </button>
+          <button className="ct-btn-save" onClick={handleSave}>
+            SALVAR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RoundTimer({ user }) {
   const [config, setConfig] = useState(carregarConfig);
   const [mode, setMode] = useState("training");
   const [showConfig, setShowConfig] = useState(false);
   const [salvandoCardio, setSalvandoCardio] = useState(false);
 
-  const [localRounds, setLocalRounds] = useState(config.rounds);
-  const [localRoundMin, setLocalRoundMin] = useState(
-    Math.floor(config.round_duration / 60),
-  );
-  const [localRoundSec, setLocalRoundSec] = useState(
-    config.round_duration % 60,
-  );
-  const [localRestMin, setLocalRestMin] = useState(
-    Math.floor(config.rest_duration / 60),
-  );
-  const [localRestSec, setLocalRestSec] = useState(config.rest_duration % 60);
-  const [localWarningTime, setLocalWarningTime] = useState(
-    config.warning_time || 10,
-  );
+  useEffect(() => {
+    if (showConfig) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      return () => {
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showConfig]);
 
   const {
     currentRound,
@@ -60,24 +201,11 @@ export default function RoundTimer({ user }) {
     reset();
   };
 
-  const applyInlineConfig = () => {
-    const newConfig = {
-      ...config,
-      rounds: localRounds,
-      round_duration: localRoundMin * 60 + localRoundSec,
-      rest_duration: localRestMin * 60 + localRestSec,
-      warning_time: localWarningTime,
-    };
+  const salvarConfig = (newConfig) => {
     setConfig(newConfig);
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
     setShowConfig(false);
     reset();
-  };
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
   const registrarNoCardio = async () => {
@@ -195,130 +323,12 @@ export default function RoundTimer({ user }) {
             ↺
           </button>
           <button
-            className={`ct-config-inline-btn ${showConfig ? "ct-active" : ""}`}
-            onClick={() => setShowConfig((s) => !s)}
+            className="ct-config-inline-btn"
+            onClick={() => setShowConfig(true)}
           >
             ⚙
           </button>
         </div>
-
-        {showConfig && (
-          <div className="ct-inline-config">
-            <div className="ct-inline-row">
-              <span className="ct-inline-label">ROUNDS</span>
-              <input
-                type="number"
-                min="1"
-                max="30"
-                value={localRounds}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "") {
-                    setLocalRounds("");
-                    return;
-                  }
-                  setLocalRounds(Number(val));
-                }}
-                className="ct-rounds-input"
-              />
-            </div>
-
-            <div className="ct-inline-row">
-              <span className="ct-inline-label">ROUND</span>
-              <div className="ct-time-inputs">
-                <div className="ct-time-field">
-                  <input
-                    type="number"
-                    min="0"
-                    max="9"
-                    value={localRoundMin}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setLocalRoundMin(val === "" ? "" : Number(val));
-                    }}
-                    onBlur={() => setLocalRoundMin((v) => Number(v) || 0)}
-                  />
-                  <span className="ct-time-unit">min</span>
-                </div>
-                <span className="ct-time-sep">:</span>
-                <div className="ct-time-field">
-                  <input
-                    type="number"
-                    min="0"
-                    max="59"
-                    value={String(localRoundSec).padStart(2, "0")}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setLocalRoundSec(
-                        val === "" ? "" : Math.min(59, Number(val)),
-                      );
-                    }}
-                    onBlur={() => setLocalRoundSec((v) => Number(v) || 0)}
-                  />
-                  <span className="ct-time-unit">seg</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="ct-inline-row">
-              <span className="ct-inline-label">DESCANSO</span>
-              <div className="ct-time-inputs">
-                <div className="ct-time-field">
-                  <input
-                    type="number"
-                    min="0"
-                    max="9"
-                    value={localRestMin}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setLocalRestMin(val === "" ? "" : Number(val));
-                    }}
-                    onBlur={() => setLocalRestMin((v) => Number(v) || 0)}
-                  />
-                  <span className="ct-time-unit">min</span>
-                </div>
-                <span className="ct-time-sep">:</span>
-                <div className="ct-time-field">
-                  <input
-                    type="number"
-                    min="0"
-                    max="59"
-                    value={String(localRestSec).padStart(2, "0")}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setLocalRestSec(
-                        val === "" ? "" : Math.min(59, Number(val)),
-                      );
-                    }}
-                    onBlur={() => setLocalRestSec((v) => Number(v) || 0)}
-                  />
-                  <span className="ct-time-unit">seg</span>
-                </div>
-              </div>
-            </div>
-
-            {mode === "sparring" && (
-              <div className="ct-inline-row">
-                <span className="ct-inline-label">AVISO</span>
-                <div className="ct-warning-options">
-                  {[10, 20, 30].map((val) => (
-                    <button
-                      key={val}
-                      className={`ct-warning-btn ${localWarningTime === val ? "ct-active" : ""}`}
-                      onClick={() => setLocalWarningTime(val)}
-                    >
-                      {val}s
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button className="ct-inline-apply" onClick={applyInlineConfig}>
-              ✓ APLICAR
-            </button>
-          </div>
-        )}
 
         <div className="ct-config-summary">
           {config.rounds} rounds • {formatTime(config.round_duration)} •
@@ -327,8 +337,8 @@ export default function RoundTimer({ user }) {
 
         {isFinished && user && (
           <button
-            className="ct-inline-apply"
-            style={{ maxWidth: 400, marginTop: 16 }}
+            className="ct-btn-save"
+            style={{ maxWidth: 400, width: "100%", marginTop: 16 }}
             onClick={registrarNoCardio}
             disabled={salvandoCardio}
           >
@@ -336,6 +346,15 @@ export default function RoundTimer({ user }) {
           </button>
         )}
       </main>
+
+      {showConfig && (
+        <ConfigModal
+          config={config}
+          mode={mode}
+          onSave={salvarConfig}
+          onClose={() => setShowConfig(false)}
+        />
+      )}
     </div>
   );
 }
