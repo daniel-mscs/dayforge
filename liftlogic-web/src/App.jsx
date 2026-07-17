@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase";
 import Login from "./pages/Login";
+import RedefinirSenha from "./pages/RedefinirSenha";
 import Treino from "./Treino";
 import Onboarding from "./Onboarding";
 import { ToastContainer } from "./lib/toast";
@@ -10,6 +11,11 @@ function App() {
   const [carregando, setCarregando] = useState(true);
   const [precisaOnboarding, setPrecisaOnboarding] = useState(false);
   const [abrirPerfil, setAbrirPerfil] = useState(false);
+  const [modoRecuperacao, setModoRecuperacao] = useState(
+    () =>
+      window.location.hash.includes("type=recovery") ||
+      window.location.pathname.includes("reset-password"),
+  );
 
   useEffect(() => {
     import("./lib/notifications").then(
@@ -122,9 +128,19 @@ function App() {
     );
   }
 
-  if (!session) {
-    return <Login onLoginSuccess={setSession} />;
-  }
+  if (modoRecuperacao) {
+      return (
+        <RedefinirSenha
+          onConcluido={() => {
+            setModoRecuperacao(false);
+          }}
+        />
+      );
+    }
+
+    if (!session) {
+      return <Login onLoginSuccess={setSession} />;
+    }
 
   if (precisaOnboarding) {
     return (
