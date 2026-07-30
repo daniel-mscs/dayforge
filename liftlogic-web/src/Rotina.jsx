@@ -176,6 +176,7 @@ export default function Rotina({ user }) {
     return { ano: h.getFullYear(), mes: h.getMonth() };
   });
   const [diasSelecionadosClone, setDiasSelecionadosClone] = useState([]);
+  const [tarefasSelecionadasClone, setTarefasSelecionadasClone] = useState([]);
   const [adicionando, setAdicionando] = useState(false);
 
   const hoje = formatarData(new Date());
@@ -456,12 +457,22 @@ export default function Rotina({ user }) {
     );
   };
 
+  const toggleTarefaClone = (tarefaId) => {
+    setTarefasSelecionadasClone((prev) =>
+      prev.includes(tarefaId)
+        ? prev.filter((id) => id !== tarefaId)
+        : [...prev, tarefaId],
+    );
+  };
+
   const confirmarClone = async () => {
     if (clonando || diasSelecionadosClone.length === 0) return;
     setClonando(true);
     const diaOrigemId = modalClone;
     const tarefasOrigem = PERIODOS.flatMap((p) =>
-      (tarefas[diaOrigemId]?.[p] || []).map((t) => ({ ...t, periodo: p })),
+      (tarefas[diaOrigemId]?.[p] || [])
+        .filter((t) => tarefasSelecionadasClone.includes(t.id))
+        .map((t) => ({ ...t, periodo: p })),
     );
     if (tarefasOrigem.length === 0) {
       toast("Nenhuma tarefa para clonar!", "warning");
@@ -505,6 +516,7 @@ export default function Rotina({ user }) {
       return novo;
     });
     setDiasSelecionadosClone([]);
+    setTarefasSelecionadasClone([]);
     setModalClone(null);
     setClonando(false);
     toast(
@@ -606,6 +618,92 @@ export default function Rotina({ user }) {
                 <h2 style={{ fontSize: "1rem", marginBottom: 14 }}>
                   ⧉ Clonar para...
                 </h2>
+
+                {(() => {
+                  const tarefasOrigemModal = PERIODOS.flatMap((p) =>
+                    (tarefas[modalClone]?.[p] || []).map((t) => ({
+                      ...t,
+                      periodo: p,
+                    })),
+                  );
+                  if (tarefasOrigemModal.length === 0) return null;
+                  return (
+                    <div style={{ marginBottom: 16 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                          O que clonar:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTarefasSelecionadasClone((prev) =>
+                              prev.length === tarefasOrigemModal.length
+                                ? []
+                                : tarefasOrigemModal.map((t) => t.id),
+                            )
+                          }
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "#6366f1",
+                            fontSize: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {tarefasSelecionadasClone.length ===
+                          tarefasOrigemModal.length
+                            ? "desmarcar todas"
+                            : "marcar todas"}
+                        </button>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                          maxHeight: 180,
+                          overflowY: "auto",
+                        }}
+                      >
+                        {tarefasOrigemModal.map((t) => (
+                          <label
+                            key={t.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              fontSize: 13,
+                              color: "#e2e8f0",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={tarefasSelecionadasClone.includes(t.id)}
+                              onChange={() => toggleTarefaClone(t.id)}
+                            />
+                            <span
+                              style={{
+                                opacity: tarefasSelecionadasClone.includes(t.id)
+                                  ? 1
+                                  : 0.5,
+                              }}
+                            >
+                              {t.texto}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div
                   style={{
@@ -759,7 +857,11 @@ export default function Rotina({ user }) {
                 <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
                   <button
                     onClick={confirmarClone}
-                    disabled={diasSelecionadosClone.length === 0 || clonando}
+                    disabled={
+                      diasSelecionadosClone.length === 0 ||
+                      tarefasSelecionadasClone.length === 0 ||
+                      clonando
+                    }
                     style={{
                       flex: 1,
                       background:
@@ -789,6 +891,7 @@ export default function Rotina({ user }) {
                     onClick={() => {
                       setModalClone(null);
                       setDiasSelecionadosClone([]);
+                      setTarefasSelecionadasClone([]);
                     }}
                     style={{
                       flex: 1,
@@ -1040,7 +1143,18 @@ export default function Rotina({ user }) {
                   })()}
                   <button
                     className="rotina-btn-clonar"
-                    onClick={() => setModalClone(diaSel.id)}
+                    onClick={() => {
+                      const tarefasDoDia = PERIODOS.flatMap((p) =>
+                        (tarefas[diaSel.id]?.[p] || []).map((t) => ({
+                          ...t,
+                          periodo: p,
+                        })),
+                      );
+                      setTarefasSelecionadasClone(
+                        tarefasDoDia.map((t) => t.id),
+                      );
+                      setModalClone(diaSel.id);
+                    }}
                   >
                     ⧉
                   </button>
