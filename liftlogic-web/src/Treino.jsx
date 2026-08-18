@@ -321,12 +321,37 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   );
   const inicioDescansoRef = useRef(null);
   const duracaoDescansoRef = useRef(0);
-  const audioRef = useRef(
-    new Audio(
-      "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/pause.wav",
-    ),
-  );
   const nomeExercicioRef = useRef(null);
+
+  const tocarTom = (frequencia, duracaoMs, volume = 0.35) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = frequencia;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        ctx.currentTime + duracaoMs / 1000,
+      );
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duracaoMs / 1000);
+    } catch (e) {
+      // AudioContext indisponível, ignora silenciosamente
+    }
+  };
+
+  const tocarSinoDescanso = () => {
+    tocarTom(1046, 260);
+    setTimeout(() => tocarTom(1318, 300), 200);
+  };
+
+  const tocarAvisoDescanso = () => {
+    tocarTom(660, 150, 0.3);
+  };
 
   const [novoExercicio, setNovoExercicio] = useState({
     nome: "",
@@ -354,12 +379,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const tocarAlertaLongo = () => {
     if (alertaAtivoRef.current) return;
     alertaAtivoRef.current = true;
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
     let repeticoes = 0;
     const intervaloSom = setInterval(() => {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+      tocarSinoDescanso();
       repeticoes++;
       if (repeticoes >= 3) {
         clearInterval(intervaloSom);
@@ -367,7 +389,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
           alertaAtivoRef.current = false;
         }, 1000);
       }
-    }, 600);
+    }, 800);
   };
 
   const buscarExercicios = async () => {
@@ -644,9 +666,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       } else {
         if (restante === 10 && !alerta10sDisparadoRef.current) {
           alerta10sDisparadoRef.current = true;
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(() => {});
+          tocarAvisoDescanso();
         }
         setDescanso(restante);
       }
@@ -1354,16 +1374,27 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
-                  fontSize: 12,
-                  color: "#94a3b8",
+                  gap: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#cbd5e1",
                   cursor: "pointer",
                   marginTop: 2,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 10,
+                  padding: "10px 14px",
                 }}
               >
                 <input
                   type="checkbox"
                   checked={modalEditEx.reps_variam}
+                  style={{
+                    width: 18,
+                    height: 18,
+                    accentColor: "#6366f1",
+                    flexShrink: 0,
+                  }}
                   onChange={(e) => {
                     const ligado = e.target.checked;
                     setModalEditEx({
@@ -1946,16 +1977,27 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 8,
-                          fontSize: 12,
-                          color: "#94a3b8",
+                          gap: 10,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#cbd5e1",
                           cursor: "pointer",
-                          margin: "4px 0",
+                          margin: "6px 0",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: 10,
+                          padding: "10px 14px",
                         }}
                       >
                         <input
                           type="checkbox"
                           checked={novoExercicio.reps_variam}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            accentColor: "#6366f1",
+                            flexShrink: 0,
+                          }}
                           onChange={(e) => {
                             const ligado = e.target.checked;
                             setNovoExercicio({
