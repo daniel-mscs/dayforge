@@ -226,13 +226,34 @@ function ExercicioCard({
                 : "⚙️"}{" "}
             Carga:
           </span>
-          <input
-            type="number"
-            className="inline-edit carga-input"
-            defaultValue={ex.carga}
-            onBlur={(e) => atualizarExercicio(ex.id, "carga", e.target.value)}
-          />
-          <strong>kg</strong>
+          {ex.carga_por_serie && ex.carga_por_serie.length > 0 ? (
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#818cf8",
+                background: "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.3)",
+                borderRadius: 8,
+                padding: "3px 8px",
+              }}
+              title={ex.carga_por_serie.join(" / ")}
+            >
+              {ex.carga_por_serie.join("-")}kg
+            </span>
+          ) : (
+            <>
+              <input
+                type="number"
+                className="inline-edit carga-input"
+                defaultValue={ex.carga}
+                onBlur={(e) =>
+                  atualizarExercicio(ex.id, "carga", e.target.value)
+                }
+              />
+              <strong>kg</strong>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -364,6 +385,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     descanso_segundos: "90",
     reps_variam: false,
     reps_por_serie: [],
+    carga_variam: false,
+    carga_por_serie: [],
   });
   const [sugestoesExercicio, setSugestoesExercicio] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
@@ -859,6 +882,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     const repsPorSerieFinal = novoExercicio.reps_variam
       ? (novoExercicio.reps_por_serie || []).map((r) => Number(r) || 0)
       : null;
+    const cargaPorSerieFinal = novoExercicio.carga_variam
+      ? (novoExercicio.carga_por_serie || []).map((c) => Number(c) || 0)
+      : null;
     const { error } = await supabase.from("exercicio").insert([
       {
         nome: novoExercicio.nome,
@@ -867,6 +893,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         repeticoes: Number(novoExercicio.repeticoes),
         reps_por_serie: repsPorSerieFinal,
         carga: Number(novoExercicio.carga),
+        carga_por_serie: cargaPorSerieFinal,
         treino: treinoAtivo,
         user_id: user.id,
         ordem: exerciciosFiltrados.length,
@@ -887,6 +914,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         equipamento: "maquina",
         reps_variam: false,
         reps_por_serie: [],
+        carga_variam: false,
+        carga_por_serie: [],
       });
       nomeExercicioRef.current?.focus();
     }
@@ -932,6 +961,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       carga: ex.carga,
       repeticoes: ex.repeticoes,
       repsPorSerie: ex.reps_por_serie || null,
+      cargaPorSerie: ex.carga_por_serie || null,
       supersetExs: supersetGrupo,
       supersetIdx: supersetGrupo
         ? supersetGrupo.findIndex((e) => e.id === ex.id)
@@ -1344,6 +1374,12 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               prev.reps_por_serie?.[i] ?? prev.repeticoes,
                           )
                         : prev.reps_por_serie,
+                      carga_por_serie: prev.carga_variam
+                        ? Array.from(
+                            { length: Number(novaQtd) || 0 },
+                            (_, i) => prev.carga_por_serie?.[i] ?? prev.carga,
+                          )
+                        : prev.carga_por_serie,
                     }));
                   }}
                 />
@@ -1364,8 +1400,12 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   type="number"
                   placeholder="Kg"
                   value={modalEditEx.carga}
+                  disabled={modalEditEx.carga_variam}
                   onChange={(e) =>
                     setModalEditEx({ ...modalEditEx, carga: e.target.value })
+                  }
+                  style={
+                    modalEditEx.carga_variam ? { opacity: 0.4 } : undefined
                   }
                 />
               </div>
@@ -1460,6 +1500,96 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   )}
                 </div>
               )}
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#cbd5e1",
+                  cursor: "pointer",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={modalEditEx.carga_variam}
+                  style={{
+                    width: 18,
+                    height: 18,
+                    accentColor: "#6366f1",
+                    flexShrink: 0,
+                  }}
+                  onChange={(e) => {
+                    const ligado = e.target.checked;
+                    setModalEditEx({
+                      ...modalEditEx,
+                      carga_variam: ligado,
+                      carga_por_serie: ligado
+                        ? Array.from(
+                            { length: Number(modalEditEx.series) || 1 },
+                            (_, i) =>
+                              modalEditEx.carga_por_serie?.[i] ??
+                              modalEditEx.carga,
+                          )
+                        : modalEditEx.carga_por_serie,
+                    });
+                  }}
+                />
+                Carga varia por série (ex: pirâmide)
+              </label>
+
+              {modalEditEx.carga_variam && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    background: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: 10,
+                    padding: 10,
+                  }}
+                >
+                  {Array.from({ length: Number(modalEditEx.series) || 0 }).map(
+                    (_, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
+                        <span style={{ fontSize: 10, color: "#64748b" }}>
+                          Série {i + 1}
+                        </span>
+                        <input
+                          type="number"
+                          value={modalEditEx.carga_por_serie?.[i] ?? ""}
+                          onChange={(e) => {
+                            const novo = [
+                              ...(modalEditEx.carga_por_serie || []),
+                            ];
+                            novo[i] = e.target.value;
+                            setModalEditEx({
+                              ...modalEditEx,
+                              carga_por_serie: novo,
+                            });
+                          }}
+                          style={{ width: 52, textAlign: "center" }}
+                        />
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
               <button
@@ -1485,6 +1615,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         (r) => Number(r) || 0,
                       )
                     : null;
+                  const cargaPorSerieFinal = modalEditEx.carga_variam
+                    ? (modalEditEx.carga_por_serie || []).map(
+                        (c) => Number(c) || 0,
+                      )
+                    : null;
                   const { error } = await supabase
                     .from("exercicio")
                     .update({
@@ -1495,6 +1630,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       repeticoes: Number(modalEditEx.repeticoes),
                       reps_por_serie: repsPorSerieFinal,
                       carga: Number(modalEditEx.carga),
+                      carga_por_serie: cargaPorSerieFinal,
                       descanso_segundos:
                         Number(modalEditEx.descanso_segundos) || 90,
                     })
@@ -1937,6 +2073,13 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                                       prev.repeticoes,
                                   )
                                 : prev.reps_por_serie,
+                              carga_por_serie: prev.carga_variam
+                                ? Array.from(
+                                    { length: Number(novaQtd) || 0 },
+                                    (_, i) =>
+                                      prev.carga_por_serie?.[i] ?? prev.carga,
+                                  )
+                                : prev.carga_por_serie,
                             }));
                           }}
                           required
@@ -1963,13 +2106,19 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           type="number"
                           placeholder="Kg"
                           value={novoExercicio.carga}
+                          disabled={novoExercicio.carga_variam}
                           onChange={(e) =>
                             setNovoExercicio({
                               ...novoExercicio,
                               carga: e.target.value,
                             })
                           }
-                          required
+                          required={!novoExercicio.carga_variam}
+                          style={
+                            novoExercicio.carga_variam
+                              ? { opacity: 0.4 }
+                              : undefined
+                          }
                         />
                       </div>
 
@@ -2071,6 +2220,105 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           )}
                         </div>
                       )}
+
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#cbd5e1",
+                          cursor: "pointer",
+                          margin: "6px 0",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderRadius: 10,
+                          padding: "10px 14px",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={novoExercicio.carga_variam}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            accentColor: "#6366f1",
+                            flexShrink: 0,
+                          }}
+                          onChange={(e) => {
+                            const ligado = e.target.checked;
+                            setNovoExercicio({
+                              ...novoExercicio,
+                              carga_variam: ligado,
+                              carga_por_serie: ligado
+                                ? Array.from(
+                                    {
+                                      length: Number(novoExercicio.series) || 1,
+                                    },
+                                    (_, i) =>
+                                      novoExercicio.carga_por_serie?.[i] ??
+                                      novoExercicio.carga,
+                                  )
+                                : novoExercicio.carga_por_serie,
+                            });
+                          }}
+                        />
+                        Carga varia por série (ex: pirâmide)
+                      </label>
+
+                      {novoExercicio.carga_variam && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            background: "#0f172a",
+                            border: "1px solid #334155",
+                            borderRadius: 10,
+                            padding: 10,
+                            marginBottom: 10,
+                          }}
+                        >
+                          {Array.from({
+                            length: Number(novoExercicio.series) || 0,
+                          }).map((_, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 3,
+                              }}
+                            >
+                              <span style={{ fontSize: 10, color: "#64748b" }}>
+                                Série {i + 1}
+                              </span>
+                              <input
+                                type="number"
+                                value={novoExercicio.carga_por_serie?.[i] ?? ""}
+                                onChange={(e) => {
+                                  const novo = [
+                                    ...(novoExercicio.carga_por_serie || []),
+                                  ];
+                                  novo[i] = e.target.value;
+                                  setNovoExercicio({
+                                    ...novoExercicio,
+                                    carga_por_serie: novo,
+                                  });
+                                }}
+                                style={{ width: 52, textAlign: "center" }}
+                              />
+                            </div>
+                          ))}
+                          {Number(novoExercicio.series) === 0 && (
+                            <span style={{ fontSize: 11, color: "#475569" }}>
+                              Preenche "Séries" primeiro
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <button type="submit" disabled={carregando}>
                         {carregando
                           ? "Salvando..."
@@ -2123,6 +2371,19 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                                     : Array.from(
                                         { length: Number(ex.series) || 1 },
                                         () => ex.repeticoes,
+                                      ),
+                                carga_variam: !!(
+                                  ex.carga_por_serie &&
+                                  ex.carga_por_serie.length > 0
+                                ),
+                                carga_por_serie:
+                                  ex.carga_por_serie &&
+                                  ex.carga_por_serie.length ===
+                                    Number(ex.series)
+                                    ? ex.carga_por_serie
+                                    : Array.from(
+                                        { length: Number(ex.series) || 1 },
+                                        () => ex.carga,
                                       ),
                               })
                             }

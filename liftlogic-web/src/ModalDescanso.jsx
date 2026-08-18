@@ -29,6 +29,12 @@ export default function ModalDescanso({
       ? repsPorSerie[modalDescanso.serieAtual]
       : modalDescanso.repeticoes;
 
+  const cargaPorSerie = modalDescanso.cargaPorSerie;
+  const cargaAlvo =
+    cargaPorSerie && cargaPorSerie.length > modalDescanso.serieAtual
+      ? cargaPorSerie[modalDescanso.serieAtual]
+      : modalDescanso.carga;
+
   const posicaoAtual = exerciciosFiltrados.findIndex(
     (e) => e.id === modalDescanso.exId,
   );
@@ -51,6 +57,7 @@ export default function ModalDescanso({
       carga: proximo.carga,
       repeticoes: proximo.repeticoes,
       repsPorSerie: proximo.reps_por_serie || null,
+      cargaPorSerie: proximo.carga_por_serie || null,
     });
   };
 
@@ -196,8 +203,19 @@ export default function ModalDescanso({
           }}
         >
           <span style={{ fontSize: 14, color: "#94a3b8", fontWeight: 700 }}>
-            {modalDescanso.carga}kg
+            {cargaAlvo}kg
           </span>
+          {cargaPorSerie && cargaPorSerie.length > 0 && (
+            <span
+              style={{
+                fontSize: 10,
+                color: "#475569",
+                fontWeight: 600,
+              }}
+            >
+              ({cargaPorSerie.join("-")})
+            </span>
+          )}
           <span style={{ color: "#334155" }}>·</span>
           <span style={{ fontSize: 14, color: "#10b981", fontWeight: 800 }}>
             {repAlvo} reps
@@ -470,6 +488,7 @@ export default function ModalDescanso({
                   carga: proximo.carga,
                   repeticoes: proximo.repeticoes,
                   repsPorSerie: proximo.reps_por_serie || null,
+                  cargaPorSerie: proximo.carga_por_serie || null,
                   totalSeries: Number(proximo.series),
                   serieAtual: seriesFeitas[proximo.id] || 0,
                   supersetIdx: supersetIdx + 1,
@@ -485,6 +504,7 @@ export default function ModalDescanso({
                     carga: supersetExs[0].carga,
                     repeticoes: supersetExs[0].repeticoes,
                     repsPorSerie: supersetExs[0].reps_por_serie || null,
+                    cargaPorSerie: supersetExs[0].carga_por_serie || null,
                     totalSeries: Number(supersetExs[0].series),
                     serieAtual: novasSeries,
                     supersetIdx: 0,
