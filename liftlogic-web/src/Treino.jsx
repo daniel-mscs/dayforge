@@ -337,6 +337,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     treino: "A",
     equipamento: "maquina",
     descanso_segundos: "90",
+    reps_variam: false,
+    reps_por_serie: [],
   });
   const [sugestoesExercicio, setSugestoesExercicio] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
@@ -834,12 +836,16 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     const exerciciosFiltrados = exercicios.filter(
       (ex) => ex.treino === treinoAtivo,
     );
+    const repsPorSerieFinal = novoExercicio.reps_variam
+      ? (novoExercicio.reps_por_serie || []).map((r) => Number(r) || 0)
+      : null;
     const { error } = await supabase.from("exercicio").insert([
       {
         nome: novoExercicio.nome,
         grupo_muscular: novoExercicio.grupo_muscular,
         series: Number(novoExercicio.series),
         repeticoes: Number(novoExercicio.repeticoes),
+        reps_por_serie: repsPorSerieFinal,
         carga: Number(novoExercicio.carga),
         treino: treinoAtivo,
         user_id: user.id,
@@ -859,6 +865,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         grupo_muscular: "",
         treino: treinoAtivo,
         equipamento: "maquina",
+        reps_variam: false,
+        reps_por_serie: [],
       });
       nomeExercicioRef.current?.focus();
     }
@@ -1304,9 +1312,20 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   type="number"
                   placeholder="Séries"
                   value={modalEditEx.series}
-                  onChange={(e) =>
-                    setModalEditEx({ ...modalEditEx, series: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const novaQtd = e.target.value;
+                    setModalEditEx((prev) => ({
+                      ...prev,
+                      series: novaQtd,
+                      reps_por_serie: prev.reps_variam
+                        ? Array.from(
+                            { length: Number(novaQtd) || 0 },
+                            (_, i) =>
+                              prev.reps_por_serie?.[i] ?? prev.repeticoes,
+                          )
+                        : prev.reps_por_serie,
+                    }));
+                  }}
                 />
                 <input
                   type="number"
@@ -1874,25 +1893,40 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           type="number"
                           placeholder="Séries"
                           value={novoExercicio.series}
-                          onChange={(e) =>
-                            setNovoExercicio({
-                              ...novoExercicio,
-                              series: e.target.value,
-                            })
-                          }
+                          onChange={(e) => {
+                            const novaQtd = e.target.value;
+                            setNovoExercicio((prev) => ({
+                              ...prev,
+                              series: novaQtd,
+                              reps_por_serie: prev.reps_variam
+                                ? Array.from(
+                                    { length: Number(novaQtd) || 0 },
+                                    (_, i) =>
+                                      prev.reps_por_serie?.[i] ??
+                                      prev.repeticoes,
+                                  )
+                                : prev.reps_por_serie,
+                            }));
+                          }}
                           required
                         />
                         <input
                           type="number"
                           placeholder="Reps"
                           value={novoExercicio.repeticoes}
+                          disabled={novoExercicio.reps_variam}
                           onChange={(e) =>
                             setNovoExercicio({
                               ...novoExercicio,
                               repeticoes: e.target.value,
                             })
                           }
-                          required
+                          required={!novoExercicio.reps_variam}
+                          style={
+                            novoExercicio.reps_variam
+                              ? { opacity: 0.4 }
+                              : undefined
+                          }
                         />
                         <input
                           type="number"
@@ -1907,6 +1941,94 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           required
                         />
                       </div>
+
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          fontSize: 12,
+                          color: "#94a3b8",
+                          cursor: "pointer",
+                          margin: "4px 0",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={novoExercicio.reps_variam}
+                          onChange={(e) => {
+                            const ligado = e.target.checked;
+                            setNovoExercicio({
+                              ...novoExercicio,
+                              reps_variam: ligado,
+                              reps_por_serie: ligado
+                                ? Array.from(
+                                    {
+                                      length: Number(novoExercicio.series) || 1,
+                                    },
+                                    (_, i) =>
+                                      novoExercicio.reps_por_serie?.[i] ??
+                                      novoExercicio.repeticoes,
+                                  )
+                                : novoExercicio.reps_por_serie,
+                            });
+                          }}
+                        />
+                        Repetições variam por série (ex: pirâmide)
+                      </label>
+
+                      {novoExercicio.reps_variam && (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            background: "#0f172a",
+                            border: "1px solid #334155",
+                            borderRadius: 10,
+                            padding: 10,
+                            marginBottom: 10,
+                          }}
+                        >
+                          {Array.from({
+                            length: Number(novoExercicio.series) || 0,
+                          }).map((_, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 3,
+                              }}
+                            >
+                              <span style={{ fontSize: 10, color: "#64748b" }}>
+                                Série {i + 1}
+                              </span>
+                              <input
+                                type="number"
+                                value={novoExercicio.reps_por_serie?.[i] ?? ""}
+                                onChange={(e) => {
+                                  const novo = [
+                                    ...(novoExercicio.reps_por_serie || []),
+                                  ];
+                                  novo[i] = e.target.value;
+                                  setNovoExercicio({
+                                    ...novoExercicio,
+                                    reps_por_serie: novo,
+                                  });
+                                }}
+                                style={{ width: 52, textAlign: "center" }}
+                              />
+                            </div>
+                          ))}
+                          {Number(novoExercicio.series) === 0 && (
+                            <span style={{ fontSize: 11, color: "#475569" }}>
+                              Preenche "Séries" primeiro
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <button type="submit" disabled={carregando}>
                         {carregando
                           ? "Salvando..."
