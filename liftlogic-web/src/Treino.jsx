@@ -185,15 +185,34 @@ function ExercicioCard({
               }
             />
             <span>séries x</span>
-            <input
-              type="number"
-              className="inline-edit"
-              defaultValue={ex.repeticoes}
-              onBlur={(e) =>
-                atualizarExercicio(ex.id, "repeticoes", e.target.value)
-              }
-            />
-            <span>reps</span>
+            {ex.reps_por_serie && ex.reps_por_serie.length > 0 ? (
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#818cf8",
+                  background: "rgba(99,102,241,0.12)",
+                  border: "1px solid rgba(99,102,241,0.3)",
+                  borderRadius: 8,
+                  padding: "3px 8px",
+                }}
+                title={ex.reps_por_serie.join(" / ")}
+              >
+                {ex.reps_por_serie.join("-")} reps
+              </span>
+            ) : (
+              <>
+                <input
+                  type="number"
+                  className="inline-edit"
+                  defaultValue={ex.repeticoes}
+                  onBlur={(e) =>
+                    atualizarExercicio(ex.id, "repeticoes", e.target.value)
+                  }
+                />
+                <span>reps</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -530,6 +549,19 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   useEffect(() => {
     if (divisao) localStorage.setItem("divisao", divisao);
   }, [divisao]);
+  useEffect(() => {
+    if (!modalDescanso) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollY);
+    };
+  }, [modalDescanso]);
   useEffect(() => {
     buscarHistorico();
   }, []);
@@ -871,6 +903,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       descansoSeg: Number(ex.descanso_segundos) || 90,
       carga: ex.carga,
       repeticoes: ex.repeticoes,
+      repsPorSerie: ex.reps_por_serie || null,
       supersetExs: supersetGrupo,
       supersetIdx: supersetGrupo
         ? supersetGrupo.findIndex((e) => e.id === ex.id)
@@ -1279,12 +1312,14 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   type="number"
                   placeholder="Reps"
                   value={modalEditEx.repeticoes}
+                  disabled={modalEditEx.reps_variam}
                   onChange={(e) =>
                     setModalEditEx({
                       ...modalEditEx,
                       repeticoes: e.target.value,
                     })
                   }
+                  style={modalEditEx.reps_variam ? { opacity: 0.4 } : undefined}
                 />
                 <input
                   type="number"
@@ -1295,6 +1330,86 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   }
                 />
               </div>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 12,
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  marginTop: 2,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={modalEditEx.reps_variam}
+                  onChange={(e) => {
+                    const ligado = e.target.checked;
+                    setModalEditEx({
+                      ...modalEditEx,
+                      reps_variam: ligado,
+                      reps_por_serie: ligado
+                        ? Array.from(
+                            { length: Number(modalEditEx.series) || 1 },
+                            (_, i) =>
+                              modalEditEx.reps_por_serie?.[i] ??
+                              modalEditEx.repeticoes,
+                          )
+                        : modalEditEx.reps_por_serie,
+                    });
+                  }}
+                />
+                Repetições variam por série (ex: pirâmide)
+              </label>
+
+              {modalEditEx.reps_variam && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    background: "#0f172a",
+                    border: "1px solid #334155",
+                    borderRadius: 10,
+                    padding: 10,
+                  }}
+                >
+                  {Array.from({ length: Number(modalEditEx.series) || 0 }).map(
+                    (_, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
+                        <span style={{ fontSize: 10, color: "#64748b" }}>
+                          Série {i + 1}
+                        </span>
+                        <input
+                          type="number"
+                          value={modalEditEx.reps_por_serie?.[i] ?? ""}
+                          onChange={(e) => {
+                            const novo = [
+                              ...(modalEditEx.reps_por_serie || []),
+                            ];
+                            novo[i] = e.target.value;
+                            setModalEditEx({
+                              ...modalEditEx,
+                              reps_por_serie: novo,
+                            });
+                          }}
+                          style={{ width: 52, textAlign: "center" }}
+                        />
+                      </div>
+                    ),
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
               <button
@@ -1315,6 +1430,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               </button>
               <button
                 onClick={async () => {
+                  const repsPorSerieFinal = modalEditEx.reps_variam
+                    ? (modalEditEx.reps_por_serie || []).map(
+                        (r) => Number(r) || 0,
+                      )
+                    : null;
                   const { error } = await supabase
                     .from("exercicio")
                     .update({
@@ -1323,6 +1443,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       equipamento: modalEditEx.equipamento,
                       series: Number(modalEditEx.series),
                       repeticoes: Number(modalEditEx.repeticoes),
+                      reps_por_serie: repsPorSerieFinal,
                       carga: Number(modalEditEx.carga),
                       descanso_segundos:
                         Number(modalEditEx.descanso_segundos) || 90,
@@ -1826,6 +1947,18 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               setModalEditEx({
                                 ...ex,
                                 descanso_segundos: ex.descanso_segundos || 90,
+                                reps_variam: !!(
+                                  ex.reps_por_serie &&
+                                  ex.reps_por_serie.length > 0
+                                ),
+                                reps_por_serie:
+                                  ex.reps_por_serie &&
+                                  ex.reps_por_serie.length === Number(ex.series)
+                                    ? ex.reps_por_serie
+                                    : Array.from(
+                                        { length: Number(ex.series) || 1 },
+                                        () => ex.repeticoes,
+                                      ),
                               })
                             }
                             onVincular={(ex) => setModalSuperset(ex)}

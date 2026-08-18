@@ -21,8 +21,38 @@ export default function ModalDescanso({
   const supersetExs = modalDescanso.supersetExs || null;
   const supersetIdx = modalDescanso.supersetIdx ?? 0;
   const emSuperset = supersetExs && supersetExs.length > 1;
-  const exAtual = emSuperset ? supersetExs[supersetIdx] : null;
   const ultimoDoSuperset = emSuperset && supersetIdx === supersetExs.length - 1;
+
+  const repsPorSerie = modalDescanso.repsPorSerie;
+  const repAlvo =
+    repsPorSerie && repsPorSerie.length > modalDescanso.serieAtual
+      ? repsPorSerie[modalDescanso.serieAtual]
+      : modalDescanso.repeticoes;
+
+  const posicaoAtual = exerciciosFiltrados.findIndex(
+    (e) => e.id === modalDescanso.exId,
+  );
+  const temAnterior = posicaoAtual > 0;
+  const temProximo =
+    posicaoAtual >= 0 && posicaoAtual < exerciciosFiltrados.length - 1;
+
+  const irParaExercicio = (proximo) => {
+    cancelarDescanso();
+    if (!proximo) {
+      setModalDescanso(null);
+      return;
+    }
+    setModalDescanso({
+      exId: proximo.id,
+      nomeEx: proximo.nome,
+      serieAtual: seriesFeitas[proximo.id] || 0,
+      totalSeries: Number(proximo.series),
+      descansoSeg: Number(proximo.descanso_segundos) || 90,
+      carga: proximo.carga,
+      repeticoes: proximo.repeticoes,
+      repsPorSerie: proximo.reps_por_serie || null,
+    });
+  };
 
   return (
     <div
@@ -34,7 +64,9 @@ export default function ModalDescanso({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        touchAction: "none",
       }}
+      onTouchMove={(e) => e.preventDefault()}
     >
       <style>{`
         @keyframes modalSlideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
@@ -42,17 +74,44 @@ export default function ModalDescanso({
       `}</style>
       <div
         style={{
-          background: "#1a1d21",
-          borderRadius: 24,
-          padding: "28px 22px 22px",
+          background: "linear-gradient(180deg,#1c1f24,#161819)",
+          borderRadius: 26,
+          padding: "26px 22px 22px",
           width: "92%",
           maxWidth: 380,
+          maxHeight: "92vh",
+          overflowY: "auto",
           textAlign: "center",
-          border: "1px solid #ffffff0d",
+          border: "1px solid #ffffff12",
           boxShadow: "0 24px 60px rgba(0,0,0,0.8)",
           animation: "modalSlideUp 0.3s cubic-bezier(0.16,1,0.3,1)",
+          touchAction: "pan-y",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          {posicaoAtual >= 0 && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "#475569",
+                letterSpacing: "0.08em",
+              }}
+            >
+              EXERCÍCIO {posicaoAtual + 1}/{exerciciosFiltrados.length}
+            </span>
+          )}
+        </div>
+
         <div
           style={{
             display: "inline-block",
@@ -115,23 +174,45 @@ export default function ModalDescanso({
         )}
         <div
           style={{
-            fontSize: 20,
+            fontSize: 21,
             fontWeight: 900,
             color: "#f1f5f9",
-            marginBottom: 4,
+            marginBottom: 6,
             lineHeight: 1.2,
           }}
         >
           {modalDescanso.nomeEx}
         </div>
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
-          <span style={{ color: "#94a3b8", fontWeight: 600 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 12,
+            padding: "6px 14px",
+            marginBottom: 20,
+          }}
+        >
+          <span style={{ fontSize: 14, color: "#94a3b8", fontWeight: 700 }}>
             {modalDescanso.carga}kg
           </span>
-          <span style={{ margin: "0 8px", color: "#334155" }}>·</span>
-          <span style={{ color: "#94a3b8", fontWeight: 600 }}>
-            {modalDescanso.repeticoes} reps
+          <span style={{ color: "#334155" }}>·</span>
+          <span style={{ fontSize: 14, color: "#10b981", fontWeight: 800 }}>
+            {repAlvo} reps
           </span>
+          {repsPorSerie && repsPorSerie.length > 0 && (
+            <span
+              style={{
+                fontSize: 10,
+                color: "#475569",
+                fontWeight: 600,
+              }}
+            >
+              ({repsPorSerie.join("-")})
+            </span>
+          )}
         </div>
 
         <div
@@ -145,30 +226,57 @@ export default function ModalDescanso({
         >
           {Array.from({ length: modalDescanso.totalSeries }).map((_, i) => {
             const feita = i < modalDescanso.serieAtual;
+            const atual = i === modalDescanso.serieAtual;
+            const repDaSerie =
+              repsPorSerie && repsPorSerie.length > i
+                ? repsPorSerie[i]
+                : modalDescanso.repeticoes;
             return (
               <div
                 key={i}
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: feita
-                    ? "linear-gradient(135deg,#6366f1,#4f46e5)"
-                    : "rgba(255,255,255,0.04)",
-                  border: `2px solid ${feita ? "#6366f1" : "rgba(255,255,255,0.12)"}`,
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  color: feita ? "#fff" : "#64748b",
-                  boxShadow: feita
-                    ? "0 4px 14px rgba(99,102,241,0.45)"
-                    : "none",
-                  transition: "all 0.3s",
+                  gap: 3,
                 }}
               >
-                {feita ? "✓" : i + 1}
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    background: feita
+                      ? "linear-gradient(135deg,#6366f1,#4f46e5)"
+                      : atual
+                        ? "rgba(99,102,241,0.15)"
+                        : "rgba(255,255,255,0.04)",
+                    border: `2px solid ${feita ? "#6366f1" : atual ? "#6366f1" : "rgba(255,255,255,0.12)"}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: feita ? "#fff" : atual ? "#a5b4fc" : "#64748b",
+                    boxShadow: feita
+                      ? "0 4px 14px rgba(99,102,241,0.45)"
+                      : "none",
+                    transition: "all 0.3s",
+                  }}
+                >
+                  {feita ? "✓" : i + 1}
+                </div>
+                {repsPorSerie && repsPorSerie.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: atual ? "#a5b4fc" : "#475569",
+                    }}
+                  >
+                    {repDaSerie}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -361,6 +469,7 @@ export default function ModalDescanso({
                   nomeEx: proximo.nome,
                   carga: proximo.carga,
                   repeticoes: proximo.repeticoes,
+                  repsPorSerie: proximo.reps_por_serie || null,
                   totalSeries: Number(proximo.series),
                   serieAtual: seriesFeitas[proximo.id] || 0,
                   supersetIdx: supersetIdx + 1,
@@ -375,6 +484,7 @@ export default function ModalDescanso({
                     nomeEx: supersetExs[0].nome,
                     carga: supersetExs[0].carga,
                     repeticoes: supersetExs[0].repeticoes,
+                    repsPorSerie: supersetExs[0].reps_por_serie || null,
                     totalSeries: Number(supersetExs[0].series),
                     serieAtual: novasSeries,
                     supersetIdx: 0,
@@ -403,6 +513,26 @@ export default function ModalDescanso({
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => {
+              const anterior = exerciciosFiltrados[posicaoAtual - 1];
+              irParaExercicio(anterior);
+            }}
+            disabled={!temAnterior}
+            style={{
+              flex: 1,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              color: temAnterior ? "#94a3b8" : "#334155",
+              fontSize: 13,
+              fontWeight: 700,
+              padding: "13px 0",
+              cursor: temAnterior ? "pointer" : "default",
+            }}
+          >
+            ← Anterior
+          </button>
+          <button
+            onClick={() => {
               cancelarDescanso();
               setModalDescanso(null);
             }}
@@ -418,39 +548,26 @@ export default function ModalDescanso({
               cursor: "pointer",
             }}
           >
-            ← Fechar
+            Fechar
           </button>
           <button
             onClick={() => {
-              const idx = exerciciosFiltrados.findIndex(
-                (e) => e.id === modalDescanso.exId,
-              );
-              const proximo = exerciciosFiltrados[idx + 1];
-              cancelarDescanso();
-              if (proximo) {
-                setModalDescanso({
-                  exId: proximo.id,
-                  nomeEx: proximo.nome,
-                  serieAtual: seriesFeitas[proximo.id] || 0,
-                  totalSeries: Number(proximo.series),
-                  descansoSeg: Number(proximo.descanso_segundos) || 90,
-                  carga: proximo.carga,
-                  repeticoes: proximo.repeticoes,
-                });
-              } else {
-                setModalDescanso(null);
-              }
+              const proximo = exerciciosFiltrados[posicaoAtual + 1];
+              irParaExercicio(proximo);
             }}
+            disabled={!temProximo}
             style={{
               flex: 1,
-              background: "rgba(99,102,241,0.1)",
-              border: "1px solid rgba(99,102,241,0.25)",
+              background: temProximo
+                ? "rgba(99,102,241,0.1)"
+                : "rgba(255,255,255,0.02)",
+              border: `1px solid ${temProximo ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.06)"}`,
               borderRadius: 12,
-              color: "#818cf8",
+              color: temProximo ? "#818cf8" : "#334155",
               fontSize: 13,
               fontWeight: 700,
               padding: "13px 0",
-              cursor: "pointer",
+              cursor: temProximo ? "pointer" : "default",
             }}
           >
             Próximo →
