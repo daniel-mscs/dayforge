@@ -1786,6 +1786,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               <button
                                 key={preset.nome}
                                 type="button"
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() =>
                                   selecionarExercicioPreset(preset)
                                 }
