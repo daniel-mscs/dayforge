@@ -370,8 +370,23 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setTimeout(() => tocarTom(1318, 300), 200);
   };
 
+  const falar = (texto) => {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(texto);
+      utter.lang = "pt-BR";
+      utter.rate = 1.05;
+      utter.pitch = 1;
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      // Speech Synthesis indisponível, ignora silenciosamente
+    }
+  };
+
   const tocarAvisoDescanso = () => {
     tocarTom(660, 150, 0.3);
+    falar("Prepare-se!");
   };
 
   const [novoExercicio, setNovoExercicio] = useState({
@@ -402,17 +417,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const tocarAlertaLongo = () => {
     if (alertaAtivoRef.current) return;
     alertaAtivoRef.current = true;
-    let repeticoes = 0;
-    const intervaloSom = setInterval(() => {
-      tocarSinoDescanso();
-      repeticoes++;
-      if (repeticoes >= 3) {
-        clearInterval(intervaloSom);
-        setTimeout(() => {
-          alertaAtivoRef.current = false;
-        }, 1000);
-      }
-    }, 800);
+    tocarSinoDescanso();
+    falar("Bora treinar!");
+    setTimeout(() => {
+      alertaAtivoRef.current = false;
+    }, 2500);
   };
 
   const buscarExercicios = async () => {
@@ -687,7 +696,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         alerta10sDisparadoRef.current = false;
         tocarAlertaLongo();
       } else {
-        if (restante === 10 && !alerta10sDisparadoRef.current) {
+        if (restante === 5 && !alerta10sDisparadoRef.current) {
           alerta10sDisparadoRef.current = true;
           tocarAvisoDescanso();
         }
