@@ -373,12 +373,13 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const falar = (texto) => {
     try {
       if (!("speechSynthesis" in window)) return;
-      window.speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(texto);
       utter.lang = "pt-BR";
       utter.rate = 1.05;
       utter.pitch = 1;
-      window.speechSynthesis.speak(utter);
+      utter.volume = 1;
+      window.speechSynthesis.cancel();
+      setTimeout(() => window.speechSynthesis.speak(utter), 50);
     } catch (e) {
       // Speech Synthesis indisponível, ignora silenciosamente
     }
@@ -1807,6 +1808,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           inicioTreinoRef.current = agora;
                           setTreinando(true);
                           setTempoTotal(0);
+                          falar("Vamos treinar!");
                         }}
                       >
                         ▶ Iniciar Treino {treinoAtivo}
