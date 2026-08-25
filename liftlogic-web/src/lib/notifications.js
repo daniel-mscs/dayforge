@@ -130,3 +130,37 @@ export async function cancelarNotificacoes() {
     await LocalNotifications.cancel({ notifications: pending.notifications });
   }
 }
+
+// ID reservado só pra notificação de descanso do treino, longe dos
+// ids 1-7 usados pelas notificações diárias fixas.
+const ID_NOTIF_DESCANSO = 9999;
+
+export async function agendarNotificacaoDescanso(segundos) {
+  if (!Capacitor.isNativePlatform()) return;
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return;
+  await LocalNotifications.cancel({
+    notifications: [{ id: ID_NOTIF_DESCANSO }],
+  });
+  await LocalNotifications.schedule({
+    notifications: [
+      {
+        id: ID_NOTIF_DESCANSO,
+        title: "⏱️ Descanso acabou!",
+        body: "Bora pra próxima série 💪",
+        smallIcon: "ic_notification",
+        schedule: {
+          at: new Date(Date.now() + segundos * 1000),
+          allowWhileIdle: true,
+        },
+      },
+    ],
+  });
+}
+
+export async function cancelarNotificacaoDescanso() {
+  if (!Capacitor.isNativePlatform()) return;
+  await LocalNotifications.cancel({
+    notifications: [{ id: ID_NOTIF_DESCANSO }],
+  });
+}

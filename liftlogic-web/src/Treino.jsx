@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase";
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 import ModalDescanso from "./ModalDescanso";
 import {
   DndContext,
@@ -53,7 +54,11 @@ import { ganharXP } from "./lib/rpg";
 import { toast } from "./lib/toast";
 import Tour from "./lib/tour";
 import { useTour } from "./lib/useTour";
-import { NOTIFICACOES } from "./lib/notifications";
+import {
+  NOTIFICACOES,
+  agendarNotificacaoDescanso,
+  cancelarNotificacaoDescanso,
+} from "./lib/notifications";
 
 function ExercicioCard({
   ex,
@@ -371,18 +376,23 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   };
 
   const falar = (texto) => {
-    try {
-      if (!("speechSynthesis" in window)) return;
-      const utter = new SpeechSynthesisUtterance(texto);
-      utter.lang = "pt-BR";
-      utter.rate = 1.05;
-      utter.pitch = 1;
-      utter.volume = 1;
-      window.speechSynthesis.cancel();
-      setTimeout(() => window.speechSynthesis.speak(utter), 50);
-    } catch (e) {
-      // Speech Synthesis indisponível, ignora silenciosamente
-    }
+    TextToSpeech.speak({
+      text: texto,
+      lang: "pt-BR",
+      rate: 1.05,
+      pitch: 1.0,
+      volume: 1.0,
+      category: "ambient",
+    }).catch(() => {
+      // TTS indisponível (ex: rodando no navegador sem o plugin nativo)
+      try {
+        if (!("speechSynthesis" in window)) return;
+        const utter = new SpeechSynthesisUtterance(texto);
+        utter.lang = "pt-BR";
+        window.speechSynthesis.cancel();
+        setTimeout(() => window.speechSynthesis.speak(utter), 50);
+      } catch (e) {}
+    });
   };
 
   const tocarAvisoDescanso = () => {
@@ -684,6 +694,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     duracaoDescansoRef.current = segundos;
     setDescanso(segundos);
     alerta10sDisparadoRef.current = false;
+    agendarNotificacaoDescanso(segundos);
     descansoRef.current = setInterval(() => {
       const restante =
         duracaoDescansoRef.current -
@@ -695,6 +706,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         duracaoDescansoRef.current = 0;
         setDescanso(0);
         alerta10sDisparadoRef.current = false;
+        cancelarNotificacaoDescanso();
         tocarAlertaLongo();
       } else {
         if (restante === 5 && !alerta10sDisparadoRef.current) {
@@ -728,6 +740,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     inicioDescansoRef.current = null;
     duracaoDescansoRef.current = 0;
     setDescanso(0);
+    cancelarNotificacaoDescanso();
   };
 
   const handleDragEnd = async (event) => {
