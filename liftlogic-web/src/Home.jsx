@@ -40,6 +40,63 @@ function formatarData(date) {
   return local.toISOString().split("T")[0];
 }
 
+// Feriados nacionais fixos (mês/dia, mesmo todo ano)
+const FERIADOS_FIXOS = [
+  { mes: 1, dia: 1, nome: "Ano Novo" },
+  { mes: 4, dia: 21, nome: "Tiradentes" },
+  { mes: 5, dia: 1, nome: "Dia do Trabalho" },
+  { mes: 9, dia: 7, nome: "Independência" },
+  { mes: 10, dia: 12, nome: "N. Sra. Aparecida" },
+  { mes: 11, dia: 2, nome: "Finados" },
+  { mes: 11, dia: 15, nome: "Proclamação da República" },
+  { mes: 12, dia: 25, nome: "Natal" },
+];
+
+// Algoritmo de Gauss/Anônimo pra calcular o domingo de Páscoa
+function calcularPascoa(ano) {
+  const a = ano % 19;
+  const b = Math.floor(ano / 100);
+  const c = ano % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mes = Math.floor((h + l - 7 * m + 114) / 31);
+  const dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(ano, mes - 1, dia);
+}
+
+function feriadosMoveis(ano) {
+  const pascoa = calcularPascoa(ano);
+  const somarDias = (data, dias) => {
+    const d = new Date(data);
+    d.setDate(d.getDate() + dias);
+    return d;
+  };
+  return [
+    { data: somarDias(pascoa, -47), nome: "Carnaval" },
+    { data: somarDias(pascoa, -2), nome: "Sexta-feira Santa" },
+    { data: pascoa, nome: "Páscoa" },
+    { data: somarDias(pascoa, 60), nome: "Corpus Christi" },
+  ];
+}
+
+function getFeriado(dataStr) {
+  const d = new Date(dataStr + "T00:00:00");
+  const fixo = FERIADOS_FIXOS.find(
+    (f) => f.mes === d.getMonth() + 1 && f.dia === d.getDate(),
+  );
+  if (fixo) return fixo.nome;
+  const moveis = feriadosMoveis(d.getFullYear());
+  const movel = moveis.find((f) => formatarData(f.data) === dataStr);
+  return movel ? movel.nome : null;
+}
+
 function diasDesdeData(dataStr) {
   if (!dataStr) return null;
   return Math.floor((Date.now() - new Date(dataStr).getTime()) / 86400000);
@@ -88,6 +145,7 @@ export default function Home({
   const [showConfetti, setShowConfetti] = useState(false);
   const [statsAniversario, setStatsAniversario] = useState(null);
   const [resumoRotinaSemana, setResumoRotinaSemana] = useState([]);
+  const [resumoRotinaFixas, setResumoRotinaFixas] = useState([]);
   const [chaveSemanaRotina, setChaveSemanaRotina] = useState("");
   const [mostrarResumoRotina, setMostrarResumoRotina] = useState(true);
 
@@ -506,9 +564,35 @@ export default function Home({
         ? (tarefasSemana || []).filter((t) => t.dia_id === dia.id)
         : [];
       const nomeDia = NOMES_DIA[new Date(data + "T00:00:00").getDay()];
-      return { data, nomeDia, tarefas: tarefasDoDia };
+      const diaSemanaNum2 = new Date(data + "T00:00:00").getDay();
+      return {
+        data,
+        nomeDia,
+        tarefas: tarefasDoDia,
+        fimDeSemana: diaSemanaNum2 === 0 || diaSemanaNum2 === 6,
+        feriado: getFeriado(data),
+      };
     });
-    setResumoRotinaSemana(resumo);
+
+    // Tarefas que se repetem em TODOS os dias com pelo menos uma tarefa
+    // viram um "todo dia" fixo, em vez de repetir a mesma linha 7 vezes.
+    const diasComTarefa = resumo.filter((d) => d.tarefas.length > 0);
+    let fixas = [];
+    if (diasComTarefa.length >= 2) {
+      const textosPorDia = diasComTarefa.map(
+        (d) => new Set(d.tarefas.map((t) => t.texto)),
+      );
+      fixas = [...textosPorDia[0]].filter((texto) =>
+        textosPorDia.every((set) => set.has(texto)),
+      );
+    }
+    const resumoComExtras = resumo.map((d) => ({
+      ...d,
+      extras: d.tarefas.filter((t) => !fixas.includes(t.texto)),
+    }));
+
+    setResumoRotinaFixas(fixas);
+    setResumoRotinaSemana(resumoComExtras);
   }, [user.id]);
 
   useEffect(() => {
@@ -912,6 +996,39 @@ export default function Home({
                 ✕
               </button>
             </div>
+            {resumoRotinaFixas.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  padding: "6px 0 12px",
+                  marginBottom: 8,
+                  borderBottom: "1px solid #6366f133",
+                }}
+              >
+                <div
+                  style={{
+                    width: 62,
+                    flexShrink: 0,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "#f59e0b",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Todo dia
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#cbd5e1",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {resumoRotinaFixas.join(" • ")}
+                </div>
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
@@ -921,7 +1038,14 @@ export default function Home({
             >
               {resumoRotinaSemana.map((d) => {
                 const isHoje = d.data === formatarData(new Date());
-                const textos = d.tarefas.map((t) => t.texto).filter(Boolean);
+                const textos = d.extras.map((t) => t.texto).filter(Boolean);
+                const cor = d.feriado
+                  ? "#ef4444"
+                  : isHoje
+                    ? "#818cf8"
+                    : d.fimDeSemana
+                      ? "#f59e0b"
+                      : "#64748b";
                 return (
                   <div
                     key={d.data}
@@ -930,6 +1054,10 @@ export default function Home({
                       gap: 10,
                       padding: "6px 0",
                       borderBottom: "1px solid #ffffff08",
+                      background: d.feriado
+                        ? "rgba(239,68,68,0.06)"
+                        : "transparent",
+                      borderRadius: d.feriado ? 8 : 0,
                     }}
                   >
                     <div
@@ -938,7 +1066,7 @@ export default function Home({
                         flexShrink: 0,
                         fontSize: 11,
                         fontWeight: 800,
-                        color: isHoje ? "#818cf8" : "#64748b",
+                        color: cor,
                         textTransform: "uppercase",
                       }}
                     >
@@ -951,9 +1079,29 @@ export default function Home({
                         lineHeight: 1.5,
                       }}
                     >
+                      {d.feriado && (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            background: "rgba(239,68,68,0.15)",
+                            border: "1px solid rgba(239,68,68,0.3)",
+                            color: "#ef4444",
+                            fontSize: 10,
+                            fontWeight: 800,
+                            padding: "2px 7px",
+                            borderRadius: 6,
+                            marginRight: 6,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          🎉 {d.feriado}
+                        </span>
+                      )}
                       {textos.length
                         ? textos.join(" • ")
-                        : "Nada planejado ainda"}
+                        : resumoRotinaFixas.length
+                          ? "Só a rotina fixa"
+                          : "Nada planejado ainda"}
                     </div>
                   </div>
                 );
