@@ -164,3 +164,63 @@ export async function cancelarNotificacaoDescanso() {
     notifications: [{ id: ID_NOTIF_DESCANSO }],
   });
 }
+
+// IDs reservados pras notificações de resumo da Rotina por período,
+// longe dos outros blocos de id já usados no app.
+const IDS_NOTIF_ROTINA = {
+  Acordar: 9101,
+  Manhã: 9102,
+  Tarde: 9103,
+  Noite: 9104,
+};
+
+const HORARIOS_ROTINA = {
+  Acordar: { hour: 6, minute: 30 },
+  Manhã: { hour: 8, minute: 0 },
+  Tarde: { hour: 13, minute: 0 },
+  Noite: { hour: 19, minute: 0 },
+};
+
+function resumirTarefas(lista) {
+  const textos = lista.map((t) => t.texto).filter(Boolean);
+  if (textos.length === 0) return "";
+  if (textos.length <= 4) return textos.join(" • ");
+  return textos.slice(0, 4).join(" • ") + ` • +${textos.length - 4}`;
+}
+
+export async function agendarNotificacoesRotina(tarefasPorPeriodo) {
+  if (!Capacitor.isNativePlatform()) return;
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return;
+
+  await LocalNotifications.cancel({
+    notifications: Object.values(IDS_NOTIF_ROTINA).map((id) => ({ id })),
+  });
+
+  const agora = new Date();
+  const agendamentos = [];
+
+  Object.entries(HORARIOS_ROTINA).forEach(([periodo, hora]) => {
+    const lista = tarefasPorPeriodo[periodo] || [];
+    if (lista.length === 0) return;
+
+    const quando = new Date();
+    quando.setHours(hora.hour, hora.minute, 0, 0);
+    if (quando <= agora) return; // já passou esse período hoje
+
+    const resumo = resumirTarefas(lista);
+    if (!resumo) return;
+
+    agendamentos.push({
+      id: IDS_NOTIF_ROTINA[periodo],
+      title: `📋 ${periodo}`,
+      body: resumo,
+      smallIcon: "ic_notification",
+      schedule: { at: quando, allowWhileIdle: true },
+    });
+  });
+
+  if (agendamentos.length > 0) {
+    await LocalNotifications.schedule({ notifications: agendamentos });
+  }
+}

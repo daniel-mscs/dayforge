@@ -87,6 +87,9 @@ export default function Home({
   const [salvandoHumor, setSalvandoHumor] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [statsAniversario, setStatsAniversario] = useState(null);
+  const [resumoRotinaSemana, setResumoRotinaSemana] = useState([]);
+  const [chaveSemanaRotina, setChaveSemanaRotina] = useState("");
+  const [mostrarResumoRotina, setMostrarResumoRotina] = useState(true);
 
   const isNatal = (() => {
     const hoje = new Date();
@@ -457,6 +460,69 @@ export default function Home({
     carregar();
   }, [carregar]);
 
+  const buscarResumoSemanaRotina = useCallback(async () => {
+    const hojeDate = new Date();
+    const diaSemanaNum = hojeDate.getDay(); // 0 = domingo
+    const offsetSegunda = diaSemanaNum === 0 ? -6 : 1 - diaSemanaNum;
+    const segunda = new Date(hojeDate);
+    segunda.setDate(hojeDate.getDate() + offsetSegunda);
+    const datasSemana = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(segunda);
+      d.setDate(segunda.getDate() + i);
+      return formatarData(d);
+    });
+    const chave = datasSemana[0];
+    setChaveSemanaRotina(chave);
+    const oculto =
+      localStorage.getItem(`home_resumo_rotina_oculto_${chave}`) === "true";
+    setMostrarResumoRotina(!oculto);
+    if (oculto) return;
+
+    const { data: diasSemana } = await supabase
+      .from("rotina_dias")
+      .select("id,data")
+      .eq("user_id", user.id)
+      .in("data", datasSemana);
+    if (!diasSemana || diasSemana.length === 0) return;
+
+    const ids = diasSemana.map((d) => d.id);
+    const { data: tarefasSemana } = await supabase
+      .from("rotina_tarefas")
+      .select("dia_id, periodo, texto")
+      .in("dia_id", ids);
+
+    const NOMES_DIA = [
+      "Domingo",
+      "Segunda",
+      "Terça",
+      "Quarta",
+      "Quinta",
+      "Sexta",
+      "Sábado",
+    ];
+    const resumo = datasSemana.map((data) => {
+      const dia = diasSemana.find((d) => d.data === data);
+      const tarefasDoDia = dia
+        ? (tarefasSemana || []).filter((t) => t.dia_id === dia.id)
+        : [];
+      const nomeDia = NOMES_DIA[new Date(data + "T00:00:00").getDay()];
+      return { data, nomeDia, tarefas: tarefasDoDia };
+    });
+    setResumoRotinaSemana(resumo);
+  }, [user.id]);
+
+  useEffect(() => {
+    buscarResumoSemanaRotina();
+  }, [buscarResumoSemanaRotina]);
+
+  const fecharResumoRotina = () => {
+    localStorage.setItem(
+      `home_resumo_rotina_oculto_${chaveSemanaRotina}`,
+      "true",
+    );
+    setMostrarResumoRotina(false);
+  };
+
   async function registrarStreakHoje(userId) {
     const hoje = formatarData(new Date());
     await supabase
@@ -809,6 +875,94 @@ export default function Home({
           </div>
         </div>
       )}
+
+      {/* Card resumo semanal da Rotina */}
+      {mostrarResumoRotina &&
+        resumoRotinaSemana.some((d) => d.tarefas.length > 0) && (
+          <div
+            style={{
+              background: "#1a1d21",
+              border: "1px solid #6366f155",
+              borderRadius: 16,
+              padding: "18px 20px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{ fontSize: 15, fontWeight: 800, color: "#f8fafc" }}
+              >
+                📋 Resumo da semana
+              </div>
+              <button
+                onClick={fecharResumoRotina}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#475569",
+                  fontSize: 13,
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {resumoRotinaSemana.map((d) => {
+                const isHoje = d.data === formatarData(new Date());
+                const textos = d.tarefas.map((t) => t.texto).filter(Boolean);
+                return (
+                  <div
+                    key={d.data}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      padding: "6px 0",
+                      borderBottom: "1px solid #ffffff08",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 62,
+                        flexShrink: 0,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: isHoje ? "#818cf8" : "#64748b",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {isHoje ? "Hoje" : d.nomeDia.slice(0, 3)}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: textos.length ? "#cbd5e1" : "#475569",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {textos.length
+                        ? textos.join(" • ")
+                        : "Nada planejado ainda"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
       {/* Card Natal */}
       {isNatal && (

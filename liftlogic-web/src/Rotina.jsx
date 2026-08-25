@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { agendarNotificacoesRotina } from "./lib/notifications";
 import {
   DndContext,
   closestCenter,
@@ -279,6 +280,14 @@ export default function Rotina({ user }) {
   useEffect(() => {
     buscarRotina();
   }, [buscarRotina]);
+
+  useEffect(() => {
+    if (dias.length === 0) return;
+    const diaHoje = dias.find((d) => d.data === hoje);
+    if (!diaHoje) return;
+    const tarefasHoje = tarefas[diaHoje.id] || {};
+    agendarNotificacoesRotina(tarefasHoje);
+  }, [dias, tarefas, hoje]);
 
   // Meses disponíveis na rotina
   const mesesDisponiveis = (() => {
