@@ -861,10 +861,10 @@ export default function Macros({ user, onAjuda }) {
             lineHeight: 1.5,
           }}
         >
-          Valores de referência diária aproximados — não substituem
-          orientação nutricional profissional. Alimentos da base geral podem
-          não ter esses dados cadastrados ainda; alimentos personalizados
-          que você criar já podem incluir.
+          Valores de referência diária aproximados — não substituem orientação
+          nutricional profissional. Alimentos da base geral podem não ter esses
+          dados cadastrados ainda; alimentos personalizados que você criar já
+          podem incluir.
         </div>
       </div>
 

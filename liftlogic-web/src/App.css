@@ -70,9 +70,22 @@ body {
 /* TÍTULO */
 .title-divisao {
   font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 20px;
   color: #f8fafc;
+  position: relative;
+  padding-left: 14px;
+}
+
+.title-divisao::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #6366f1, #4f46e5);
 }
 
 /* ABAS */
@@ -102,10 +115,10 @@ body {
 }
 
 .tab-button.active {
-  background: #6366f1;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: white;
   border-color: #6366f1;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
 }
 
 /* FORMULÁRIO */
@@ -178,31 +191,46 @@ button[type="submit"]:disabled {
 
 .btn-start-workout {
   width: 100%;
-  background: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
-  padding: 15px;
-  border-radius: 12px;
-  font-weight: 700;
+  padding: 17px;
+  border-radius: 14px;
+  font-weight: 800;
   font-size: 16px;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: opacity 0.2s;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+  transition: all 0.2s;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.35);
 }
 
 .btn-start-workout:hover {
-  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.45);
 }
 
 .active-timer-container {
-  background: #16191d;
-  border: 1px solid #ffffff05;
-  border-radius: 24px;
+  position: relative;
+  background: linear-gradient(165deg, #1a1d23, #131519);
+  border: 1px solid #ffffff0d;
+  border-radius: 26px;
   padding: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.active-timer-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #6366f1, transparent);
 }
 
 .main-timer {
@@ -219,10 +247,11 @@ button[type="submit"]:disabled {
 }
 
 .main-timer strong {
-  font-size: 3rem;
+  font-size: 3.1rem;
   letter-spacing: -2px;
   color: #f8fafc;
-  font-weight: 700;
+  font-weight: 800;
+  text-shadow: 0 0 30px rgba(99, 102, 241, 0.25);
 }
 
 .rest-timer {
@@ -386,17 +415,21 @@ button[type="submit"]:disabled {
 /* CARDS DE EXERCÍCIO */
 .card {
   position: relative;
-  background: #1a1d21;
-  border: 1px solid #ffffff0d;
+  background: linear-gradient(155deg, #1c2026, #17191d);
+  border: 1px solid #ffffff10;
   padding: 18px 20px;
-  border-radius: 16px;
+  border-radius: 18px;
   margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   transition: all 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  border-color: #6366f133;
+  transform: translateY(-3px);
+  border-color: #6366f14d;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(99, 102, 241, 0.08);
 }
 
 .card.concluido {
@@ -467,10 +500,11 @@ button[type="submit"]:disabled {
 
 .tag {
   display: inline-block;
-  background: rgba(99, 102, 241, 0.1);
-  color: #818cf8;
-  padding: 3px 8px;
-  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  padding: 4px 10px;
+  border-radius: 8px;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;

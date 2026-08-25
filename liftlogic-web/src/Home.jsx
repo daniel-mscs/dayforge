@@ -895,9 +895,7 @@ export default function Home({
                 marginBottom: 12,
               }}
             >
-              <div
-                style={{ fontSize: 15, fontWeight: 800, color: "#f8fafc" }}
-              >
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#f8fafc" }}>
                 📋 Resumo da semana
               </div>
               <button
