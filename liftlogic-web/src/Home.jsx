@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -26,6 +26,7 @@ import {
   SkeletonGrid,
 } from "./lib/skeleton";
 import Confetti from "react-confetti";
+import { toast } from "./lib/toast";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -144,6 +145,8 @@ export default function Home({
   const [salvandoHumor, setSalvandoHumor] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [statsAniversario, setStatsAniversario] = useState(null);
+  const [easterEggAtivo, setEasterEggAtivo] = useState(false);
+  const tapsEasterEgg = useRef({ count: 0, ultimoTap: 0 });
   const [resumoRotinaSemana, setResumoRotinaSemana] = useState([]);
   const [chaveSemanaRotina, setChaveSemanaRotina] = useState("");
   const [mostrarResumoRotina, setMostrarResumoRotina] = useState(true);
@@ -748,7 +751,33 @@ export default function Home({
       {/* Saudação + streak */}
       <div className="home-header">
         <div>
-          <h2 className="home-greeting">
+          <h2
+            className="home-greeting"
+            onClick={() => {
+              const agora = Date.now();
+              const t = tapsEasterEgg.current;
+              if (agora - t.ultimoTap > 2500) t.count = 0;
+              t.count += 1;
+              t.ultimoTap = agora;
+              if (t.count >= 7) {
+                t.count = 0;
+                const mensagens = [
+                  "🔨 A bigorna reconhece sua persistência!",
+                  "🔥 Segredo da forja desbloqueado!",
+                  "⚒️ Nem todo mundo acha isso. Parabéns!",
+                  "🧱 Tijolo por tijolo, até os easter eggs.",
+                ];
+                toast(
+                  mensagens[Math.floor(Math.random() * mensagens.length)],
+                  "success",
+                  4000,
+                );
+                setEasterEggAtivo(true);
+                setTimeout(() => setEasterEggAtivo(false), 4000);
+              }
+            }}
+            style={{ cursor: "default", userSelect: "none" }}
+          >
             {getGreeting()}, {nome}!
           </h2>
           <p className="home-date">
@@ -766,6 +795,16 @@ export default function Home({
           </div>
         )}
       </div>
+
+      {easterEggAtivo && (
+        <Confetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          numberOfPieces={180}
+          recycle={false}
+          gravity={0.25}
+        />
+      )}
 
       {/* Confete aniversário */}
       {showConfetti && (
