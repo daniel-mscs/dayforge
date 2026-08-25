@@ -89,6 +89,11 @@ export default function Macros({ user, onAjuda }) {
     prot: "",
     carb: "",
     gord: "",
+    vit_c: "",
+    vit_d: "",
+    calcio: "",
+    ferro: "",
+    fibra: "",
   });
 
   const [showClonar, setShowClonar] = useState(false);
@@ -252,6 +257,11 @@ export default function Macros({ user, onAjuda }) {
       prot: round1(food.prot * f),
       carb: round1(food.carb * f),
       gord: round1(food.gord * f),
+      vit_c: round1((food.vit_c || 0) * f),
+      vit_d: round1((food.vit_d || 0) * f),
+      calcio: round1((food.calcio || 0) * f),
+      ferro: round1((food.ferro || 0) * f),
+      fibra: round1((food.fibra || 0) * f),
     };
   };
 
@@ -329,7 +339,8 @@ export default function Macros({ user, onAjuda }) {
   };
 
   const salvarCustom = async () => {
-    const { nome, kcal, prot, carb, gord } = novoAlimento;
+    const { nome, kcal, prot, carb, gord, vit_c, vit_d, calcio, ferro, fibra } =
+      novoAlimento;
     if (!nome || !kcal) {
       toast("Preencha nome e calorias!", "warning");
       return;
@@ -344,6 +355,11 @@ export default function Macros({ user, onAjuda }) {
           prot: parseFloat(prot || 0),
           carb: parseFloat(carb || 0),
           gord: parseFloat(gord || 0),
+          vit_c: parseFloat(vit_c || 0),
+          vit_d: parseFloat(vit_d || 0),
+          calcio: parseFloat(calcio || 0),
+          ferro: parseFloat(ferro || 0),
+          fibra: parseFloat(fibra || 0),
         },
       ])
       .select();
@@ -352,7 +368,18 @@ export default function Macros({ user, onAjuda }) {
       return;
     }
     setCustomFoods((prev) => [...prev, data[0]]);
-    setNovoAlimento({ nome: "", kcal: "", prot: "", carb: "", gord: "" });
+    setNovoAlimento({
+      nome: "",
+      kcal: "",
+      prot: "",
+      carb: "",
+      gord: "",
+      vit_c: "",
+      vit_d: "",
+      calcio: "",
+      ferro: "",
+      fibra: "",
+    });
     setShowCustomForm(false);
     toast("Alimento salvo!", "success");
   };
@@ -407,6 +434,11 @@ export default function Macros({ user, onAjuda }) {
         prot: round1(Number(r.prot) * fator),
         carb: round1(Number(r.carb) * fator),
         gord: round1(Number(r.gord) * fator),
+        vit_c: round1(Number(r.vit_c || 0) * fator),
+        vit_d: round1(Number(r.vit_d || 0) * fator),
+        calcio: round1(Number(r.calcio || 0) * fator),
+        ferro: round1(Number(r.ferro || 0) * fator),
+        fibra: round1(Number(r.fibra || 0) * fator),
       };
     }
     const refeicaoClone = gramasClonar[r.id + "_ref"] ?? r.refeicao;
@@ -438,12 +470,37 @@ export default function Macros({ user, onAjuda }) {
       prot: round1(acc.prot + Number(r.prot)),
       carb: round1(acc.carb + Number(r.carb)),
       gord: round1(acc.gord + Number(r.gord)),
+      vit_c: round1(acc.vit_c + Number(r.vit_c || 0)),
+      vit_d: round1(acc.vit_d + Number(r.vit_d || 0)),
+      calcio: round1(acc.calcio + Number(r.calcio || 0)),
+      ferro: round1(acc.ferro + Number(r.ferro || 0)),
+      fibra: round1(acc.fibra + Number(r.fibra || 0)),
     }),
-    { kcal: 0, prot: 0, carb: 0, gord: 0 },
+    {
+      kcal: 0,
+      prot: 0,
+      carb: 0,
+      gord: 0,
+      vit_c: 0,
+      vit_d: 0,
+      calcio: 0,
+      ferro: 0,
+      fibra: 0,
+    },
   );
 
   const pct = Math.min(100, Math.round((total.kcal / meta) * 100));
   const tmb = calcTMB(perfil);
+
+  // Valores de referência diária (RDI) gerais — não são prescrição médica,
+  // servem só de referência aproximada.
+  const metasMicro = {
+    vit_c: 90,
+    vit_d: 15,
+    calcio: 1000,
+    ferro: perfil?.sexo === "F" ? 18 : 14,
+    fibra: perfil?.sexo === "F" ? 25 : 38,
+  };
 
   const metasMacro = (() => {
     if (!perfil?.peso) return null;
@@ -700,6 +757,115 @@ export default function Macros({ user, onAjuda }) {
             })}
           </div>
         )}
+      </div>
+
+      {/* Vitaminas e minerais */}
+      <div className="macros-card">
+        <div className="macros-card-title">VITAMINAS & MINERAIS (hoje)</div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginTop: 8,
+          }}
+        >
+          {[
+            {
+              label: "🍊 Vitamina C",
+              val: total.vit_c,
+              meta: metasMicro.vit_c,
+              unidade: "mg",
+            },
+            {
+              label: "☀️ Vitamina D",
+              val: total.vit_d,
+              meta: metasMicro.vit_d,
+              unidade: "mcg",
+            },
+            {
+              label: "🦴 Cálcio",
+              val: total.calcio,
+              meta: metasMicro.calcio,
+              unidade: "mg",
+            },
+            {
+              label: "🩸 Ferro",
+              val: total.ferro,
+              meta: metasMicro.ferro,
+              unidade: "mg",
+            },
+            {
+              label: "🌾 Fibra",
+              val: total.fibra,
+              meta: metasMicro.fibra,
+              unidade: "g",
+            },
+          ].map((m) => {
+            const pctM = Math.min(100, Math.round((m.val / m.meta) * 100));
+            const emDeficit = pctM < 70;
+            const cor = emDeficit ? "#ef4444" : "#10b981";
+            return (
+              <div key={m.label}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                    {m.label}
+                    {emDeficit && (
+                      <span
+                        style={{
+                          marginLeft: 6,
+                          fontSize: 10,
+                          color: "#ef4444",
+                          fontWeight: 700,
+                        }}
+                      >
+                        ⚠ déficit
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: cor }}>
+                    {m.val}
+                    {m.unidade}{" "}
+                    <span style={{ color: "#475569", fontWeight: 400 }}>
+                      / {m.meta}
+                      {m.unidade}
+                    </span>
+                  </span>
+                </div>
+                <div className="macros-bar-bg">
+                  <div
+                    style={{
+                      height: 6,
+                      borderRadius: 99,
+                      background: cor,
+                      width: `${pctM}%`,
+                      transition: "width 0.4s",
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div
+          style={{
+            fontSize: 10,
+            color: "#475569",
+            marginTop: 10,
+            lineHeight: 1.5,
+          }}
+        >
+          Valores de referência diária aproximados — não substituem
+          orientação nutricional profissional. Alimentos da base geral podem
+          não ter esses dados cadastrados ainda; alimentos personalizados
+          que você criar já podem incluir.
+        </div>
       </div>
 
       {/* Saldo calórico */}
@@ -1237,6 +1403,56 @@ export default function Macros({ user, onAjuda }) {
                   value={novoAlimento.gord}
                   onChange={(e) =>
                     setNovoAlimento((p) => ({ ...p, gord: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Vit. C (mg)</label>
+                <input
+                  type="number"
+                  value={novoAlimento.vit_c}
+                  onChange={(e) =>
+                    setNovoAlimento((p) => ({ ...p, vit_c: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Vit. D (mcg)</label>
+                <input
+                  type="number"
+                  value={novoAlimento.vit_d}
+                  onChange={(e) =>
+                    setNovoAlimento((p) => ({ ...p, vit_d: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Cálcio (mg)</label>
+                <input
+                  type="number"
+                  value={novoAlimento.calcio}
+                  onChange={(e) =>
+                    setNovoAlimento((p) => ({ ...p, calcio: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Ferro (mg)</label>
+                <input
+                  type="number"
+                  value={novoAlimento.ferro}
+                  onChange={(e) =>
+                    setNovoAlimento((p) => ({ ...p, ferro: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label>Fibra (g)</label>
+                <input
+                  type="number"
+                  value={novoAlimento.fibra}
+                  onChange={(e) =>
+                    setNovoAlimento((p) => ({ ...p, fibra: e.target.value }))
                   }
                 />
               </div>
