@@ -501,7 +501,9 @@ export default function Home({
 
     const inicioSemana = (() => {
       const d = new Date();
-      d.setDate(d.getDate() - 6);
+      const diaSemanaNum = d.getDay(); // 0 = domingo
+      const offsetSegunda = diaSemanaNum === 0 ? -6 : 1 - diaSemanaNum;
+      d.setDate(d.getDate() + offsetSegunda);
       return formatarData(d);
     })();
     const { data: treinosSemanaDados } = await supabase
@@ -1702,7 +1704,7 @@ export default function Home({
                   </div>
                   <div style={{ fontSize: 11, color: "#475569", marginTop: 8 }}>
                     {treinosSemana.length} treino
-                    {treinosSemana.length !== 1 ? "s" : ""} nos últimos 7 dias
+                    {treinosSemana.length !== 1 ? "s" : ""} nesta semana
                   </div>
                 </div>
               )}
