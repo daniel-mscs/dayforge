@@ -532,7 +532,10 @@ export default function Home({
     });
     const chave = datasSemana[0];
     setChaveSemanaRotina(chave);
+    const desativadoGeral =
+      localStorage.getItem("df_resumo_rotina_ativado") === "false";
     const oculto =
+      desativadoGeral ||
       localStorage.getItem(`home_resumo_rotina_oculto_${chave}`) === "true";
     setMostrarResumoRotina(!oculto);
     if (oculto) return;

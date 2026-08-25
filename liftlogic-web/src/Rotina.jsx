@@ -178,6 +178,9 @@ export default function Rotina({ user }) {
   });
   const [diasSelecionadosClone, setDiasSelecionadosClone] = useState([]);
   const [tarefasSelecionadasClone, setTarefasSelecionadasClone] = useState([]);
+  const [resumoAtivado, setResumoAtivado] = useState(
+    () => localStorage.getItem("df_resumo_rotina_ativado") !== "false",
+  );
   const [adicionando, setAdicionando] = useState(false);
 
   const hoje = formatarData(new Date());
@@ -570,6 +573,62 @@ export default function Rotina({ user }) {
 
   return (
     <div className="rotina-section">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "#1a1d21",
+          border: "1px solid #ffffff0d",
+          borderRadius: 12,
+          padding: "12px 14px",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>
+            📋 Resumo da semana na Home
+          </div>
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+            Mostra o card com a rotina da semana na tela inicial
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            const novo = !resumoAtivado;
+            setResumoAtivado(novo);
+            localStorage.setItem(
+              "df_resumo_rotina_ativado",
+              novo ? "true" : "false",
+            );
+          }}
+          style={{
+            width: 46,
+            height: 26,
+            borderRadius: 99,
+            border: "none",
+            flexShrink: 0,
+            background: resumoAtivado ? "#6366f1" : "#334155",
+            position: "relative",
+            cursor: "pointer",
+            transition: "background 0.2s",
+          }}
+        >
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "#fff",
+              position: "absolute",
+              top: 3,
+              left: resumoAtivado ? 23 : 3,
+              transition: "left 0.2s",
+            }}
+          />
+        </button>
+      </div>
+
       {/* Modal clone */}
       {modalClone &&
         (() => {
