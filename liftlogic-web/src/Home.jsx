@@ -145,7 +145,6 @@ export default function Home({
   const [showConfetti, setShowConfetti] = useState(false);
   const [statsAniversario, setStatsAniversario] = useState(null);
   const [resumoRotinaSemana, setResumoRotinaSemana] = useState([]);
-  const [resumoRotinaFixas, setResumoRotinaFixas] = useState([]);
   const [chaveSemanaRotina, setChaveSemanaRotina] = useState("");
   const [mostrarResumoRotina, setMostrarResumoRotina] = useState(true);
 
@@ -558,10 +557,17 @@ export default function Home({
       "Sexta",
       "Sábado",
     ];
+    const ORDEM_PERIODO = { Acordar: 0, Manhã: 1, Tarde: 2, Noite: 3 };
     const resumo = datasSemana.map((data) => {
       const dia = diasSemana.find((d) => d.data === data);
       const tarefasDoDia = dia
-        ? (tarefasSemana || []).filter((t) => t.dia_id === dia.id)
+        ? (tarefasSemana || [])
+            .filter((t) => t.dia_id === dia.id)
+            .sort(
+              (a, b) =>
+                (ORDEM_PERIODO[a.periodo] ?? 9) -
+                (ORDEM_PERIODO[b.periodo] ?? 9),
+            )
         : [];
       const nomeDia = NOMES_DIA[new Date(data + "T00:00:00").getDay()];
       const diaSemanaNum2 = new Date(data + "T00:00:00").getDay();
@@ -573,25 +579,10 @@ export default function Home({
         feriado: getFeriado(data),
       };
     });
-
-    // Tarefas que se repetem em TODOS os dias com pelo menos uma tarefa
-    // viram um "todo dia" fixo, em vez de repetir a mesma linha 7 vezes.
-    const diasComTarefa = resumo.filter((d) => d.tarefas.length > 0);
-    let fixas = [];
-    if (diasComTarefa.length >= 2) {
-      const textosPorDia = diasComTarefa.map(
-        (d) => new Set(d.tarefas.map((t) => t.texto)),
-      );
-      fixas = [...textosPorDia[0]].filter((texto) =>
-        textosPorDia.every((set) => set.has(texto)),
-      );
-    }
     const resumoComExtras = resumo.map((d) => ({
       ...d,
-      extras: d.tarefas.filter((t) => !fixas.includes(t.texto)),
+      extras: d.tarefas,
     }));
-
-    setResumoRotinaFixas(fixas);
     setResumoRotinaSemana(resumoComExtras);
   }, [user.id]);
 
@@ -996,44 +987,11 @@ export default function Home({
                 ✕
               </button>
             </div>
-            {resumoRotinaFixas.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  padding: "6px 0 12px",
-                  marginBottom: 8,
-                  borderBottom: "1px solid #6366f133",
-                }}
-              >
-                <div
-                  style={{
-                    width: 62,
-                    flexShrink: 0,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: "#f59e0b",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Todo dia
-                </div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#cbd5e1",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {resumoRotinaFixas.join(" • ")}
-                </div>
-              </div>
-            )}
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: 8,
+                gap: 10,
               }}
             >
               {resumoRotinaSemana.map((d) => {
@@ -1050,9 +1008,7 @@ export default function Home({
                   <div
                     key={d.data}
                     style={{
-                      display: "flex",
-                      gap: 10,
-                      padding: "6px 0",
+                      padding: "8px 10px",
                       borderBottom: "1px solid #ffffff08",
                       background: d.feriado
                         ? "rgba(239,68,68,0.06)"
@@ -1062,23 +1018,22 @@ export default function Home({
                   >
                     <div
                       style={{
-                        width: 62,
-                        flexShrink: 0,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: cor,
-                        textTransform: "uppercase",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 6,
                       }}
                     >
-                      {isHoje ? "Hoje" : d.nomeDia.slice(0, 3)}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: textos.length ? "#cbd5e1" : "#475569",
-                        lineHeight: 1.5,
-                      }}
-                    >
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          color: cor,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {isHoje ? "Hoje" : d.nomeDia.slice(0, 3)}
+                      </span>
                       {d.feriado && (
                         <span
                           style={{
@@ -1090,19 +1045,49 @@ export default function Home({
                             fontWeight: 800,
                             padding: "2px 7px",
                             borderRadius: 6,
-                            marginRight: 6,
                             textTransform: "uppercase",
                           }}
                         >
                           🎉 {d.feriado}
                         </span>
                       )}
-                      {textos.length
-                        ? textos.join(" • ")
-                        : resumoRotinaFixas.length
-                          ? "Só a rotina fixa"
-                          : "Nada planejado ainda"}
                     </div>
+                    {textos.length ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 4,
+                          paddingLeft: 4,
+                        }}
+                      >
+                        {textos.map((texto, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              fontSize: 12,
+                              color: "#cbd5e1",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            <span style={{ color: "#6366f1" }}>•</span>
+                            <span>{texto}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#475569",
+                          paddingLeft: 4,
+                        }}
+                      >
+                        Nada planejado ainda
+                      </div>
+                    )}
                   </div>
                 );
               })}
