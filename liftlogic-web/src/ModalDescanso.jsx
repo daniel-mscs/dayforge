@@ -3,6 +3,9 @@ import React from "react";
 export default function ModalDescanso({
   modalDescanso,
   descanso,
+  descansoPausado,
+  pausarDescanso,
+  retomarDescanso,
   seriesFeitas,
   exerciciosFiltrados,
   formatarTempo,
@@ -341,27 +344,40 @@ export default function ModalDescanso({
                 Prepare-se! ⚡
               </div>
             )}
+            {descansoPausado && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#f59e0b",
+                  marginBottom: 10,
+                  fontWeight: 700,
+                }}
+              >
+                ⏸ Pausado
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
                 gap: 6,
                 justifyContent: "center",
-                marginBottom: 14,
+                marginBottom: 10,
               }}
             >
               {[30, 60, 90].map((s) => (
                 <button
                   key={s}
                   onClick={() => adicionarDescanso(s)}
+                  disabled={descansoPausado}
                   style={{
                     background: "#1e293b",
                     border: "1px solid #334155",
                     borderRadius: 10,
-                    color: "#94a3b8",
+                    color: descansoPausado ? "#334155" : "#94a3b8",
                     fontSize: 12,
                     fontWeight: 600,
                     padding: "7px 14px",
-                    cursor: "pointer",
+                    cursor: descansoPausado ? "default" : "pointer",
                   }}
                 >
                   +{s}s
@@ -382,6 +398,25 @@ export default function ModalDescanso({
                 ✕
               </button>
             </div>
+            <button
+              onClick={descansoPausado ? retomarDescanso : pausarDescanso}
+              style={{
+                width: "100%",
+                background: descansoPausado
+                  ? "rgba(16,185,129,0.12)"
+                  : "rgba(245,158,11,0.12)",
+                border: `1px solid ${descansoPausado ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)"}`,
+                borderRadius: 12,
+                color: descansoPausado ? "#10b981" : "#f59e0b",
+                fontSize: 13,
+                fontWeight: 700,
+                padding: "12px 0",
+                cursor: "pointer",
+                marginBottom: 14,
+              }}
+            >
+              {descansoPausado ? "▶ Retomar descanso" : "⏸ Pausar descanso"}
+            </button>
           </>
         ) : (
           <div style={{ marginBottom: 16 }}>
@@ -494,7 +529,7 @@ export default function ModalDescanso({
                   supersetIdx: supersetIdx + 1,
                 }));
               } else {
-                cancelarDescanso();
+                iniciarTimerDescanso(modalDescanso.descansoSeg || 90);
                 setModalDescanso((prev) => ({
                   ...prev,
                   serieAtual: novasSeries,

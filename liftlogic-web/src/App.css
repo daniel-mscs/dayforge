@@ -134,7 +134,8 @@ body {
   margin-bottom: 28px;
 }
 
-input {
+input,
+select {
   width: 100%;
   background: #24282d;
   border: 1px solid #ffffff0d;
@@ -147,7 +148,29 @@ input {
     box-shadow 0.2s;
 }
 
-input:focus {
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+select:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+select option {
+  background: #24282d;
+  color: #f8fafc;
+}
+
+input:focus,
+select:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);

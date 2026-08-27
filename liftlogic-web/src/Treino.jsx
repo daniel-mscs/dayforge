@@ -59,6 +59,7 @@ import {
   agendarNotificacaoDescanso,
   cancelarNotificacaoDescanso,
 } from "./lib/notifications";
+import { extrairTextoPDF, parsearTreinoTexto } from "./lib/pdfImportarTreino";
 
 function ExercicioCard({
   ex,
@@ -273,6 +274,21 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [divisao, setDivisao] = useState(
     localStorage.getItem("divisao") || null,
   );
+  const [cicloInicio, setCicloInicio] = useState(() => {
+    const v = localStorage.getItem("df_ciclo_treino_inicio");
+    return v ? Number(v) : null;
+  });
+  const [cicloDias, setCicloDias] = useState(() => {
+    const v = localStorage.getItem("df_ciclo_treino_dias");
+    return v ? Number(v) : null;
+  });
+  const [modalCicloConfig, setModalCicloConfig] = useState(false);
+  const [modalConfirmarApagarTreino, setModalConfirmarApagarTreino] =
+    useState(false);
+  const [modalImportarPDF, setModalImportarPDF] = useState(false);
+  const [processandoPDF, setProcessandoPDF] = useState(false);
+  const [treinoImportado, setTreinoImportado] = useState(null);
+  const [aplicandoImportado, setAplicandoImportado] = useState(false);
   const [treinoAtivo, setTreinoAtivo] = useState(
     () => localStorage.getItem(TREINO_ATIVO_KEY) || "A",
   );
@@ -314,6 +330,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     return elapsed < MAX_TREINO_SEG ? elapsed : 0;
   });
   const [descanso, setDescanso] = useState(0);
+  const [descansoPausado, setDescansoPausado] = useState(false);
   const [inputDescanso, setInputDescanso] = useState("");
   const [perfil, setPerfil] = useState({
     nome: "",
@@ -335,6 +352,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   });
   const [prs, setPrs] = useState({});
   const [modalSuperset, setModalSuperset] = useState(null);
+  const [modalTreinosProntos, setModalTreinosProntos] = useState(false);
+  const [previewPreset, setPreviewPreset] = useState(null);
+  const [aplicandoPreset, setAplicandoPreset] = useState(false);
+  const [treinosProntos, setTreinosProntos] = useState([]);
+  const [carregandoPresets, setCarregandoPresets] = useState(false);
 
   const timerRef = useRef(null);
   const descansoRef = useRef(null);
@@ -346,6 +368,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       : null,
   );
   const inicioDescansoRef = useRef(null);
+  const restanteAoPausarRef = useRef(0);
   const duracaoDescansoRef = useRef(0);
   const nomeExercicioRef = useRef(null);
 
@@ -693,6 +716,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     inicioDescansoRef.current = Date.now();
     duracaoDescansoRef.current = segundos;
     setDescanso(segundos);
+    setDescansoPausado(false);
     alerta10sDisparadoRef.current = false;
     agendarNotificacaoDescanso(segundos);
     descansoRef.current = setInterval(() => {
@@ -740,7 +764,26 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     inicioDescansoRef.current = null;
     duracaoDescansoRef.current = 0;
     setDescanso(0);
+    setDescansoPausado(false);
     cancelarNotificacaoDescanso();
+  };
+
+  const pausarDescanso = () => {
+    if (!descansoRef.current) return;
+    clearInterval(descansoRef.current);
+    descansoRef.current = null;
+    const restante =
+      duracaoDescansoRef.current -
+      Math.floor((Date.now() - inicioDescansoRef.current) / 1000);
+    restanteAoPausarRef.current = Math.max(0, restante);
+    setDescansoPausado(true);
+    cancelarNotificacaoDescanso();
+  };
+
+  const retomarDescanso = () => {
+    if (restanteAoPausarRef.current <= 0) return;
+    setDescansoPausado(false);
+    iniciarTimerDescanso(restanteAoPausarRef.current);
   };
 
   const handleDragEnd = async (event) => {
@@ -1016,6 +1059,247 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     buscarExercicios();
   };
 
+  const buscarTreinosProntos = async () => {
+    if (treinosProntos.length > 0 || carregandoPresets) return;
+    setCarregandoPresets(true);
+    const { data: presets, error: erroPresets } = await supabase
+      .from("treinos_prontos")
+      .select("*")
+      .order("categoria", { ascending: true })
+      .order("ordem", { ascending: true });
+    if (erroPresets) {
+      toast("Erro ao buscar treinos prontos: " + erroPresets.message, "error");
+      setCarregandoPresets(false);
+      return;
+    }
+    const { data: exs, error: erroExs } = await supabase
+      .from("treinos_prontos_exercicios")
+      .select("*")
+      .order("ordem", { ascending: true });
+    if (erroExs) {
+      toast("Erro ao buscar exercícios: " + erroExs.message, "error");
+      setCarregandoPresets(false);
+      return;
+    }
+    const montados = (presets || []).map((p) => {
+      const exsDoPreset = (exs || []).filter(
+        (e) => e.treino_pronto_id === p.id,
+      );
+      const dias = {};
+      exsDoPreset.forEach((e) => {
+        if (!dias[e.letra]) dias[e.letra] = [];
+        dias[e.letra].push(e);
+      });
+      return { ...p, dias };
+    });
+    setTreinosProntos(montados);
+    setCarregandoPresets(false);
+  };
+
+  const configurarCiclo = (dias) => {
+    const agora = Date.now();
+    localStorage.setItem("df_ciclo_treino_inicio", String(agora));
+    localStorage.setItem("df_ciclo_treino_dias", String(dias));
+    setCicloInicio(agora);
+    setCicloDias(dias);
+    setModalCicloConfig(false);
+    toast(`Troca de treino configurada pra cada ${dias} dias!`, "success");
+  };
+
+  const desativarCiclo = () => {
+    localStorage.removeItem("df_ciclo_treino_inicio");
+    localStorage.removeItem("df_ciclo_treino_dias");
+    setCicloInicio(null);
+    setCicloDias(null);
+    setModalCicloConfig(false);
+  };
+
+  const reiniciarCicloSeAtivo = () => {
+    if (!cicloDias) return;
+    const agora = Date.now();
+    localStorage.setItem("df_ciclo_treino_inicio", String(agora));
+    setCicloInicio(agora);
+  };
+
+  const processarPDF = async (file) => {
+    if (!file) return;
+    setProcessandoPDF(true);
+    try {
+      const texto = await extrairTextoPDF(file);
+      const dias = parsearTreinoTexto(texto);
+      const totalExercicios = Object.values(dias).reduce(
+        (acc, lista) => acc + lista.length,
+        0,
+      );
+      if (totalExercicios === 0) {
+        toast(
+          "Não consegui reconhecer nenhum exercício nesse PDF. Tenta editar manualmente ou usar outro arquivo.",
+          "warning",
+          5000,
+        );
+        setTreinoImportado({ A: [] });
+      } else {
+        setTreinoImportado(dias);
+      }
+    } catch (err) {
+      toast("Erro ao ler o PDF: " + err.message, "error");
+    }
+    setProcessandoPDF(false);
+  };
+
+  const atualizarExercicioImportado = (letra, index, campo, valor) => {
+    setTreinoImportado((prev) => {
+      const copia = { ...prev };
+      copia[letra] = [...copia[letra]];
+      copia[letra][index] = { ...copia[letra][index], [campo]: valor };
+      return copia;
+    });
+  };
+
+  const removerExercicioImportado = (letra, index) => {
+    setTreinoImportado((prev) => {
+      const copia = { ...prev };
+      copia[letra] = copia[letra].filter((_, i) => i !== index);
+      return copia;
+    });
+  };
+
+  const adicionarLinhaImportada = (letra) => {
+    setTreinoImportado((prev) => ({
+      ...prev,
+      [letra]: [
+        ...(prev[letra] || []),
+        {
+          nome: "",
+          grupo_muscular: "",
+          series: 3,
+          repeticoes: 10,
+          carga: 0,
+          descanso_segundos: 90,
+          equipamento: "maquina",
+        },
+      ],
+    }));
+  };
+
+  const aplicarTreinoImportado = async () => {
+    if (aplicandoImportado || !treinoImportado) return;
+    setAplicandoImportado(true);
+
+    const { error: erroDelete } = await supabase
+      .from("exercicio")
+      .delete()
+      .eq("user_id", user.id);
+    if (erroDelete) {
+      toast("Erro ao substituir: " + erroDelete.message, "error");
+      setAplicandoImportado(false);
+      return;
+    }
+
+    const novosExercicios = [];
+    Object.entries(treinoImportado).forEach(([letra, lista]) => {
+      lista.forEach((ex, index) => {
+        novosExercicios.push({
+          nome: ex.nome || "Exercício sem nome",
+          grupo_muscular: ex.grupo_muscular || "Geral",
+          series: Number(ex.series) || 1,
+          repeticoes: Number(ex.repeticoes) || 1,
+          carga: Number(ex.carga) || 0,
+          treino: letra,
+          user_id: user.id,
+          ordem: index,
+          equipamento: ex.equipamento || "maquina",
+          descanso_segundos: Number(ex.descanso_segundos) || 90,
+        });
+      });
+    });
+
+    if (novosExercicios.length === 0) {
+      toast("Não tem nenhum exercício pra aplicar!", "warning");
+      setAplicandoImportado(false);
+      return;
+    }
+
+    const { error: erroInsert } = await supabase
+      .from("exercicio")
+      .insert(novosExercicios);
+    if (erroInsert) {
+      toast("Erro ao aplicar: " + erroInsert.message, "error");
+      setAplicandoImportado(false);
+      return;
+    }
+
+    const novaDivisao = Object.keys(treinoImportado).sort().join("");
+    localStorage.setItem("divisao", novaDivisao);
+    setDivisao(novaDivisao);
+    setTreinoAtivo(Object.keys(treinoImportado).sort()[0]);
+    localStorage.setItem(
+      TREINO_ATIVO_KEY,
+      Object.keys(treinoImportado).sort()[0],
+    );
+    reiniciarCicloSeAtivo();
+    await buscarExercicios();
+    setAplicandoImportado(false);
+    setTreinoImportado(null);
+    setModalImportarPDF(false);
+    toast("Treino importado com sucesso! 💪", "success");
+  };
+
+  const aplicarPreset = async (preset) => {
+    if (aplicandoPreset) return;
+    setAplicandoPreset(true);
+
+    // Apaga TODOS os exercícios atuais (todas as letras), já que o preset
+    // define a divisão inteira do zero.
+    const { error: erroDelete } = await supabase
+      .from("exercicio")
+      .delete()
+      .eq("user_id", user.id);
+    if (erroDelete) {
+      toast("Erro ao substituir: " + erroDelete.message, "error");
+      setAplicandoPreset(false);
+      return;
+    }
+
+    const novosExercicios = [];
+    Object.entries(preset.dias).forEach(([letra, lista]) => {
+      lista.forEach((ex, index) => {
+        novosExercicios.push({
+          nome: ex.nome,
+          grupo_muscular: ex.grupo_muscular,
+          series: ex.series,
+          repeticoes: ex.repeticoes,
+          carga: 0,
+          treino: letra,
+          user_id: user.id,
+          ordem: index,
+          equipamento: ex.equipamento,
+          descanso_segundos: ex.descanso_segundos,
+        });
+      });
+    });
+
+    const { error: erroInsert } = await supabase
+      .from("exercicio")
+      .insert(novosExercicios);
+    if (erroInsert) {
+      toast("Erro ao aplicar: " + erroInsert.message, "error");
+      setAplicandoPreset(false);
+      return;
+    }
+
+    localStorage.setItem("divisao", preset.divisao);
+    setDivisao(preset.divisao);
+    setTreinoAtivo("A");
+    localStorage.setItem(TREINO_ATIVO_KEY, "A");
+    reiniciarCicloSeAtivo();
+    await buscarExercicios();
+    setAplicandoPreset(false);
+    setPreviewPreset(null);
+    setModalTreinosProntos(false);
+    toast(`"${preset.nome}" aplicado! 💪`, "success");
+  };
+
   const abrirAjuda = (ancora) => {
     setAjudaAncora(ancora);
     setAbaPrincipal("perfil");
@@ -1035,6 +1319,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   );
   const imc = calcularIMC();
   const tmb = calcularTMB();
+  const diasRestantesCiclo =
+    cicloDias && cicloInicio
+      ? cicloDias -
+        Math.floor((Date.now() - cicloInicio) / (1000 * 60 * 60 * 24))
+      : null;
 
   return (
     <div className="container">
@@ -1149,6 +1438,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       <ModalDescanso
         modalDescanso={modalDescanso}
         descanso={descanso}
+        descansoPausado={descansoPausado}
+        pausarDescanso={pausarDescanso}
+        retomarDescanso={retomarDescanso}
         seriesFeitas={seriesFeitas}
         exerciciosFiltrados={exerciciosFiltrados}
         formatarTempo={formatarTempo}
@@ -1685,6 +1977,776 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         </div>
       )}
 
+      {/* Modal importar treino de PDF */}
+      {modalImportarPDF && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9993,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => {
+            if (!processandoPDF) {
+              setModalImportarPDF(false);
+              setTreinoImportado(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "92%",
+              maxWidth: 460,
+              maxHeight: "85vh",
+              overflowY: "auto",
+              border: "1px solid #1e1e1e",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 4,
+              }}
+            >
+              📄 Importar treino em PDF
+            </div>
+
+            {!treinoImportado && (
+              <>
+                <div
+                  style={{ fontSize: 12, color: "#64748b", marginBottom: 18 }}
+                >
+                  Sobe o PDF da sua ficha de treino. Eu tento reconhecer os
+                  exercícios sozinho (procurando padrões tipo "3x12" e "40kg") —
+                  depois você confere e corrige antes de aplicar.
+                </div>
+                <label
+                  style={{
+                    display: "block",
+                    textAlign: "center",
+                    background: "rgba(16,185,129,0.08)",
+                    border: "2px dashed rgba(16,185,129,0.3)",
+                    borderRadius: 14,
+                    padding: "32px 16px",
+                    cursor: processandoPDF ? "default" : "pointer",
+                    color: "#10b981",
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  {processandoPDF
+                    ? "Lendo o PDF..."
+                    : "📎 Toque pra escolher o arquivo PDF"}
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    disabled={processandoPDF}
+                    onChange={(e) => processarPDF(e.target.files?.[0])}
+                    style={{ display: "none" }}
+                  />
+                </label>
+              </>
+            )}
+
+            {treinoImportado && (
+              <>
+                <div
+                  style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}
+                >
+                  Confere se ficou certo — pode editar qualquer campo, apagar
+                  linha errada ou adicionar uma que ficou de fora.
+                </div>
+
+                {Object.entries(treinoImportado).map(([letra, lista]) => (
+                  <div key={letra} style={{ marginBottom: 18 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 800,
+                        color: "#818cf8",
+                        marginBottom: 8,
+                      }}
+                    >
+                      TREINO {letra}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
+                      {lista.map((ex, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            background: "#24282d",
+                            border: "1px solid #ffffff0d",
+                            borderRadius: 10,
+                            padding: 10,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              marginBottom: 6,
+                            }}
+                          >
+                            <input
+                              type="text"
+                              placeholder="Nome do exercício"
+                              value={ex.nome}
+                              onChange={(e) =>
+                                atualizarExercicioImportado(
+                                  letra,
+                                  i,
+                                  "nome",
+                                  e.target.value,
+                                )
+                              }
+                              style={{ flex: 1, fontSize: 13, padding: 8 }}
+                            />
+                            <button
+                              onClick={() =>
+                                removerExercicioImportado(letra, i)
+                              }
+                              style={{
+                                background: "transparent",
+                                border: "1px solid #ef444433",
+                                borderRadius: 8,
+                                color: "#ef4444",
+                                fontSize: 13,
+                                padding: "0 10px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                              gap: 6,
+                            }}
+                          >
+                            <input
+                              type="text"
+                              placeholder="Grupo"
+                              value={ex.grupo_muscular}
+                              onChange={(e) =>
+                                atualizarExercicioImportado(
+                                  letra,
+                                  i,
+                                  "grupo_muscular",
+                                  e.target.value,
+                                )
+                              }
+                              style={{ fontSize: 12, padding: 8 }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Séries"
+                              value={ex.series}
+                              onChange={(e) =>
+                                atualizarExercicioImportado(
+                                  letra,
+                                  i,
+                                  "series",
+                                  e.target.value,
+                                )
+                              }
+                              style={{ fontSize: 12, padding: 8 }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Reps"
+                              value={ex.repeticoes}
+                              onChange={(e) =>
+                                atualizarExercicioImportado(
+                                  letra,
+                                  i,
+                                  "repeticoes",
+                                  e.target.value,
+                                )
+                              }
+                              style={{ fontSize: 12, padding: 8 }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Kg"
+                              value={ex.carga}
+                              onChange={(e) =>
+                                atualizarExercicioImportado(
+                                  letra,
+                                  i,
+                                  "carga",
+                                  e.target.value,
+                                )
+                              }
+                              style={{ fontSize: 12, padding: 8 }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => adicionarLinhaImportada(letra)}
+                      style={{
+                        marginTop: 8,
+                        width: "100%",
+                        background: "transparent",
+                        border: "1px dashed #334155",
+                        borderRadius: 8,
+                        color: "#64748b",
+                        fontSize: 12,
+                        padding: "8px 0",
+                        cursor: "pointer",
+                      }}
+                    >
+                      + Adicionar exercício no Treino {letra}
+                    </button>
+                  </div>
+                ))}
+
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#f59e0b",
+                    background: "rgba(245,158,11,0.1)",
+                    border: "1px solid rgba(245,158,11,0.25)",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                    marginBottom: 14,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  ⚠️ Aplicar substitui TODOS os seus exercícios cadastrados
+                  atualmente pelos desse PDF.
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      setTreinoImportado(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: "#0f172a",
+                      border: "1px solid #334155",
+                      borderRadius: 10,
+                      color: "#94a3b8",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: "12px 0",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Tentar outro PDF
+                  </button>
+                  <button
+                    onClick={aplicarTreinoImportado}
+                    disabled={aplicandoImportado}
+                    style={{
+                      flex: 2,
+                      background: "#10b981",
+                      border: "none",
+                      borderRadius: 10,
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      padding: "12px 0",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {aplicandoImportado
+                      ? "Aplicando..."
+                      : "✅ Substituir e aplicar"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar apagar treino */}
+      {modalConfirmarApagarTreino && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9993,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModalConfirmarApagarTreino(false)}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "90%",
+              maxWidth: 360,
+              border: "1px solid #ef444433",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 6,
+              }}
+            >
+              🗑️ Apagar Treino {treinoAtivo}?
+            </div>
+            <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20 }}>
+              Isso apaga todos os {exerciciosFiltrados.length} exercícios
+              cadastrados no Treino {treinoAtivo}. Não dá pra desfazer.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setModalConfirmarApagarTreino(false)}
+                style={{
+                  flex: 1,
+                  background: "#0f172a",
+                  border: "1px solid #334155",
+                  borderRadius: 10,
+                  color: "#94a3b8",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "12px 0",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  await Promise.all(
+                    exerciciosFiltrados.map((ex) =>
+                      supabase
+                        .from("exercicio")
+                        .delete()
+                        .eq("id", ex.id)
+                        .eq("user_id", user.id),
+                    ),
+                  );
+                  buscarExercicios();
+                  setModalConfirmarApagarTreino(false);
+                }}
+                style={{
+                  flex: 1,
+                  background: "#ef4444",
+                  border: "none",
+                  borderRadius: 10,
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "12px 0",
+                  cursor: "pointer",
+                }}
+              >
+                🗑️ Apagar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal configurar ciclo de troca de treino */}
+      {modalCicloConfig && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9993,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModalCicloConfig(false)}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "90%",
+              maxWidth: 380,
+              border: "1px solid #1e1e1e",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 6,
+              }}
+            >
+              🗓️ Troca de treino
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
+              De quanto em quanto tempo você quer ser lembrado de trocar de
+              treino?
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                marginBottom: 14,
+              }}
+            >
+              {[
+                { label: "15 dias", dias: 15 },
+                { label: "1 mês", dias: 30 },
+                { label: "2 meses", dias: 60 },
+                { label: "3 meses", dias: 90 },
+                { label: "6 meses", dias: 180 },
+              ].map((op) => (
+                <button
+                  key={op.dias}
+                  onClick={() => configurarCiclo(op.dias)}
+                  style={{
+                    background: cicloDias === op.dias ? "#6366f1" : "#24282d",
+                    border: "1px solid #ffffff0d",
+                    borderRadius: 10,
+                    color: "#f8fafc",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    padding: "12px 16px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  {op.label}
+                </button>
+              ))}
+            </div>
+            {cicloDias !== null && (
+              <button
+                onClick={desativarCiclo}
+                style={{
+                  width: "100%",
+                  background: "#ef444415",
+                  border: "1px solid #ef444433",
+                  borderRadius: 10,
+                  color: "#ef4444",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "10px 0",
+                  cursor: "pointer",
+                  marginBottom: 8,
+                }}
+              >
+                Desativar lembrete
+              </button>
+            )}
+            <button
+              onClick={() => setModalCicloConfig(false)}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "1px solid #ffffff0d",
+                borderRadius: 8,
+                color: "#64748b",
+                fontSize: 13,
+                padding: "10px 0",
+                cursor: "pointer",
+              }}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal navegar treinos prontos */}
+      {modalTreinosProntos && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9993,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModalTreinosProntos(false)}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "92%",
+              maxWidth: 420,
+              maxHeight: "85vh",
+              overflowY: "auto",
+              border: "1px solid #1e1e1e",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 4,
+              }}
+            >
+              📋 Treinos prontos
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 18 }}>
+              Escolha um treino pronto pra aplicar. Você vê tudo antes de
+              decidir substituir.
+            </div>
+
+            {[...new Set(treinosProntos.map((p) => p.categoria))]
+              .filter(
+                (categoria) => categoria !== "Feminino" || perfil.sexo === "F",
+              )
+              .map((categoria) => (
+                <div key={categoria} style={{ marginBottom: 20 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: "#6366f1",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {categoria}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {treinosProntos
+                      .filter((p) => p.categoria === categoria)
+                      .map((preset) => (
+                        <button
+                          key={preset.id}
+                          onClick={() => setPreviewPreset(preset)}
+                          style={{
+                            textAlign: "left",
+                            background: "#24282d",
+                            border: "1px solid #ffffff0d",
+                            borderRadius: 12,
+                            padding: "12px 14px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: "#f8fafc",
+                              marginBottom: 3,
+                            }}
+                          >
+                            {preset.nome}{" "}
+                            <span style={{ color: "#475569", fontWeight: 600 }}>
+                              · {preset.divisao}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#94a3b8",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {preset.descricao}
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              ))}
+
+            <button
+              onClick={() => setModalTreinosProntos(false)}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "1px solid #ffffff0d",
+                borderRadius: 8,
+                color: "#64748b",
+                fontSize: 13,
+                padding: "10px 0",
+                cursor: "pointer",
+                marginTop: 4,
+              }}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal preview + aplicar treino pronto */}
+      {previewPreset && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9994,
+            background: "rgba(0,0,0,0.9)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setPreviewPreset(null)}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "92%",
+              maxWidth: 420,
+              maxHeight: "85vh",
+              overflowY: "auto",
+              border: "1px solid #6366f133",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 3,
+              }}
+            >
+              {previewPreset.nome}
+            </div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
+              {previewPreset.descricao}
+            </div>
+
+            {Object.entries(previewPreset.dias).map(([letra, lista]) => (
+              <div key={letra} style={{ marginBottom: 16 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: "#818cf8",
+                    marginBottom: 6,
+                  }}
+                >
+                  TREINO {letra}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}
+                >
+                  {lista.map((ex, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: 12,
+                        color: "#cbd5e1",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <span>{ex.nome}</span>
+                      <span style={{ color: "#64748b", flexShrink: 0 }}>
+                        {ex.series}x{ex.repeticoes}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div
+              style={{
+                fontSize: 11,
+                color: "#f59e0b",
+                background: "rgba(245,158,11,0.1)",
+                border: "1px solid rgba(245,158,11,0.25)",
+                borderRadius: 8,
+                padding: "8px 10px",
+                marginBottom: 14,
+                lineHeight: 1.4,
+              }}
+            >
+              ⚠️ Aplicar substitui TODOS os seus exercícios cadastrados
+              atualmente pelos desse treino. As cargas começam zeradas — você
+              ajusta pro seu peso.
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setPreviewPreset(null)}
+                style={{
+                  flex: 1,
+                  background: "#0f172a",
+                  border: "1px solid #334155",
+                  borderRadius: 10,
+                  color: "#94a3b8",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "12px 0",
+                  cursor: "pointer",
+                }}
+              >
+                Só olhando
+              </button>
+              <button
+                onClick={() => aplicarPreset(previewPreset)}
+                disabled={aplicandoPreset}
+                style={{
+                  flex: 2,
+                  background: "#6366f1",
+                  border: "none",
+                  borderRadius: 10,
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "12px 0",
+                  cursor: "pointer",
+                }}
+              >
+                {aplicandoPreset ? "Aplicando..." : "✅ Substituir e aplicar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ModalResumo
         modalResumo={modalResumo}
         treinoAtivo={treinoAtivo}
@@ -1793,9 +2855,53 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       </button>
                     ))}
                   </div>
+                  <button
+                    onClick={() => {
+                      setModalTreinosProntos(true);
+                      buscarTreinosProntos();
+                    }}
+                    style={{
+                      marginTop: 16,
+                      width: "100%",
+                      background: "rgba(99,102,241,0.1)",
+                      border: "1px solid rgba(99,102,241,0.3)",
+                      borderRadius: 12,
+                      color: "#a5b4fc",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      padding: "14px 0",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📋 Ver treinos prontos
+                  </button>
+                  <button
+                    onClick={() => setModalImportarPDF(true)}
+                    style={{
+                      marginTop: 8,
+                      width: "100%",
+                      background: "rgba(16,185,129,0.1)",
+                      border: "1px solid rgba(16,185,129,0.3)",
+                      borderRadius: 12,
+                      color: "#10b981",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      padding: "14px 0",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📄 Importar treino em PDF
+                  </button>
                 </div>
               ) : (
-                <header className="header-app">
+                <header
+                  className="header-app"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <button
                     className="back-btn"
                     onClick={() => {
@@ -1805,7 +2911,83 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   >
                     ← Trocar Divisão
                   </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => setModalImportarPDF(true)}
+                      style={{
+                        background: "rgba(16,185,129,0.1)",
+                        border: "1px solid rgba(16,185,129,0.3)",
+                        borderRadius: 10,
+                        color: "#10b981",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      📄 PDF
+                    </button>
+                    <button
+                      onClick={() => {
+                        setModalTreinosProntos(true);
+                        buscarTreinosProntos();
+                      }}
+                      style={{
+                        background: "rgba(99,102,241,0.1)",
+                        border: "1px solid rgba(99,102,241,0.3)",
+                        borderRadius: 10,
+                        color: "#a5b4fc",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      📋 Treinos prontos
+                    </button>
+                  </div>
                 </header>
+              )}
+              {divisao && (
+                <div
+                  onClick={() => setModalCicloConfig(true)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background:
+                      diasRestantesCiclo !== null && diasRestantesCiclo <= 0
+                        ? "rgba(239,68,68,0.1)"
+                        : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${
+                      diasRestantesCiclo !== null && diasRestantesCiclo <= 0
+                        ? "rgba(239,68,68,0.3)"
+                        : "rgba(255,255,255,0.08)"
+                    }`,
+                    borderRadius: 10,
+                    padding: "8px 12px",
+                    marginBottom: 14,
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color:
+                        diasRestantesCiclo !== null && diasRestantesCiclo <= 0
+                          ? "#ef4444"
+                          : "#94a3b8",
+                    }}
+                  >
+                    {cicloDias === null
+                      ? "🗓️ Configurar troca de treino"
+                      : diasRestantesCiclo <= 0
+                        ? "🔥 Hora de trocar de treino!"
+                        : `🗓️ Troca de treino em ${diasRestantesCiclo} dia${diasRestantesCiclo !== 1 ? "s" : ""}`}
+                  </span>
+                  <span style={{ fontSize: 11, color: "#475569" }}>⚙️</span>
+                </div>
               )}
 
               {divisao && (
@@ -1822,6 +3004,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           setTreinando(true);
                           setTempoTotal(0);
                           falar("Vamos treinar!");
+                          if (exerciciosFiltrados.length > 0) {
+                            toggleConcluido(exerciciosFiltrados[0].id);
+                          }
                         }}
                       >
                         ▶ Iniciar Treino {treinoAtivo}
@@ -1924,24 +3109,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       }}
                     >
                       <button
-                        onClick={async () => {
-                          if (
-                            !confirm(
-                              `Apagar todos os exercícios do Treino ${treinoAtivo}?`,
-                            )
-                          )
-                            return;
-                          await Promise.all(
-                            exerciciosFiltrados.map((ex) =>
-                              supabase
-                                .from("exercicio")
-                                .delete()
-                                .eq("id", ex.id)
-                                .eq("user_id", user.id),
-                            ),
-                          );
-                          buscarExercicios();
-                        }}
+                        onClick={() => setModalConfirmarApagarTreino(true)}
                         style={{
                           background: "transparent",
                           border: "1px solid #ef444433",
