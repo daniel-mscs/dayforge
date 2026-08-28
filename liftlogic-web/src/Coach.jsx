@@ -156,6 +156,32 @@ export default function Coach({ user }) {
         supabase.from("suplementos").select("nome").eq("user_id", user.id),
       ]);
 
+      const { data: exerciciosAtuais } = await supabase
+        .from("exercicio")
+        .select("*")
+        .eq("user_id", user.id);
+
+      const totalExerciciosAtuais = (exerciciosAtuais || []).length;
+      const exerciciosPiramide = (exerciciosAtuais || []).filter(
+        (ex) =>
+          (ex.reps_por_serie && ex.reps_por_serie.length > 0) ||
+          (ex.carga_por_serie && ex.carga_por_serie.length > 0),
+      );
+      const descansosConfigurados = (exerciciosAtuais || [])
+        .map((ex) => ex.descanso_segundos)
+        .filter(Boolean);
+      const descansoMin =
+        descansosConfigurados.length > 0
+          ? Math.min(...descansosConfigurados)
+          : null;
+      const descansoMax =
+        descansosConfigurados.length > 0
+          ? Math.max(...descansosConfigurados)
+          : null;
+      const ultimoTreinoPronto = localStorage.getItem(
+        "df_ultimo_treino_pronto",
+      );
+
       const metaAgua = aguaMeta?.meta_ml || 2500;
       const totalAgua = (agua || []).reduce((s, r) => s + r.ml, 0);
       const diasAgua = [...new Set((agua || []).map((r) => r.data))].length;
@@ -253,6 +279,9 @@ ${perfil?.sobre_mim ? `- Contexto pessoal: ${perfil.sobre_mim}` : ""}
 - Tempo total: ${Math.round((treinos || []).reduce((s, t) => s + (t.tempo_segundos || 0), 0) / 60)} minutos
 - Kcal queimadas: ${(treinos || []).reduce((s, t) => s + (t.kcal || 0), 0)} kcal
 - Volume total: ${(treinos || []).reduce((s, t) => s + (t.volume_total || 0), 0).toLocaleString("pt-BR")} kg
+- Ficha atual: ${totalExerciciosAtuais} exercícios cadastrados${ultimoTreinoPronto ? `, baseada em "${ultimoTreinoPronto}"` : ""}
+- Exercícios em pirâmide (reps/carga variam por série): ${exerciciosPiramide.length > 0 ? exerciciosPiramide.map((ex) => ex.nome).join(", ") : "nenhum"}
+- Descanso configurado entre séries: ${descansoMin !== null ? `${descansoMin}s a ${descansoMax}s` : "não configurado"}
 
 ## CARDIO
 - Sessões: ${(cardio || []).length}

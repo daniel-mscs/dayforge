@@ -58,6 +58,7 @@ import {
   NOTIFICACOES,
   agendarNotificacaoDescanso,
   cancelarNotificacaoDescanso,
+  agendarNotificacaoAusencia,
 } from "./lib/notifications";
 import { extrairTextoPDF, parsearTreinoTexto } from "./lib/pdfImportarTreino";
 
@@ -310,6 +311,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [celebrando, setCelebrando] = useState(false);
   const [xpGanho, setXpGanho] = useState(0);
   const [mensagemCelebracao, setMensagemCelebracao] = useState("");
+  const [novosRecordes, setNovosRecordes] = useState([]);
   const [notifAtivas, setNotifAtivas] = useState(() => {
     const salvo = localStorage.getItem("df_notif_ativas");
     return salvo ? JSON.parse(salvo) : NOTIFICACOES.map((n) => n.id);
@@ -620,6 +622,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   useEffect(() => {
     buscarExercicios();
     buscarPerfil();
+    agendarNotificacaoAusencia(3);
     supabase
       .from("exercicios_preset")
       .select("nome, grupo_muscular")
@@ -872,6 +875,39 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       toast("Erro ao salvar: " + error.message, "error");
       return;
     }
+    const nomesExercicios = filtrados.map((ex) => ex.nome);
+    const { data: recordesAnteriores } = await supabase
+      .from("historico_carga")
+      .select("exercicio_nome, carga")
+      .eq("user_id", user.id)
+      .in(
+        "exercicio_nome",
+        nomesExercicios.length > 0 ? nomesExercicios : [""],
+      );
+
+    const maximosAnteriores = {};
+    (recordesAnteriores || []).forEach((r) => {
+      const atual = maximosAnteriores[r.exercicio_nome] || 0;
+      if (Number(r.carga) > atual)
+        maximosAnteriores[r.exercicio_nome] = Number(r.carga);
+    });
+
+    const novosRecordesDetectados = [];
+    filtrados.forEach((ex) => {
+      const cargaEfetiva =
+        ex.carga_por_serie && ex.carga_por_serie.length > 0
+          ? Math.max(...ex.carga_por_serie)
+          : Number(ex.carga || 0);
+      const recordeAnterior = maximosAnteriores[ex.nome];
+      if (recordeAnterior && cargaEfetiva > recordeAnterior) {
+        novosRecordesDetectados.push({
+          nome: ex.nome,
+          cargaNova: cargaEfetiva,
+          cargaAntiga: recordeAnterior,
+        });
+      }
+    });
+
     const registrosCarga = filtrados.map((ex) => ({
       user_id: user.id,
       exercicio_nome: ex.nome,
@@ -888,6 +924,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     await buscarHistorico();
     setSalvandoTreino(false);
     await ganharXP(user.id, "treino_finalizado");
+    setNovosRecordes(novosRecordesDetectados);
     const mensagens = [
       "Mais um tijolo na forja. Continue assim! 💪",
       "Sem desculpas, só resultado. Você mandou bem! 🔥",
@@ -1156,6 +1193,47 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     });
   };
 
+  const alternarPiramideImportado = (letra, index) => {
+    setTreinoImportado((prev) => {
+      const copia = { ...prev };
+      copia[letra] = [...copia[letra]];
+      const ex = copia[letra][index];
+      const ligado = !(ex.reps_variam || ex.carga_variam);
+      const totalSeries = Number(ex.series) || 1;
+      copia[letra][index] = {
+        ...ex,
+        reps_variam: ligado,
+        carga_variam: ligado,
+        reps_por_serie: ligado
+          ? Array.from(
+              { length: totalSeries },
+              (_, i) => ex.reps_por_serie?.[i] ?? ex.repeticoes,
+            )
+          : ex.reps_por_serie,
+        carga_por_serie: ligado
+          ? Array.from(
+              { length: totalSeries },
+              (_, i) => ex.carga_por_serie?.[i] ?? ex.carga,
+            )
+          : ex.carga_por_serie,
+      };
+      return copia;
+    });
+  };
+
+  const atualizarSerieImportada = (letra, index, campo, serieIdx, valor) => {
+    setTreinoImportado((prev) => {
+      const copia = { ...prev };
+      copia[letra] = [...copia[letra]];
+      const ex = { ...copia[letra][index] };
+      const arr = [...(ex[campo] || [])];
+      arr[serieIdx] = valor;
+      ex[campo] = arr;
+      copia[letra][index] = ex;
+      return copia;
+    });
+  };
+
   const removerExercicioImportado = (letra, index) => {
     setTreinoImportado((prev) => {
       const copia = { ...prev };
@@ -1205,6 +1283,12 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
           series: Number(ex.series) || 1,
           repeticoes: Number(ex.repeticoes) || 1,
           carga: Number(ex.carga) || 0,
+          reps_por_serie: ex.reps_variam
+            ? (ex.reps_por_serie || []).map((r) => Number(r) || 0)
+            : null,
+          carga_por_serie: ex.carga_variam
+            ? (ex.carga_por_serie || []).map((c) => Number(c) || 0)
+            : null,
           treino: letra,
           user_id: user.id,
           ordem: index,
@@ -1236,6 +1320,10 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     localStorage.setItem(
       TREINO_ATIVO_KEY,
       Object.keys(treinoImportado).sort()[0],
+    );
+    localStorage.setItem(
+      "df_ultimo_treino_pronto",
+      "Importado de PDF (ficha própria)",
     );
     reiniciarCicloSeAtivo();
     await buscarExercicios();
@@ -1292,6 +1380,10 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setDivisao(preset.divisao);
     setTreinoAtivo("A");
     localStorage.setItem(TREINO_ATIVO_KEY, "A");
+    localStorage.setItem(
+      "df_ultimo_treino_pronto",
+      `${preset.nome} (${preset.categoria})`,
+    );
     reiniciarCicloSeAtivo();
     await buscarExercicios();
     setAplicandoPreset(false);
@@ -1407,6 +1499,42 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 +{xpGanho} XP
               </span>
             </div>
+            {novosRecordes.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  marginTop: 18,
+                  maxWidth: 280,
+                }}
+              >
+                {novosRecordes.map((r) => (
+                  <div
+                    key={r.nome}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "rgba(245,158,11,0.12)",
+                      border: "1px solid rgba(245,158,11,0.35)",
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      fontSize: 12,
+                      color: "#fbbf24",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span style={{ fontSize: 16 }}>🏆</span>
+                    <span>
+                      Recorde em {r.nome}: {r.cargaNova}kg (antes{" "}
+                      {r.cargaAntiga}
+                      kg)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div
               style={{
                 position: "absolute",
@@ -2136,8 +2264,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                              gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
                               gap: 6,
+                              marginBottom: 6,
                             }}
                           >
                             <input
@@ -2172,6 +2301,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               type="number"
                               placeholder="Reps"
                               value={ex.repeticoes}
+                              disabled={ex.reps_variam}
                               onChange={(e) =>
                                 atualizarExercicioImportado(
                                   letra,
@@ -2180,12 +2310,17 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                                   e.target.value,
                                 )
                               }
-                              style={{ fontSize: 12, padding: 8 }}
+                              style={{
+                                fontSize: 12,
+                                padding: 8,
+                                opacity: ex.reps_variam ? 0.4 : 1,
+                              }}
                             />
                             <input
                               type="number"
                               placeholder="Kg"
                               value={ex.carga}
+                              disabled={ex.carga_variam}
                               onChange={(e) =>
                                 atualizarExercicioImportado(
                                   letra,
@@ -2194,9 +2329,125 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                                   e.target.value,
                                 )
                               }
+                              style={{
+                                fontSize: 12,
+                                padding: 8,
+                                opacity: ex.carga_variam ? 0.4 : 1,
+                              }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Descanso (s)"
+                              value={ex.descanso_segundos}
+                              onChange={(e) =>
+                                atualizarExercicioImportado(
+                                  letra,
+                                  i,
+                                  "descanso_segundos",
+                                  e.target.value,
+                                )
+                              }
                               style={{ fontSize: 12, padding: 8 }}
                             />
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => alternarPiramideImportado(letra, i)}
+                            style={{
+                              width: "100%",
+                              background:
+                                ex.reps_variam || ex.carga_variam
+                                  ? "rgba(99,102,241,0.15)"
+                                  : "transparent",
+                              border: "1px dashed #6366f155",
+                              borderRadius: 8,
+                              color: "#a5b4fc",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "6px 0",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {ex.reps_variam || ex.carga_variam
+                              ? "🔺 Pirâmide ativada"
+                              : "🔺 É exercício pirâmide? (reps/carga variam)"}
+                          </button>
+
+                          {(ex.reps_variam || ex.carga_variam) && (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                                background: "#0f172a",
+                                border: "1px solid #334155",
+                                borderRadius: 8,
+                                padding: 8,
+                                marginTop: 6,
+                              }}
+                            >
+                              {Array.from({
+                                length: Number(ex.series) || 0,
+                              }).map((_, serieIdx) => (
+                                <div
+                                  key={serieIdx}
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: 3,
+                                  }}
+                                >
+                                  <span
+                                    style={{ fontSize: 9, color: "#64748b" }}
+                                  >
+                                    Série {serieIdx + 1}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    placeholder="reps"
+                                    value={ex.reps_por_serie?.[serieIdx] ?? ""}
+                                    onChange={(e) =>
+                                      atualizarSerieImportada(
+                                        letra,
+                                        i,
+                                        "reps_por_serie",
+                                        serieIdx,
+                                        e.target.value,
+                                      )
+                                    }
+                                    style={{
+                                      width: 44,
+                                      fontSize: 11,
+                                      padding: 4,
+                                      textAlign: "center",
+                                    }}
+                                  />
+                                  <input
+                                    type="number"
+                                    placeholder="kg"
+                                    value={ex.carga_por_serie?.[serieIdx] ?? ""}
+                                    onChange={(e) =>
+                                      atualizarSerieImportada(
+                                        letra,
+                                        i,
+                                        "carga_por_serie",
+                                        serieIdx,
+                                        e.target.value,
+                                      )
+                                    }
+                                    style={{
+                                      width: 44,
+                                      fontSize: 11,
+                                      padding: 4,
+                                      textAlign: "center",
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -2521,6 +2772,12 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               Escolha um treino pronto pra aplicar. Você vê tudo antes de
               decidir substituir.
             </div>
+
+            {carregandoPresets && (
+              <p style={{ fontSize: 13, color: "#64748b", padding: "20px 0" }}>
+                Carregando treinos...
+              </p>
+            )}
 
             {[...new Set(treinosProntos.map((p) => p.categoria))]
               .filter(
@@ -2900,6 +3157,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 8,
                   }}
                 >
                   <button
@@ -2948,6 +3207,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   </div>
                 </header>
               )}
+
               {divisao && (
                 <div
                   onClick={() => setModalCicloConfig(true)}

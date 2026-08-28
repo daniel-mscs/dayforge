@@ -165,6 +165,33 @@ export async function cancelarNotificacaoDescanso() {
   });
 }
 
+// Lembrete de "sumiço" — reagendado do zero toda vez que o app abre.
+// Se a pessoa não abrir de novo antes do prazo, o lembrete dispara.
+const ID_NOTIF_AUSENCIA = 9201;
+
+export async function agendarNotificacaoAusencia(dias = 3) {
+  if (!Capacitor.isNativePlatform()) return;
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return;
+
+  await LocalNotifications.cancel({
+    notifications: [{ id: ID_NOTIF_AUSENCIA }],
+  });
+
+  const quando = new Date(Date.now() + dias * 24 * 60 * 60 * 1000);
+  await LocalNotifications.schedule({
+    notifications: [
+      {
+        id: ID_NOTIF_AUSENCIA,
+        title: "🔥 Sentimos sua falta!",
+        body: "Já faz uns dias que você não abre o DayForge — bora manter o ritmo?",
+        smallIcon: "ic_notification",
+        schedule: { at: quando, allowWhileIdle: true },
+      },
+    ],
+  });
+}
+
 // IDs reservados pras notificações de resumo da Rotina por período,
 // longe dos outros blocos de id já usados no app.
 const IDS_NOTIF_ROTINA = {
