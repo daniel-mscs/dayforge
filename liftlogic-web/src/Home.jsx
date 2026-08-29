@@ -98,6 +98,37 @@ function getFeriado(dataStr) {
   return movel ? movel.nome : null;
 }
 
+// Monta um calendário do mês atual, com os dias em ✅ que têm streak.
+function gerarCalendarioMesStreak(diasAtivos) {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+  const primeiroDia = new Date(ano, mes, 1);
+  const ultimoDia = new Date(ano, mes + 1, 0);
+  const diasNoMes = ultimoDia.getDate();
+  const offsetInicio = primeiroDia.getDay(); // 0 = domingo
+
+  const celulas = [];
+  for (let i = 0; i < offsetInicio; i++) celulas.push(null);
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const dataStr = formatarData(new Date(ano, mes, dia));
+    celulas.push({ dia, data: dataStr, ativo: diasAtivos.has(dataStr) });
+  }
+
+  const semanas = [];
+  for (let i = 0; i < celulas.length; i += 7) {
+    const semana = celulas.slice(i, i + 7);
+    while (semana.length < 7) semana.push(null);
+    semanas.push(semana);
+  }
+
+  const nomeMes = hoje.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+  return { semanas, nomeMes };
+}
+
 function diasDesdeData(dataStr) {
   if (!dataStr) return null;
   return Math.floor((Date.now() - new Date(dataStr).getTime()) / 86400000);
@@ -125,6 +156,7 @@ export default function Home({
   const [perfil, setPerfil] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [streak, setStreak] = useState(0);
+  const [streakDiasAtivos, setStreakDiasAtivos] = useState(new Set());
   const [aguaHoje, setAguaHoje] = useState({ total: 0, meta: 2500 });
   const [passosHoje, setPassosHoje] = useState(null);
   const [passosMeta, setPassosMeta] = useState(10000);
@@ -337,6 +369,15 @@ export default function Home({
         localStorage.setItem("home_blocos", JSON.stringify(novo));
         return novo;
       }
+      const temStreak = parsed.find((b) => b.id === "streak");
+      if (!temStreak) {
+        const novo = [
+          ...parsed,
+          { id: "streak", label: "Calendário de Streak", visivel: true },
+        ];
+        localStorage.setItem("home_blocos", JSON.stringify(novo));
+        return novo;
+      }
       return parsed;
     }
     return [
@@ -349,6 +390,7 @@ export default function Home({
       { id: "humor", label: "Humor + Energia", visivel: true },
       { id: "sono", label: "Sono", visivel: true },
       { id: "treino_semana", label: "Semana de Treino", visivel: true },
+      { id: "streak", label: "Calendário de Streak", visivel: true },
     ];
   });
 
@@ -462,6 +504,15 @@ export default function Home({
     await registrarStreakHoje(user.id);
     const s = await calcularStreak(user.id);
     setStreak(s);
+
+    const noventaDiasAtras = new Date();
+    noventaDiasAtras.setDate(noventaDiasAtras.getDate() - 95);
+    const { data: streakDias } = await supabase
+      .from("streak_registro")
+      .select("data")
+      .eq("user_id", user.id)
+      .gte("data", formatarData(noventaDiasAtras));
+    setStreakDiasAtivos(new Set((streakDias || []).map((r) => r.data)));
 
     const totalAgua = (aguaRegs || []).reduce((s, r) => s + r.ml, 0);
     setAguaHoje({ total: totalAgua, meta: aguaMeta?.meta_ml || 2500 });
@@ -591,6 +642,7 @@ export default function Home({
       ...d,
       extras: d.tarefas,
     }));
+
     setResumoRotinaSemana(resumoComExtras);
   }, [user.id]);
 
@@ -1748,6 +1800,98 @@ export default function Home({
                     {treinosSemana.length} treino
                     {treinosSemana.length !== 1 ? "s" : ""} nesta semana
                   </div>
+                </div>
+              )}
+
+              {bloco.id === "streak" && streakDiasAtivos.size > 0 && (
+                <div
+                  style={{
+                    background: "#1a1d21",
+                    border: "1px solid #ffffff0d",
+                    borderRadius: 16,
+                    padding: "18px 16px",
+                  }}
+                >
+                  {(() => {
+                    const { semanas, nomeMes } =
+                      gerarCalendarioMesStreak(streakDiasAtivos);
+                    return (
+                      <>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 800,
+                            color: "#f8fafc",
+                            marginBottom: 12,
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          🔥 Streak — {nomeMes}
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(7, 1fr)",
+                            gap: 4,
+                            marginBottom: 6,
+                          }}
+                        >
+                          {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                textAlign: "center",
+                                fontSize: 10,
+                                color: "#475569",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {d}
+                            </div>
+                          ))}
+                        </div>
+                        {semanas.map((semana, wi) => (
+                          <div
+                            key={wi}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(7, 1fr)",
+                              gap: 4,
+                              marginBottom: 4,
+                            }}
+                          >
+                            {semana.map((cel, di) => (
+                              <div
+                                key={di}
+                                style={{
+                                  aspectRatio: "1",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: 8,
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  background: cel?.ativo
+                                    ? "rgba(16,185,129,0.15)"
+                                    : "transparent",
+                                  border: cel?.ativo
+                                    ? "1px solid rgba(16,185,129,0.4)"
+                                    : "1px solid transparent",
+                                  color: cel
+                                    ? cel.ativo
+                                      ? "#10b981"
+                                      : "#64748b"
+                                    : "transparent",
+                                }}
+                              >
+                                {cel ? (cel.ativo ? "✅" : cel.dia) : ""}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
