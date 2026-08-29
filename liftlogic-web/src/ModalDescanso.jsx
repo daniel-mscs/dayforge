@@ -565,6 +565,35 @@ export default function ModalDescanso({
           </button>
         )}
 
+        {modalDescanso.serieAtual > 0 &&
+          modalDescanso.serieAtual < modalDescanso.totalSeries && (
+            <button
+              onClick={() => {
+                setConcluidos((prev) => ({
+                  ...prev,
+                  [modalDescanso.exId]: true,
+                }));
+                cancelarDescanso();
+                setModalDescanso(null);
+              }}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "1px dashed rgba(148,163,184,0.35)",
+                borderRadius: 12,
+                color: "#94a3b8",
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "10px 0",
+                cursor: "pointer",
+                marginBottom: 10,
+              }}
+            >
+              Parar aqui e marcar como concluído ({modalDescanso.serieAtual}/
+              {modalDescanso.totalSeries} séries)
+            </button>
+          )}
+
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => {
