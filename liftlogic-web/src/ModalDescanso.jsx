@@ -574,7 +574,12 @@ export default function ModalDescanso({
                   [modalDescanso.exId]: true,
                 }));
                 cancelarDescanso();
-                setModalDescanso(null);
+                if (temProximo) {
+                  const proximo = exerciciosFiltrados[posicaoAtual + 1];
+                  irParaExercicio(proximo);
+                } else {
+                  setModalDescanso(null);
+                }
               }}
               style={{
                 width: "100%",
