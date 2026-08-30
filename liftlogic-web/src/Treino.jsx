@@ -72,6 +72,10 @@ function ExercicioCard({
   deletarExercicio,
   onEditar,
   onVincular,
+  pulados,
+  pularExercicio,
+  corSuperset,
+  onDuplicar,
 }) {
   const {
     attributes,
@@ -84,7 +88,10 @@ function ExercicioCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.5 : pulados?.[ex.id] ? 0.5 : 1,
+    borderLeft: ex.superset_id
+      ? `3px solid ${corSuperset(ex.superset_id)}`
+      : undefined,
   };
 
   return (
@@ -119,6 +126,14 @@ function ExercicioCard({
               >
                 🔗
               </button>
+              <button
+                className="btn-delete-mini"
+                onClick={() => onDuplicar(ex)}
+                style={{ color: "#64748b", marginRight: 2 }}
+                title="Duplicar pra outro treino"
+              >
+                📋
+              </button>
             </>
           )}
           <button
@@ -141,18 +156,37 @@ function ExercicioCard({
           >
             {concluidos[ex.id] ? (
               <span style={{ fontSize: 22 }}>✅</span>
+            ) : pulados?.[ex.id] ? (
+              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
+                ⏭ Pulado
+              </span>
             ) : (
-              <button
-                className="btn-check"
-                onClick={() => toggleConcluido(ex.id)}
-                style={{
-                  fontSize: 13,
-                  padding: "6px 10px",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                ▶ Iniciar
-              </button>
+              <>
+                <button
+                  className="btn-check"
+                  onClick={() => toggleConcluido(ex.id)}
+                  style={{
+                    fontSize: 13,
+                    padding: "6px 10px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ▶ Iniciar
+                </button>
+                <button
+                  onClick={() => pularExercicio(ex.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#475569",
+                    fontSize: 10,
+                    cursor: "pointer",
+                    marginTop: 2,
+                  }}
+                >
+                  ⏭ Pular
+                </button>
+              </>
             )}
             <span
               style={{
@@ -180,6 +214,24 @@ function ExercicioCard({
               }}
             >
               🔗 Superset
+            </div>
+          )}
+          {Number(ex.aquecimento_series) > 0 && (
+            <div style={{ fontSize: 11, color: "#22d3ee", marginBottom: 4 }}>
+              🔥 {ex.aquecimento_series} série
+              {ex.aquecimento_series > 1 ? "s" : ""} de aquecimento
+            </div>
+          )}
+          {ex.observacao && (
+            <div
+              style={{
+                fontSize: 11,
+                color: "#94a3b8",
+                marginBottom: 4,
+                fontStyle: "italic",
+              }}
+            >
+              📝 {ex.observacao}
             </div>
           )}
           <div className="edit-stats-row">
@@ -294,6 +346,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     () => localStorage.getItem(TREINO_ATIVO_KEY) || "A",
   );
   const [concluidos, setConcluidos] = useState({});
+  const [pulados, setPulados] = useState({});
+  const [modalDuplicar, setModalDuplicar] = useState(null);
   const [seriesFeitas, setSeriesFeitas] = useState({});
   const [modalDescanso, setModalDescanso] = useState(null);
   const [modalEditEx, setModalEditEx] = useState(null);
@@ -817,26 +871,30 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     const treinoIniciado =
       localStorage.getItem(TREINO_ATIVO_KEY) || treinoAtivo;
     const filtrados = exercicios.filter((ex) => ex.treino === treinoIniciado);
-    const volumeTotal = filtrados.reduce(
-      (acc, ex) =>
+    const naoPulados = filtrados.filter((ex) => !pulados[ex.id]);
+    const volumeTotal = naoPulados.reduce((acc, ex) => {
+      const seriesEfetivas = Math.max(
+        0,
+        Number(ex.series || 0) - Number(ex.aquecimento_series || 0),
+      );
+      return (
         acc +
-        Number(ex.series || 0) *
-          Number(ex.repeticoes || 0) *
-          Number(ex.carga || 0),
-      0,
-    );
+        seriesEfetivas * Number(ex.repeticoes || 0) * Number(ex.carga || 0)
+      );
+    }, 0);
     const concluídosCount = Object.values(concluidos).filter(Boolean).length;
     const kcal = perfil.peso
       ? Math.round(5.0 * Number(perfil.peso) * (tempoTotal / 3600))
       : null;
-    const maisHeavy = filtrados.reduce(
+    const maisHeavy = naoPulados.reduce(
       (max, ex) => (Number(ex.carga) > Number(max?.carga || 0) ? ex : max),
       null,
     );
     setModalResumo({
       volumeTotal,
       concluídosCount,
-      total: filtrados.length,
+      total: naoPulados.length,
+      puladosCount: filtrados.length - naoPulados.length,
       kcal,
       maisHeavy,
       treinoIniciado,
@@ -920,6 +978,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setTempoTotal(0);
     cancelarDescanso();
     setConcluidos({});
+    setPulados({});
     setSeriesFeitas({});
     await buscarHistorico();
     setSalvandoTreino(false);
@@ -1085,6 +1144,50 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       .eq("id", exDestino.id);
     buscarExercicios();
     setModalSuperset(null);
+  };
+
+  const pularExercicio = (id) => {
+    setPulados((prev) => ({ ...prev, [id]: true }));
+  };
+
+  const duplicarExercicio = async (ex, letraDestino) => {
+    const exerciciosDestino = exercicios.filter(
+      (e) => e.treino === letraDestino,
+    );
+    const { error } = await supabase.from("exercicio").insert([
+      {
+        nome: ex.nome,
+        grupo_muscular: ex.grupo_muscular,
+        series: ex.series,
+        repeticoes: ex.repeticoes,
+        reps_por_serie: ex.reps_por_serie,
+        carga: ex.carga,
+        carga_por_serie: ex.carga_por_serie,
+        treino: letraDestino,
+        user_id: user.id,
+        ordem: exerciciosDestino.length,
+        equipamento: ex.equipamento,
+        descanso_segundos: ex.descanso_segundos,
+        observacao: ex.observacao,
+        aquecimento_series: ex.aquecimento_series,
+      },
+    ]);
+    if (error) toast(error.message, "error");
+    else {
+      toast(`Duplicado pro Treino ${letraDestino}! ✅`, "success");
+      buscarExercicios();
+    }
+    setModalDuplicar(null);
+  };
+
+  // Cor consistente por superset_id, só pra dar destaque visual na lista
+  const corSuperset = (supersetId) => {
+    if (!supersetId) return null;
+    const cores = ["#f97316", "#06b6d4", "#ec4899", "#a3e635", "#f472b6"];
+    let hash = 0;
+    for (let i = 0; i < supersetId.length; i++)
+      hash = (hash * 31 + supersetId.charCodeAt(i)) % cores.length;
+    return cores[hash];
   };
 
   const desvincularSuperset = async (ex) => {
@@ -1416,6 +1519,14 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       ? cicloDias -
         Math.floor((Date.now() - cicloInicio) / (1000 * 60 * 60 * 24))
       : null;
+  const semanaDeload =
+    cicloInicio &&
+    (() => {
+      const semanasPassadas = Math.floor(
+        (Date.now() - cicloInicio) / (1000 * 60 * 60 * 24 * 7),
+      );
+      return semanasPassadas > 0 && semanasPassadas % 4 === 0;
+    })();
 
   return (
     <div className="container">
@@ -1761,6 +1872,36 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   })
                 }
               />
+              <input
+                type="text"
+                placeholder="Observação (ex: pegada aberta, cuidado com lombar)"
+                value={modalEditEx.observacao || ""}
+                onChange={(e) =>
+                  setModalEditEx({
+                    ...modalEditEx,
+                    observacao: e.target.value,
+                  })
+                }
+              />
+              <div>
+                <label
+                  style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}
+                >
+                  Séries de aquecimento (não contam no volume)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={modalEditEx.aquecimento_series || 0}
+                  onChange={(e) =>
+                    setModalEditEx({
+                      ...modalEditEx,
+                      aquecimento_series: e.target.value,
+                    })
+                  }
+                />
+              </div>
               <div className="sexo-selector">
                 {[
                   { val: "halter", label: "🏋️ Halter" },
@@ -2076,6 +2217,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       carga_por_serie: cargaPorSerieFinal,
                       descanso_segundos:
                         Number(modalEditEx.descanso_segundos) || 90,
+                      observacao: modalEditEx.observacao || null,
+                      aquecimento_series:
+                        Number(modalEditEx.aquecimento_series) || 0,
                     })
                     .eq("id", modalEditEx.id)
                     .eq("user_id", user.id);
@@ -2527,6 +2671,93 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal duplicar exercício pra outro treino */}
+      {modalDuplicar && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9993,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModalDuplicar(null)}
+        >
+          <div
+            style={{
+              background: "#1a1d21",
+              borderRadius: 20,
+              padding: "24px 20px",
+              width: "90%",
+              maxWidth: 360,
+              border: "1px solid #1e1e1e",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#f8fafc",
+                marginBottom: 6,
+              }}
+            >
+              📋 Duplicar "{modalDuplicar.nome}"
+            </div>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
+              Pra qual treino você quer copiar?
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {abasDisponiveis
+                .filter((letra) => letra !== modalDuplicar.treino)
+                .map((letra) => (
+                  <button
+                    key={letra}
+                    onClick={() => duplicarExercicio(modalDuplicar, letra)}
+                    style={{
+                      background: "#24282d",
+                      border: "1px solid #ffffff0d",
+                      borderRadius: 10,
+                      color: "#f8fafc",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    Treino {letra}
+                  </button>
+                ))}
+            </div>
+            <button
+              onClick={() => setModalDuplicar(null)}
+              style={{
+                marginTop: 14,
+                width: "100%",
+                background: "transparent",
+                border: "1px solid #ffffff0d",
+                borderRadius: 8,
+                color: "#64748b",
+                fontSize: 13,
+                padding: "10px 0",
+                cursor: "pointer",
+              }}
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}
@@ -3250,6 +3481,24 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 </div>
               )}
 
+              {semanaDeload && (
+                <div
+                  style={{
+                    background: "rgba(6,182,212,0.1)",
+                    border: "1px solid rgba(6,182,212,0.3)",
+                    borderRadius: 10,
+                    padding: "8px 12px",
+                    marginBottom: 14,
+                    fontSize: 12,
+                    color: "#22d3ee",
+                    fontWeight: 700,
+                  }}
+                >
+                  🪶 Já faz um tempo nesse ritmo — considere uma semana mais
+                  leve (deload) pra recuperar.
+                </div>
+              )}
+
               {divisao && (
                 <>
                   <div className="timer-section">
@@ -3840,6 +4089,10 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               })
                             }
                             onVincular={(ex) => setModalSuperset(ex)}
+                            pulados={pulados}
+                            pularExercicio={pularExercicio}
+                            corSuperset={corSuperset}
+                            onDuplicar={(ex) => setModalDuplicar(ex)}
                           />
                         ))}
                       </SortableContext>

@@ -38,6 +38,19 @@ export default function ModalResumo({
     concluido: !!concluidos[ex.id],
   }));
 
+  const volumePorGrupo = {};
+  filtrados.forEach((ex) => {
+    const grupo = ex.grupo_muscular || "Geral";
+    const vol =
+      Number(ex.series || 0) *
+      Number(ex.repeticoes || 0) *
+      Number(ex.carga || 0);
+    volumePorGrupo[grupo] = (volumePorGrupo[grupo] || 0) + vol;
+  });
+  const gruposOrdenados = Object.entries(volumePorGrupo).sort(
+    (a, b) => b[1] - a[1],
+  );
+
   return (
     <div className="modal-overlay">
       <div
@@ -76,6 +89,63 @@ export default function ModalResumo({
             </div>
           )}
         </div>
+
+        {/* Volume por grupo muscular */}
+        {gruposOrdenados.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 10,
+              }}
+            >
+              VOLUME POR GRUPO MUSCULAR
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {gruposOrdenados.map(([grupo, vol]) => {
+                const maxVol = gruposOrdenados[0][1] || 1;
+                return (
+                  <div key={grupo}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 12,
+                        color: "#cbd5e1",
+                        marginBottom: 3,
+                      }}
+                    >
+                      <span>{grupo}</span>
+                      <span style={{ color: "#818cf8", fontWeight: 700 }}>
+                        {vol.toLocaleString("pt-BR")} kg
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: 6,
+                        borderRadius: 99,
+                        background: "#ffffff0d",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${(vol / maxVol) * 100}%`,
+                          background: "#6366f1",
+                          borderRadius: 99,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Gráfico de cargas */}
         {filtrados.length > 0 && (
