@@ -27,6 +27,7 @@ import {
 } from "./lib/skeleton";
 import Confetti from "react-confetti";
 import { toast } from "./lib/toast";
+import { verificarEAgendarLembretePendencias } from "./lib/notifications";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -157,6 +158,7 @@ export default function Home({
   const [historico, setHistorico] = useState([]);
   const [streak, setStreak] = useState(0);
   const [streakDiasAtivos, setStreakDiasAtivos] = useState(new Set());
+  const [itensPendentes, setItensPendentes] = useState([]);
   const [aguaHoje, setAguaHoje] = useState({ total: 0, meta: 2500 });
   const [passosHoje, setPassosHoje] = useState(null);
   const [passosMeta, setPassosMeta] = useState(10000);
@@ -567,6 +569,18 @@ export default function Home({
       .gte("created_at", inicioSemana + "T00:00:00");
     setTreinosSemana(treinosSemanaDados || []);
     setCarregando(false);
+
+    const pendencias = [];
+    if (totalAgua === 0) pendencias.push({ id: "agua", label: "Água" });
+    if (!passosData?.passos) pendencias.push({ id: "passos", label: "Passos" });
+    if (!sonoHoje) pendencias.push({ id: "sono", label: "Sono" });
+    setItensPendentes(pendencias);
+
+    verificarEAgendarLembretePendencias({
+      aguaOk: totalAgua > 0,
+      passosOk: !!passosData?.passos,
+      sonoOk: !!sonoHoje,
+    });
   }, [user.id]);
 
   useEffect(() => {
@@ -847,6 +861,49 @@ export default function Home({
           </div>
         )}
       </div>
+
+      {itensPendentes.length > 0 && (
+        <div
+          style={{
+            background: "rgba(245,158,11,0.08)",
+            border: "1px solid rgba(245,158,11,0.25)",
+            borderRadius: 14,
+            padding: "12px 14px",
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              color: "#f59e0b",
+              marginBottom: 8,
+            }}
+          >
+            📋 Falta preencher hoje
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {itensPendentes.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onNavegar(item.id)}
+                style={{
+                  background: "rgba(245,158,11,0.12)",
+                  border: "1px solid rgba(245,158,11,0.3)",
+                  borderRadius: 10,
+                  color: "#fbbf24",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: "7px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                {item.label} →
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {easterEggAtivo && (
         <Confetti

@@ -251,3 +251,52 @@ export async function agendarNotificacoesRotina(tarefasPorPeriodo) {
     await LocalNotifications.schedule({ notifications: agendamentos });
   }
 }
+
+// Lembrete noturno "inteligente" — só dispara se faltar registrar
+// água, passos ou sono naquele dia. Cancela sozinho se tudo já tiver
+// sido preenchido.
+const ID_NOTIF_PENDENCIAS = 9301;
+
+export async function verificarEAgendarLembretePendencias(
+  { aguaOk, passosOk, sonoOk },
+  hora = 21,
+  minuto = 0,
+) {
+  if (!Capacitor.isNativePlatform()) return;
+
+  await LocalNotifications.cancel({
+    notifications: [{ id: ID_NOTIF_PENDENCIAS }],
+  });
+
+  const faltando = [];
+  if (!aguaOk) faltando.push("água");
+  if (!passosOk) faltando.push("passos");
+  if (!sonoOk) faltando.push("sono");
+
+  if (faltando.length === 0) return;
+
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return;
+
+  const agora = new Date();
+  const alvo = new Date();
+  alvo.setHours(hora, minuto, 0, 0);
+  if (alvo <= agora) return; // já passou do horário hoje, não agenda
+
+  const corpo =
+    faltando.length === 1
+      ? `Você ainda não registrou ${faltando[0]} hoje.`
+      : `Você ainda não registrou: ${faltando.join(", ")}.`;
+
+  await LocalNotifications.schedule({
+    notifications: [
+      {
+        id: ID_NOTIF_PENDENCIAS,
+        title: "📋 Faltou preencher hoje",
+        body: corpo,
+        smallIcon: "ic_notification",
+        schedule: { at: alvo, allowWhileIdle: true },
+      },
+    ],
+  });
+}
