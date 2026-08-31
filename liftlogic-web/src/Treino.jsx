@@ -62,6 +62,22 @@ import {
 } from "./lib/notifications";
 import { extrairTextoPDF, parsearTreinoTexto } from "./lib/pdfImportarTreino";
 
+// Fallback pra gerar um id único quando crypto.randomUUID() não existe
+// (acontece em alguns WebViews Android mais antigos, ou fora de HTTPS).
+function gerarUUID() {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function ExercicioCard({
   ex,
   concluidos,
@@ -74,6 +90,7 @@ function ExercicioCard({
   onVincular,
   pulados,
   pularExercicio,
+  desfazerPular,
   corSuperset,
   onDuplicar,
 }) {
@@ -157,9 +174,20 @@ function ExercicioCard({
             {concluidos[ex.id] ? (
               <span style={{ fontSize: 22 }}>✅</span>
             ) : pulados?.[ex.id] ? (
-              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
-                ⏭ Pulado
-              </span>
+              <button
+                onClick={() => desfazerPular(ex.id)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 11,
+                  color: "#64748b",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                ⏭ Pulado (desfazer)
+              </button>
             ) : (
               <>
                 <button
@@ -1133,21 +1161,39 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   };
 
   const vincularSuperset = async (exOrigem, exDestino) => {
-    const supersetId = exOrigem.superset_id || crypto.randomUUID();
-    await supabase
+    const supersetId = exOrigem.superset_id || gerarUUID();
+    const { error: erro1 } = await supabase
       .from("exercicio")
       .update({ superset_id: supersetId })
-      .eq("id", exOrigem.id);
-    await supabase
+      .eq("id", exOrigem.id)
+      .eq("user_id", user.id);
+    const { error: erro2 } = await supabase
       .from("exercicio")
       .update({ superset_id: supersetId })
-      .eq("id", exDestino.id);
-    buscarExercicios();
+      .eq("id", exDestino.id)
+      .eq("user_id", user.id);
+    if (erro1 || erro2) {
+      toast(
+        "Erro ao vincular superset: " + (erro1?.message || erro2?.message),
+        "error",
+      );
+      return;
+    }
+    await buscarExercicios();
+    toast("Superset vinculado! 🔗", "success");
     setModalSuperset(null);
   };
 
   const pularExercicio = (id) => {
     setPulados((prev) => ({ ...prev, [id]: true }));
+  };
+
+  const desfazerPular = (id) => {
+    setPulados((prev) => {
+      const copia = { ...prev };
+      delete copia[id];
+      return copia;
+    });
   };
 
   const duplicarExercicio = async (ex, letraDestino) => {
@@ -4091,6 +4137,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                             onVincular={(ex) => setModalSuperset(ex)}
                             pulados={pulados}
                             pularExercicio={pularExercicio}
+                            desfazerPular={desfazerPular}
                             corSuperset={corSuperset}
                             onDuplicar={(ex) => setModalDuplicar(ex)}
                           />

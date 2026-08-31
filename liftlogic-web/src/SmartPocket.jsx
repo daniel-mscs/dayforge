@@ -3,6 +3,8 @@ import { supabase } from "./lib/supabase";
 import {
   BarChart,
   Bar,
+  PieChart,
+  Pie,
   XAxis,
   YAxis,
   Tooltip,
@@ -30,11 +32,47 @@ const INVEST_TIPOS = [
   "Bolsa de Valores",
   "Reserva de Emergência",
 ];
+const CATEGORIAS = [
+  "Alimentação",
+  "Transporte",
+  "Moradia",
+  "Lazer",
+  "Saúde",
+  "Educação",
+  "Compras",
+  "Assinaturas",
+  "Outros",
+];
+const CORES_CATEGORIA = {
+  Alimentação: "#f59e0b",
+  Transporte: "#06b6d4",
+  Moradia: "#a855f7",
+  Lazer: "#ec4899",
+  Saúde: "#10b981",
+  Educação: "#3b82f6",
+  Compras: "#f97316",
+  Assinaturas: "#818cf8",
+  Outros: "#64748b",
+};
 
 function fmtBRL(v) {
   return Number(v).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
+  });
+}
+
+function gerarUUID() {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
   });
 }
 
@@ -53,9 +91,34 @@ export default function SmartPocket({ user }) {
   const [gastoNome, setGastoNome] = useState("");
   const [gastoValor, setGastoValor] = useState("");
   const [gastoData, setGastoData] = useState("");
+  const [gastoCategoria, setGastoCategoria] = useState(CATEGORIAS[0]);
 
   const [cartaoItem, setCartaoItem] = useState("");
   const [cartaoValor, setCartaoValor] = useState("");
+  const [cartaoCategoria, setCartaoCategoria] = useState(CATEGORIAS[0]);
+  const [cartaoParcelado, setCartaoParcelado] = useState(false);
+  const [cartaoParcelas, setCartaoParcelas] = useState("2");
+  const [cartaoSelecionado, setCartaoSelecionado] = useState("");
+
+  const [cartoes, setCartoes] = useState([]);
+  const [novoCartaoNome, setNovoCartaoNome] = useState("");
+  const [novoCartaoFechamento, setNovoCartaoFechamento] = useState("5");
+
+  const [limites, setLimites] = useState([]);
+  const [recorrentes, setRecorrentes] = useState([]);
+  const [config, setConfig] = useState({
+    dia_fechamento_cartao: 5,
+    meta_investimento_mensal: 0,
+  });
+  const [gastosMesPassado, setGastosMesPassado] = useState([]);
+  const [cartaoFuturo, setCartaoFuturo] = useState([]);
+  const [novoLimiteCategoria, setNovoLimiteCategoria] = useState(CATEGORIAS[0]);
+  const [novoLimiteValor, setNovoLimiteValor] = useState("");
+  const [novoRecorrenteNome, setNovoRecorrenteNome] = useState("");
+  const [novoRecorrenteValor, setNovoRecorrenteValor] = useState("");
+  const [novoRecorrenteCategoria, setNovoRecorrenteCategoria] = useState(
+    CATEGORIAS[0],
+  );
 
   const [investTipo, setInvestTipo] = useState(INVEST_TIPOS[0]);
   const [investValor, setInvestValor] = useState("");
@@ -65,41 +128,115 @@ export default function SmartPocket({ user }) {
 
   const buscarTudo = useCallback(async () => {
     setCarregando(true);
-    const [{ data: g }, { data: c }, { data: i }, { data: e }] =
-      await Promise.all([
-        supabase
-          .from("financeiro_gastos")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("mes", mes)
-          .eq("ano", ano)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("financeiro_cartao")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("mes", mes)
-          .eq("ano", ano)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("financeiro_investimentos")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("mes", mes)
-          .eq("ano", ano)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("financeiro_entradas")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("mes", mes)
-          .eq("ano", ano)
-          .order("created_at", { ascending: false }),
-      ]);
-    setGastos(g || []);
+    const mesPassadoData =
+      mes === 0 ? { mes: 11, ano: ano - 1 } : { mes: mes - 1, ano };
+    const [
+      { data: g },
+      { data: c },
+      { data: i },
+      { data: e },
+      { data: lim },
+      { data: rec },
+      { data: cfg },
+      { data: gPassado },
+      { data: cFuturo },
+      { data: cts },
+    ] = await Promise.all([
+      supabase
+        .from("financeiro_gastos")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mes)
+        .eq("ano", ano)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("financeiro_cartao")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mes)
+        .eq("ano", ano)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("financeiro_investimentos")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mes)
+        .eq("ano", ano)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("financeiro_entradas")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mes)
+        .eq("ano", ano)
+        .order("created_at", { ascending: false }),
+      supabase.from("financeiro_limites").select("*").eq("user_id", user.id),
+      supabase
+        .from("financeiro_recorrentes")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("ativo", true),
+      supabase
+        .from("financeiro_config")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("financeiro_gastos")
+        .select("valor")
+        .eq("user_id", user.id)
+        .eq("mes", mesPassadoData.mes)
+        .eq("ano", mesPassadoData.ano),
+      supabase
+        .from("financeiro_cartao")
+        .select("*")
+        .eq("user_id", user.id)
+        .not("grupo_parcela_id", "is", null)
+        .or(`ano.gt.${ano},and(ano.eq.${ano},mes.gt.${mes})`)
+        .order("ano", { ascending: true })
+        .order("mes", { ascending: true }),
+      supabase
+        .from("financeiro_cartoes")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("ativo", true)
+        .order("created_at", { ascending: true }),
+    ]);
+
+    // Aplica os gastos recorrentes que ainda não foram lançados nesse mês
+    const nomesJaLancados = new Set((g || []).map((x) => x.nome));
+    const faltando = (rec || []).filter((r) => !nomesJaLancados.has(r.nome));
+    if (faltando.length > 0) {
+      const { data: inseridos } = await supabase
+        .from("financeiro_gastos")
+        .insert(
+          faltando.map((r) => ({
+            user_id: user.id,
+            mes,
+            ano,
+            nome: r.nome,
+            valor: r.valor,
+            categoria: r.categoria,
+          })),
+        )
+        .select();
+      setGastos([...(inseridos || []), ...(g || [])]);
+    } else {
+      setGastos(g || []);
+    }
+
     setCartao(c || []);
     setInvestimentos(i || []);
     setEntradas(e || []);
+    setLimites(lim || []);
+    setRecorrentes(rec || []);
+    if (cfg) setConfig(cfg);
+    setGastosMesPassado(gPassado || []);
+    setCartaoFuturo(cFuturo || []);
+    setCartoes(cts || []);
+    if (cts && cts.length > 0 && !cartaoSelecionado) {
+      setCartaoSelecionado(cts[0].id);
+    }
     setCarregando(false);
   }, [user.id, mes, ano]);
 
@@ -119,6 +256,7 @@ export default function SmartPocket({ user }) {
           nome: gastoNome,
           valor: parseFloat(gastoValor),
           data: gastoData || null,
+          categoria: gastoCategoria,
         },
       ])
       .select();
@@ -131,22 +269,149 @@ export default function SmartPocket({ user }) {
 
   const adicionarCartao = async () => {
     if (!cartaoItem || !cartaoValor) return alert("Preencha os campos!");
+    if (!cartaoSelecionado)
+      return alert(
+        "Cadastre um cartão antes de lançar (abaixo do formulário).",
+      );
+    const valorTotal = parseFloat(cartaoValor);
+    const numParcelas = cartaoParcelado
+      ? Math.max(2, parseInt(cartaoParcelas, 10) || 2)
+      : 1;
+    const valorParcela = valorTotal / numParcelas;
+    const grupoId = cartaoParcelado ? gerarUUID() : null;
+
+    const linhas = Array.from({ length: numParcelas }, (_, idx) => {
+      let m = mes + idx;
+      let a = ano;
+      while (m > 11) {
+        m -= 12;
+        a += 1;
+      }
+      return {
+        user_id: user.id,
+        mes: m,
+        ano: a,
+        item: cartaoItem,
+        valor: valorParcela,
+        categoria: cartaoCategoria,
+        cartao_id: cartaoSelecionado,
+        parcela_atual: cartaoParcelado ? idx + 1 : null,
+        total_parcelas: cartaoParcelado ? numParcelas : null,
+        grupo_parcela_id: grupoId,
+      };
+    });
+
     const { data, error } = await supabase
       .from("financeiro_cartao")
+      .insert(linhas)
+      .select();
+    if (error) return alert(error.message);
+    const desseMes = (data || []).filter((d) => d.mes === mes && d.ano === ano);
+    setCartao((prev) => [...desseMes, ...prev]);
+    setCartaoItem("");
+    setCartaoValor("");
+    setCartaoParcelado(false);
+    setCartaoParcelas("2");
+  };
+
+  const adicionarCartaoConta = async () => {
+    if (!novoCartaoNome) return alert("Dá um nome pro cartão!");
+    const { data, error } = await supabase
+      .from("financeiro_cartoes")
       .insert([
         {
           user_id: user.id,
-          mes,
-          ano,
-          item: cartaoItem,
-          valor: parseFloat(cartaoValor),
+          nome: novoCartaoNome,
+          dia_fechamento: parseInt(novoCartaoFechamento, 10) || 5,
         },
       ])
       .select();
     if (error) return alert(error.message);
-    setCartao((prev) => [data[0], ...prev]);
-    setCartaoItem("");
-    setCartaoValor("");
+    setCartoes((prev) => [...prev, data[0]]);
+    if (!cartaoSelecionado) setCartaoSelecionado(data[0].id);
+    setNovoCartaoNome("");
+    setNovoCartaoFechamento("5");
+  };
+
+  const removerCartaoConta = async (id) => {
+    if (
+      !confirm(
+        "Remover esse cartão? Os lançamentos já feitos continuam existindo, só ficam sem cartão vinculado.",
+      )
+    )
+      return;
+    await supabase.from("financeiro_cartoes").delete().eq("id", id);
+    setCartoes((prev) => prev.filter((c) => c.id !== id));
+    if (cartaoSelecionado === id) setCartaoSelecionado("");
+  };
+
+  const salvarFechamentoCartao = async (id, dia) => {
+    setCartoes((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, dia_fechamento: dia } : c)),
+    );
+    await supabase
+      .from("financeiro_cartoes")
+      .update({ dia_fechamento: dia })
+      .eq("id", id);
+  };
+
+  const salvarLimite = async () => {
+    if (!novoLimiteValor) return alert("Informe o valor do limite!");
+    const { data, error } = await supabase
+      .from("financeiro_limites")
+      .upsert(
+        {
+          user_id: user.id,
+          categoria: novoLimiteCategoria,
+          valor_limite: parseFloat(novoLimiteValor),
+        },
+        { onConflict: "user_id,categoria" },
+      )
+      .select();
+    if (error) return alert(error.message);
+    setLimites((prev) => [
+      ...prev.filter((l) => l.categoria !== novoLimiteCategoria),
+      data[0],
+    ]);
+    setNovoLimiteValor("");
+  };
+
+  const removerLimite = async (id) => {
+    await supabase.from("financeiro_limites").delete().eq("id", id);
+    setLimites((prev) => prev.filter((l) => l.id !== id));
+  };
+
+  const adicionarRecorrente = async () => {
+    if (!novoRecorrenteNome || !novoRecorrenteValor)
+      return alert("Preencha os campos!");
+    const { data, error } = await supabase
+      .from("financeiro_recorrentes")
+      .insert([
+        {
+          user_id: user.id,
+          nome: novoRecorrenteNome,
+          valor: parseFloat(novoRecorrenteValor),
+          categoria: novoRecorrenteCategoria,
+        },
+      ])
+      .select();
+    if (error) return alert(error.message);
+    setRecorrentes((prev) => [...prev, data[0]]);
+    setNovoRecorrenteNome("");
+    setNovoRecorrenteValor("");
+  };
+
+  const removerRecorrente = async (id) => {
+    await supabase.from("financeiro_recorrentes").delete().eq("id", id);
+    setRecorrentes((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const salvarConfig = async (novaConfig) => {
+    const atualizado = { ...config, ...novaConfig };
+    setConfig(atualizado);
+    await supabase
+      .from("financeiro_config")
+      .upsert({ user_id: user.id, ...atualizado }, { onConflict: "user_id" });
   };
 
   const adicionarInvestimento = async () => {
@@ -199,6 +464,67 @@ export default function SmartPocket({ user }) {
   const totalEntradas = entradas.reduce((s, r) => s + Number(r.valor), 0);
   const saldo = totalEntradas - (totalGastos + totalInvest);
 
+  // Comparação com o mês passado
+  const totalGastosMesPassado = gastosMesPassado.reduce(
+    (s, r) => s + Number(r.valor),
+    0,
+  );
+  const variacaoMesPassado =
+    totalGastosMesPassado > 0
+      ? ((totalGastos - totalGastosMesPassado) / totalGastosMesPassado) * 100
+      : null;
+
+  // Projeção de saldo do mês (só faz sentido pro mês atual)
+  const ehMesAtual = mes === hoje.getMonth() && ano === hoje.getFullYear();
+  const diaAtual = hoje.getDate();
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+  const projecaoGastos = ehMesAtual
+    ? (totalGastos / diaAtual) * diasNoMes
+    : totalGastos;
+  const projecaoSaldo = totalEntradas - projecaoGastos - totalInvest;
+
+  // Gastos por categoria (gráfico de pizza)
+  const gastosPorCategoria = {};
+  gastos.forEach((g) => {
+    const cat = g.categoria || "Outros";
+    gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + Number(g.valor);
+  });
+  const dadosPizza = Object.entries(gastosPorCategoria).map(([nome, val]) => ({
+    name: nome,
+    value: val,
+    fill: CORES_CATEGORIA[nome] || "#64748b",
+  }));
+
+  // Fatura fechando — um cálculo por cartão
+  const cartoesComResumo = cartoes.map((cta) => {
+    const diaFechamento = cta.dia_fechamento || 5;
+    const diasParaFechar =
+      diaFechamento >= diaAtual
+        ? diaFechamento - diaAtual
+        : diaFechamento + diasNoMes - diaAtual;
+    const totalDoCartao = cartao
+      .filter((c) => c.cartao_id === cta.id)
+      .reduce((s, c) => s + Number(c.valor), 0);
+    return { ...cta, diasParaFechar, totalDoCartao };
+  });
+  const lancamentosSemCartao = cartao.filter((c) => !c.cartao_id);
+  const totalSemCartao = lancamentosSemCartao.reduce(
+    (s, c) => s + Number(c.valor),
+    0,
+  );
+
+  // Parcelas futuras agrupadas por mês
+  const parcelasPorMes = {};
+  cartaoFuturo.forEach((c) => {
+    const chave = `${c.mes}-${c.ano}`;
+    if (!parcelasPorMes[chave])
+      parcelasPorMes[chave] = { mes: c.mes, ano: c.ano, total: 0 };
+    parcelasPorMes[chave].total += Number(c.valor);
+  });
+  const parcelasFuturasLista = Object.values(parcelasPorMes).sort(
+    (a, b) => a.ano - b.ano || a.mes - b.mes,
+  );
+
   const dadosGrafico = [
     { name: "Entradas", valor: totalEntradas, fill: "#10b981" },
     { name: "Gastos", valor: totalGastos, fill: "#ef4444" },
@@ -235,43 +561,78 @@ export default function SmartPocket({ user }) {
         <h2 className="title-divisao" style={{ margin: 0 }}>
           💰 SmartPocket
         </h2>
-        <div style={{ display: "flex", gap: 6 }}>
-          <select
-            value={mes}
-            onChange={(e) => setMes(Number(e.target.value))}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            background: "linear-gradient(135deg, #1c2026, #17191d)",
+            border: "1px solid #ffffff10",
+            borderRadius: 12,
+            padding: "4px 6px",
+          }}
+        >
+          <button
+            onClick={() => {
+              if (mes === 0) {
+                setMes(11);
+                setAno(ano - 1);
+              } else {
+                setMes(mes - 1);
+              }
+            }}
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
-              borderRadius: 8,
-              color: "#f8fafc",
-              fontSize: 12,
-              padding: "6px 10px",
+              background: "transparent",
+              border: "none",
+              color: "#818cf8",
+              fontSize: 16,
+              fontWeight: 800,
+              padding: "4px 8px",
+              cursor: "pointer",
             }}
           >
-            {MESES.map((m, i) => (
-              <option key={i} value={i}>
-                {m}
-              </option>
-            ))}
-          </select>
-          <select
-            value={ano}
-            onChange={(e) => setAno(Number(e.target.value))}
+            ‹
+          </button>
+          <button
+            onClick={() => {
+              setMes(hoje.getMonth());
+              setAno(hoje.getFullYear());
+            }}
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
-              borderRadius: 8,
+              background: "transparent",
+              border: "none",
               color: "#f8fafc",
-              fontSize: 12,
-              padding: "6px 10px",
+              fontSize: 13,
+              fontWeight: 700,
+              padding: "4px 10px",
+              cursor: "pointer",
+              minWidth: 108,
+              textAlign: "center",
             }}
           >
-            {[2024, 2025, 2026, 2027].map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
+            {MESES[mes]} {ano}
+          </button>
+          <button
+            onClick={() => {
+              if (mes === 11) {
+                setMes(0);
+                setAno(ano + 1);
+              } else {
+                setMes(mes + 1);
+              }
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#818cf8",
+              fontSize: 16,
+              fontWeight: 800,
+              padding: "4px 8px",
+              cursor: "pointer",
+            }}
+          >
+            ›
+          </button>
         </div>
       </div>
 
@@ -290,10 +651,11 @@ export default function SmartPocket({ user }) {
           <div
             key={i}
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
               borderRadius: 14,
               padding: 14,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
             }}
           >
             <div
@@ -318,10 +680,11 @@ export default function SmartPocket({ user }) {
       {(totalEntradas > 0 || totalGastos > 0) && (
         <div
           style={{
-            background: "#1a1d21",
-            border: "1px solid #ffffff0d",
+            background: "linear-gradient(155deg, #1c2026, #17191d)",
+            border: "1px solid #ffffff10",
             borderRadius: 16,
             padding: 16,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
           }}
         >
           <div
@@ -345,8 +708,8 @@ export default function SmartPocket({ user }) {
               />
               <Tooltip
                 contentStyle={{
-                  background: "#1a1d21",
-                  border: "1px solid #ffffff0d",
+                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  border: "1px solid #ffffff10",
                   borderRadius: 8,
                   color: "#f8fafc",
                   fontSize: 12,
@@ -368,7 +731,7 @@ export default function SmartPocket({ user }) {
         style={{
           display: "flex",
           gap: 6,
-          background: "#1a1d21",
+          background: "linear-gradient(155deg, #1c2026, #17191d)",
           padding: 5,
           borderRadius: 12,
         }}
@@ -385,14 +748,20 @@ export default function SmartPocket({ user }) {
             onClick={() => setAba(a.id)}
             style={{
               flex: 1,
-              background: aba === a.id ? "#24282d" : "transparent",
+              background:
+                aba === a.id
+                  ? "linear-gradient(135deg, #6366f1, #4f46e5)"
+                  : "transparent",
               border: "none",
               borderRadius: 8,
-              color: aba === a.id ? "#f8fafc" : "#64748b",
+              color: aba === a.id ? "#fff" : "#64748b",
               fontSize: 10,
-              fontWeight: 600,
+              fontWeight: 700,
               padding: "8px 2px",
               cursor: "pointer",
+              boxShadow:
+                aba === a.id ? "0 3px 12px rgba(99,102,241,0.4)" : "none",
+              transition: "all 0.2s",
             }}
           >
             {a.label}
@@ -405,8 +774,8 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
             }}
@@ -440,11 +809,22 @@ export default function SmartPocket({ user }) {
               style={{ marginTop: 8 }}
               onKeyDown={(e) => e.key === "Enter" && adicionarGasto()}
             />
+            <select
+              value={gastoCategoria}
+              onChange={(e) => setGastoCategoria(e.target.value)}
+              style={{ marginTop: 8 }}
+            >
+              {CATEGORIAS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
             <div
               style={{
                 marginTop: 8,
                 background: "#24282d",
-                border: "1px solid #ffffff0d",
+                border: "1px solid #ffffff10",
                 borderRadius: 8,
                 padding: "10px 12px",
               }}
@@ -463,6 +843,8 @@ export default function SmartPocket({ user }) {
               <input
                 type="date"
                 value={gastoData}
+                min={`${ano}-${String(mes + 1).padStart(2, "0")}-01`}
+                max={`${ano}-${String(mes + 1).padStart(2, "0")}-${String(new Date(ano, mes + 1, 0).getDate()).padStart(2, "0")}`}
                 onChange={(e) => setGastoData(e.target.value)}
                 style={{
                   width: "100%",
@@ -503,9 +885,9 @@ export default function SmartPocket({ user }) {
               <div
                 key={g.id}
                 style={{
-                  background: "#1a1d21",
-                  border: "1px solid #ffffff0d",
-                  borderLeft: "3px solid #ef4444",
+                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  border: "1px solid #ffffff10",
+                  borderLeft: `3px solid ${CORES_CATEGORIA[g.categoria] || "#ef4444"}`,
                   borderRadius: 12,
                   padding: "12px 14px",
                   display: "flex",
@@ -519,6 +901,19 @@ export default function SmartPocket({ user }) {
                   >
                     {g.nome}
                   </div>
+                  {g.categoria && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: CORES_CATEGORIA[g.categoria] || "#94a3b8",
+                        marginTop: 3,
+                      }}
+                    >
+                      {g.categoria}
+                    </span>
+                  )}
                   {g.data && (
                     <div
                       style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
@@ -561,12 +956,197 @@ export default function SmartPocket({ user }) {
       {/* ABA CARTÃO */}
       {aba === "cartao" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Meus cartões */}
           <div
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 12,
+              }}
+            >
+              MEUS CARTÕES
+            </div>
+            {cartoesComResumo.length === 0 && (
+              <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+                Nenhum cartão cadastrado ainda. Adiciona um abaixo.
+              </div>
+            )}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
+              {cartoesComResumo.map((cta) => (
+                <div
+                  key={cta.id}
+                  style={{
+                    background: "#24282d",
+                    border: "1px solid #ffffff10",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#f8fafc",
+                      }}
+                    >
+                      💳 {cta.nome}
+                    </div>
+                    <button
+                      onClick={() => removerCartaoConta(cta.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        fontSize: 14,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 6,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span style={{ fontSize: 10, color: "#64748b" }}>
+                        Fecha dia
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        defaultValue={cta.dia_fechamento}
+                        onBlur={(e) =>
+                          salvarFechamentoCartao(
+                            cta.id,
+                            parseInt(e.target.value, 10) || 5,
+                          )
+                        }
+                        style={{
+                          width: 36,
+                          background: "#1a1d21",
+                          border: "1px solid #ffffff10",
+                          borderRadius: 6,
+                          color: "#f8fafc",
+                          fontSize: 11,
+                          padding: "2px 4px",
+                          textAlign: "center",
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "#f97316",
+                          fontWeight: 700,
+                        }}
+                      >
+                        · {cta.diasParaFechar} dia
+                        {cta.diasParaFechar !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#f8fafc",
+                      }}
+                    >
+                      {fmtBRL(cta.totalDoCartao)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {lancamentosSemCartao.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 12,
+                    color: "#64748b",
+                    padding: "4px 4px",
+                  }}
+                >
+                  <span>Sem cartão vinculado</span>
+                  <span>{fmtBRL(totalSemCartao)}</span>
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                placeholder="Nome do cartão (ex: Nubank)"
+                value={novoCartaoNome}
+                onChange={(e) => setNovoCartaoNome(e.target.value)}
+                style={{ flex: 2 }}
+              />
+              <input
+                type="number"
+                min="1"
+                max="31"
+                placeholder="Fecha dia"
+                value={novoCartaoFechamento}
+                onChange={(e) => setNovoCartaoFechamento(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <button
+                onClick={adicionarCartaoConta}
+                style={{
+                  background: "#6366f1",
+                  border: "none",
+                  borderRadius: 8,
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "0 14px",
+                  cursor: "pointer",
+                }}
+              >
+                + Cartão
+              </button>
+            </div>
+          </div>
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
             }}
           >
             <div
@@ -607,12 +1187,65 @@ export default function SmartPocket({ user }) {
             <input
               id="cartao-valor"
               type="number"
-              placeholder="Valor R$"
+              placeholder="Valor total R$"
               value={cartaoValor}
               onChange={(e) => setCartaoValor(e.target.value)}
               style={{ marginTop: 8 }}
               onKeyDown={(e) => e.key === "Enter" && adicionarCartao()}
             />
+            {cartoes.length > 0 && (
+              <select
+                value={cartaoSelecionado}
+                onChange={(e) => setCartaoSelecionado(e.target.value)}
+                style={{ marginTop: 8 }}
+              >
+                {cartoes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            )}
+            <select
+              value={cartaoCategoria}
+              onChange={(e) => setCartaoCategoria(e.target.value)}
+              style={{ marginTop: 8 }}
+            >
+              {CATEGORIAS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 10,
+                fontSize: 12,
+                color: "#cbd5e1",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={cartaoParcelado}
+                onChange={(e) => setCartaoParcelado(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              Compra parcelada
+            </label>
+            {cartaoParcelado && (
+              <input
+                type="number"
+                min="2"
+                placeholder="Número de parcelas"
+                value={cartaoParcelas}
+                onChange={(e) => setCartaoParcelas(e.target.value)}
+                style={{ marginTop: 8 }}
+              />
+            )}
             <button
               onClick={adicionarCartao}
               style={{
@@ -640,8 +1273,8 @@ export default function SmartPocket({ user }) {
               <div
                 key={c.id}
                 style={{
-                  background: "#1a1d21",
-                  border: "1px solid #ffffff0d",
+                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  border: "1px solid #ffffff10",
                   borderLeft: "3px solid #f97316",
                   borderRadius: 12,
                   padding: "12px 14px",
@@ -657,7 +1290,12 @@ export default function SmartPocket({ user }) {
                     {c.item}
                   </div>
                   <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                    💳 Crédito
+                    💳{" "}
+                    {cartoes.find((cta) => cta.id === c.cartao_id)?.nome ||
+                      "Sem cartão"}{" "}
+                    · {c.categoria || "Outros"}
+                    {c.total_parcelas > 1 &&
+                      ` · Parcela ${c.parcela_atual}/${c.total_parcelas}`}
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -685,6 +1323,50 @@ export default function SmartPocket({ user }) {
               </div>
             ))
           )}
+
+          {parcelasFuturasLista.length > 0 && (
+            <div
+              style={{
+                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                border: "1px solid #ffffff10",
+                borderRadius: 16,
+                padding: 16,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#64748b",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  marginBottom: 10,
+                }}
+              >
+                PARCELAS DOS PRÓXIMOS MESES
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {parcelasFuturasLista.map((p) => (
+                  <div
+                    key={`${p.mes}-${p.ano}`}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 13,
+                      color: "#cbd5e1",
+                    }}
+                  >
+                    <span>
+                      {MESES[p.mes]}/{p.ano}
+                    </span>
+                    <span style={{ color: "#f97316", fontWeight: 700 }}>
+                      {fmtBRL(p.total)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -693,8 +1375,8 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
             }}
@@ -716,7 +1398,7 @@ export default function SmartPocket({ user }) {
               style={{
                 width: "100%",
                 background: "#24282d",
-                border: "1px solid #ffffff0d",
+                border: "1px solid #ffffff10",
                 borderRadius: 8,
                 color: "#f8fafc",
                 fontSize: 14,
@@ -764,8 +1446,8 @@ export default function SmartPocket({ user }) {
               <div
                 key={i.id}
                 style={{
-                  background: "#1a1d21",
-                  border: "1px solid #ffffff0d",
+                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  border: "1px solid #ffffff10",
                   borderLeft: "3px solid #f59e0b",
                   borderRadius: 12,
                   padding: "12px 14px",
@@ -816,8 +1498,8 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
             }}
@@ -878,8 +1560,8 @@ export default function SmartPocket({ user }) {
               <div
                 key={e.id}
                 style={{
-                  background: "#1a1d21",
-                  border: "1px solid #ffffff0d",
+                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  border: "1px solid #ffffff10",
                   borderLeft: "3px solid #10b981",
                   borderRadius: 12,
                   padding: "12px 14px",
@@ -926,7 +1608,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "#1a1d21",
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
               border: `1px solid ${saldo >= 0 ? "#10b98144" : "#ef444444"}`,
               borderRadius: 16,
               padding: 24,
@@ -991,8 +1673,8 @@ export default function SmartPocket({ user }) {
             <div
               key={idx}
               style={{
-                background: "#1a1d21",
-                border: "1px solid #ffffff0d",
+                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                border: "1px solid #ffffff10",
                 borderRadius: 16,
                 padding: 16,
               }}

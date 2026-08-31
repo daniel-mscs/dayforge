@@ -45,8 +45,8 @@ export default function ModalDescanso({
   const temProximo =
     posicaoAtual >= 0 && posicaoAtual < exerciciosFiltrados.length - 1;
 
-  const irParaExercicio = (proximo) => {
-    cancelarDescanso();
+  const irParaExercicio = (proximo, manterDescanso = false) => {
+    if (!manterDescanso) cancelarDescanso();
     if (!proximo) {
       setModalDescanso(null);
       return;
@@ -514,8 +514,27 @@ export default function ModalDescanso({
                   [modalDescanso.exId]: true,
                 }));
 
-              if (emSuperset && !ultimoDoSuperset) {
-                const proximo = supersetExs[supersetIdx + 1];
+              // Descobre dinamicamente se essa foi a última pessoa do
+              // superset a fazer a série dessa rodada — não depende de
+              // qual exercício foi aberto primeiro. A rodada só termina
+              // quando TODOS os exercícios do superset ficam com a
+              // mesma contagem de séries.
+              const contagemDe = (exId) =>
+                exId === modalDescanso.exId
+                  ? novasSeries
+                  : seriesFeitas[exId] || 0;
+              const rodadaCompleta =
+                !emSuperset ||
+                supersetExs.every(
+                  (e) => contagemDe(e.id) === contagemDe(modalDescanso.exId),
+                );
+
+              if (emSuperset && !rodadaCompleta) {
+                // Ainda falta o(s) outro(s) do superset fazerem essa
+                // rodada — vai direto pro próximo, sem descanso.
+                const proximo = supersetExs.find(
+                  (e) => contagemDe(e.id) < novasSeries,
+                );
                 setModalDescanso((prev) => ({
                   ...prev,
                   exId: proximo.id,
@@ -526,24 +545,43 @@ export default function ModalDescanso({
                   cargaPorSerie: proximo.carga_por_serie || null,
                   totalSeries: Number(proximo.series),
                   serieAtual: seriesFeitas[proximo.id] || 0,
-                  supersetIdx: supersetIdx + 1,
+                }));
+                return;
+              }
+
+              // Rodada completa (ou não é superset) — começa o descanso.
+              iniciarTimerDescanso(modalDescanso.descansoSeg || 90);
+
+              const todosTerminaram = emSuperset
+                ? supersetExs.every((e) => contagemDe(e.id) >= Number(e.series))
+                : novasSeries >= modalDescanso.totalSeries;
+
+              if (todosTerminaram && temProximo) {
+                const proximo = exerciciosFiltrados[posicaoAtual + 1];
+                irParaExercicio(proximo, true);
+                return;
+              }
+
+              if (emSuperset) {
+                // Volta pro início do superset pra próxima rodada.
+                const proximoAlvo = supersetExs.reduce((menor, e) =>
+                  contagemDe(e.id) < contagemDe(menor.id) ? e : menor,
+                );
+                setModalDescanso((prev) => ({
+                  ...prev,
+                  exId: proximoAlvo.id,
+                  nomeEx: proximoAlvo.nome,
+                  carga: proximoAlvo.carga,
+                  repeticoes: proximoAlvo.repeticoes,
+                  repsPorSerie: proximoAlvo.reps_por_serie || null,
+                  cargaPorSerie: proximoAlvo.carga_por_serie || null,
+                  totalSeries: Number(proximoAlvo.series),
+                  serieAtual: contagemDe(proximoAlvo.id),
                 }));
               } else {
-                iniciarTimerDescanso(modalDescanso.descansoSeg || 90);
                 setModalDescanso((prev) => ({
                   ...prev,
                   serieAtual: novasSeries,
-                  ...(emSuperset && {
-                    exId: supersetExs[0].id,
-                    nomeEx: supersetExs[0].nome,
-                    carga: supersetExs[0].carga,
-                    repeticoes: supersetExs[0].repeticoes,
-                    repsPorSerie: supersetExs[0].reps_por_serie || null,
-                    cargaPorSerie: supersetExs[0].carga_por_serie || null,
-                    totalSeries: Number(supersetExs[0].series),
-                    serieAtual: novasSeries,
-                    supersetIdx: 0,
-                  }),
                 }));
               }
             }}
