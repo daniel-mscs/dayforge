@@ -58,6 +58,10 @@ export default function Login({ onLoginSuccess }) {
     setErro("");
     setSucesso("");
 
+    if (!form.email) {
+      setErro("Digite seu e-mail.");
+      return;
+    }
     const erroSenha = validarSenha(form.senha);
     if (erroSenha) {
       setErro(erroSenha);
@@ -366,7 +370,11 @@ export default function Login({ onLoginSuccess }) {
             setModo(modo === "login" ? "register" : "login");
             setErro("");
             setSucesso("");
-            setForm({ email: "", senha: "", confirmarSenha: "" });
+            setForm((prev) => ({
+              email: prev.email,
+              senha: "",
+              confirmarSenha: "",
+            }));
           }}
         >
           {modo === "login"
