@@ -109,6 +109,8 @@ export default function Macros({ user, onAjuda }) {
 
   const hoje = formatarData(new Date());
 
+  const [suplementosHoje, setSuplementosHoje] = useState([]);
+
   const buscarTudo = useCallback(async () => {
     setCarregando(true);
     const [
@@ -120,6 +122,8 @@ export default function Macros({ user, onAjuda }) {
       { data: passosHoje },
       { data: treinoHoje },
       { data: cardioHoje },
+      { data: suplChecks },
+      { data: suplList },
     ] = await Promise.all([
       supabase
         .from("macros_registro")
@@ -160,7 +164,24 @@ export default function Macros({ user, onAjuda }) {
         .select("kcal")
         .eq("user_id", user.id)
         .eq("data", hoje),
+      supabase
+        .from("suplementos_check")
+        .select("suplemento_id, concluido")
+        .eq("user_id", user.id)
+        .eq("data", hoje)
+        .eq("concluido", true),
+      supabase
+        .from("suplementos")
+        .select("id, nome, vit_c, vit_d, calcio, ferro, fibra")
+        .eq("user_id", user.id),
     ]);
+
+    const idsTomadosHoje = new Set(
+      (suplChecks || []).map((c) => c.suplemento_id),
+    );
+    setSuplementosHoje(
+      (suplList || []).filter((s) => idsTomadosHoje.has(s.id)),
+    );
 
     setRegistros(regs || []);
     if (metaData) setMeta(metaData.meta_kcal);
@@ -488,6 +509,23 @@ export default function Macros({ user, onAjuda }) {
       fibra: 0,
     },
   );
+
+  // Suplementos tomados hoje também contam pra vitaminas/minerais
+  const totalSuplementos = suplementosHoje.reduce(
+    (acc, s) => ({
+      vit_c: acc.vit_c + Number(s.vit_c || 0),
+      vit_d: acc.vit_d + Number(s.vit_d || 0),
+      calcio: acc.calcio + Number(s.calcio || 0),
+      ferro: acc.ferro + Number(s.ferro || 0),
+      fibra: acc.fibra + Number(s.fibra || 0),
+    }),
+    { vit_c: 0, vit_d: 0, calcio: 0, ferro: 0, fibra: 0 },
+  );
+  total.vit_c = round1(total.vit_c + totalSuplementos.vit_c);
+  total.vit_d = round1(total.vit_d + totalSuplementos.vit_d);
+  total.calcio = round1(total.calcio + totalSuplementos.calcio);
+  total.ferro = round1(total.ferro + totalSuplementos.ferro);
+  total.fibra = round1(total.fibra + totalSuplementos.fibra);
 
   const pct = Math.min(100, Math.round((total.kcal / meta) * 100));
   const tmb = calcTMB(perfil);

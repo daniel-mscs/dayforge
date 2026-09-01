@@ -491,21 +491,30 @@ export default function Rotina({ user }) {
       setClonando(false);
       return;
     }
-    await supabase
-      .from("rotina_tarefas")
-      .delete()
-      .in("dia_id", diasSelecionadosClone);
 
-    const novas = diasSelecionadosClone.flatMap((diaDestinoId) =>
-      tarefasOrigem.map((t, i) => ({
-        user_id: user.id,
-        dia_id: diaDestinoId,
-        periodo: t.periodo,
-        texto: t.texto,
-        concluida: false,
-        ordem: i,
-      })),
-    );
+    // Não apaga nada dos dias de destino — só ADICIONA as tarefas
+    // clonadas, preservando o que já tinha lá.
+    const novas = [];
+    diasSelecionadosClone.forEach((diaDestinoId) => {
+      const contadores = {};
+      tarefasOrigem.forEach((t) => {
+        if (contadores[t.periodo] === undefined) {
+          contadores[t.periodo] = (
+            tarefas[diaDestinoId]?.[t.periodo] || []
+          ).length;
+        }
+        novas.push({
+          user_id: user.id,
+          dia_id: diaDestinoId,
+          periodo: t.periodo,
+          texto: t.texto,
+          concluida: false,
+          ordem: contadores[t.periodo],
+        });
+        contadores[t.periodo] += 1;
+      });
+    });
+
     const { data, error } = await supabase
       .from("rotina_tarefas")
       .insert(novas)
@@ -517,13 +526,9 @@ export default function Rotina({ user }) {
     }
     setTarefas((prev) => {
       const novo = { ...prev };
-      diasSelecionadosClone.forEach((diaId) => {
-        novo[diaId] = {};
-      });
       data.forEach((t) => {
-        if (!novo[t.dia_id]) novo[t.dia_id] = {};
-        if (!novo[t.dia_id][t.periodo]) novo[t.dia_id][t.periodo] = [];
-        novo[t.dia_id][t.periodo].push(t);
+        novo[t.dia_id] = { ...(novo[t.dia_id] || {}) };
+        novo[t.dia_id][t.periodo] = [...(novo[t.dia_id][t.periodo] || []), t];
       });
       return novo;
     });

@@ -20,6 +20,14 @@ export default function Suplementos({
   const [carregando, setCarregando] = useState(true);
   const [nomeInput, setNomeInput] = useState("");
   const [doseInput, setDoseInput] = useState("");
+  const [estoqueInput, setEstoqueInput] = useState("");
+  const [estoqueAlertaInput, setEstoqueAlertaInput] = useState("5");
+  const [vitCInput, setVitCInput] = useState("");
+  const [vitDInput, setVitDInput] = useState("");
+  const [calcioInput, setCalcioInput] = useState("");
+  const [ferroInput, setFerroInput] = useState("");
+  const [fibraInput, setFibraInput] = useState("");
+  const [mostrarVitaminas, setMostrarVitaminas] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const dataAtualRef = React.useRef(formatarData(new Date()));
   const [mostrarTooltip, setMostrarTooltip] = useState(false);
@@ -89,6 +97,34 @@ export default function Suplementos({
       },
       { onConflict: "user_id,data,suplemento_id" },
     );
+
+    // Baixa (ou devolve) 1 unidade do estoque, se o suplemento tiver controle
+    const supl = lista.find((s) => s.id === suplId);
+    if (
+      supl &&
+      supl.estoque_atual !== null &&
+      supl.estoque_atual !== undefined
+    ) {
+      const novoEstoque = Math.max(0, supl.estoque_atual + (novo ? -1 : 1));
+      setLista((prev) =>
+        prev.map((s) =>
+          s.id === suplId ? { ...s, estoque_atual: novoEstoque } : s,
+        ),
+      );
+      await supabase
+        .from("suplementos")
+        .update({ estoque_atual: novoEstoque })
+        .eq("id", suplId);
+      if (
+        novo &&
+        novoEstoque <= (supl.estoque_alerta ?? 5) &&
+        novoEstoque > 0
+      ) {
+        toast(`⚠️ ${supl.nome} tá acabando (restam ${novoEstoque})`, "warning");
+      } else if (novo && novoEstoque === 0) {
+        toast(`🚨 ${supl.nome} acabou!`, "error");
+      }
+    }
   };
 
   const adicionarSupl = async () => {
@@ -104,6 +140,13 @@ export default function Suplementos({
           nome: nomeInput.trim(),
           dose: doseInput.trim(),
           ordem: lista.length,
+          estoque_atual: estoqueInput ? Number(estoqueInput) : null,
+          estoque_alerta: Number(estoqueAlertaInput) || 5,
+          vit_c: Number(vitCInput) || 0,
+          vit_d: Number(vitDInput) || 0,
+          calcio: Number(calcioInput) || 0,
+          ferro: Number(ferroInput) || 0,
+          fibra: Number(fibraInput) || 0,
         },
       ])
       .select();
@@ -114,6 +157,14 @@ export default function Suplementos({
     setLista((prev) => [...prev, data[0]]);
     setNomeInput("");
     setDoseInput("");
+    setEstoqueInput("");
+    setEstoqueAlertaInput("5");
+    setVitCInput("");
+    setVitDInput("");
+    setCalcioInput("");
+    setFerroInput("");
+    setFibraInput("");
+    setMostrarVitaminas(false);
     toast("Suplemento adicionado!", "success");
   };
 
@@ -379,6 +430,21 @@ export default function Suplementos({
                       ) : (
                         ""
                       )}
+                      {s.estoque_atual !== null &&
+                        s.estoque_atual !== undefined && (
+                          <span
+                            style={{
+                              marginLeft: 6,
+                              color:
+                                s.estoque_atual <= (s.estoque_alerta ?? 5)
+                                  ? "#ef4444"
+                                  : "#64748b",
+                              fontWeight: 700,
+                            }}
+                          >
+                            · restam {s.estoque_atual}
+                          </span>
+                        )}
                     </span>
                   </div>
                 </div>
@@ -420,6 +486,73 @@ export default function Suplementos({
               if (e.key === "Enter") adicionarSupl();
             }}
           />
+          <input
+            type="number"
+            placeholder="Estoque atual (opcional, ex: 60)"
+            value={estoqueInput}
+            onChange={(e) => setEstoqueInput(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setMostrarVitaminas((v) => !v)}
+            style={{
+              background: "transparent",
+              border: "1px dashed #6366f155",
+              borderRadius: 8,
+              color: "#a5b4fc",
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "8px 0",
+              cursor: "pointer",
+              width: "100%",
+              marginTop: 6,
+            }}
+          >
+            {mostrarVitaminas
+              ? "▲ Ocultar vitaminas"
+              : "▼ Tem tabela nutricional? Adicionar vitaminas"}
+          </button>
+          {mostrarVitaminas && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 8,
+                marginTop: 8,
+              }}
+            >
+              <input
+                type="number"
+                placeholder="Vit. C (mg)"
+                value={vitCInput}
+                onChange={(e) => setVitCInput(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Vit. D (mcg)"
+                value={vitDInput}
+                onChange={(e) => setVitDInput(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Cálcio (mg)"
+                value={calcioInput}
+                onChange={(e) => setCalcioInput(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Ferro (mg)"
+                value={ferroInput}
+                onChange={(e) => setFerroInput(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Fibra (g)"
+                value={fibraInput}
+                onChange={(e) => setFibraInput(e.target.value)}
+              />
+            </div>
+          )}
           <button className="supl-btn-add" onClick={adicionarSupl}>
             + Adicionar
           </button>
