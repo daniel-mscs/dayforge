@@ -102,7 +102,16 @@ export default function SmartPocket({ user }) {
 
   const [cartoes, setCartoes] = useState([]);
   const [novoCartaoNome, setNovoCartaoNome] = useState("");
-  const [novoCartaoFechamento, setNovoCartaoFechamento] = useState("5");
+  const [novoCartaoVencimento, setNovoCartaoVencimento] = useState("10");
+
+  const [modalClonarMes, setModalClonarMes] = useState(false);
+  const [clonarSelecao, setClonarSelecao] = useState({
+    gastos: true,
+    cartao: true,
+    investimentos: true,
+    entradas: true,
+  });
+  const [clonandoMes, setClonandoMes] = useState(false);
 
   const [limites, setLimites] = useState([]);
   const [recorrentes, setRecorrentes] = useState([]);
@@ -142,9 +151,7 @@ export default function SmartPocket({ user }) {
       { data: gPassado },
       { data: cFuturo },
       { data: cts },
-      { data: entradasHist },
-      { data: gastosHist },
-      { data: investHist },
+      { data: saldoIniData },
     ] = await Promise.all([
       supabase
         .from("financeiro_gastos")
@@ -206,17 +213,12 @@ export default function SmartPocket({ user }) {
         .eq("ativo", true)
         .order("created_at", { ascending: true }),
       supabase
-        .from("financeiro_entradas")
-        .select("valor, mes, ano")
-        .eq("user_id", user.id),
-      supabase
-        .from("financeiro_gastos")
-        .select("valor, mes, ano")
-        .eq("user_id", user.id),
-      supabase
-        .from("financeiro_investimentos")
-        .select("valor, mes, ano")
-        .eq("user_id", user.id),
+        .from("financeiro_saldo_inicial")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mes)
+        .eq("ano", ano)
+        .maybeSingle(),
     ]);
 
     // Aplica os gastos recorrentes que ainda não foram lançados nesse mês
@@ -254,16 +256,7 @@ export default function SmartPocket({ user }) {
       setCartaoSelecionado(cts[0].id);
     }
 
-    // Saldo acumulado: soma tudo que sobrou (ou faltou) nos meses
-    // anteriores ao selecionado — vai empurrando de mês em mês.
-    const antesDoMesAtual = (a, m) => a < ano || (a === ano && m < mes);
-    const somaAntes = (lista) =>
-      (lista || [])
-        .filter((r) => antesDoMesAtual(r.ano, r.mes))
-        .reduce((s, r) => s + Number(r.valor), 0);
-    const acumulado =
-      somaAntes(entradasHist) - somaAntes(gastosHist) - somaAntes(investHist);
-    setSaldoAcumulado(acumulado);
+    setSaldoAcumulado(saldoIniData?.valor ?? 0);
 
     setCarregando(false);
   }, [user.id, mes, ano]);
@@ -350,7 +343,7 @@ export default function SmartPocket({ user }) {
         {
           user_id: user.id,
           nome: novoCartaoNome,
-          dia_fechamento: parseInt(novoCartaoFechamento, 10) || 5,
+          dia_vencimento: parseInt(novoCartaoVencimento, 10) || 10,
         },
       ])
       .select();
@@ -358,7 +351,7 @@ export default function SmartPocket({ user }) {
     setCartoes((prev) => [...prev, data[0]]);
     if (!cartaoSelecionado) setCartaoSelecionado(data[0].id);
     setNovoCartaoNome("");
-    setNovoCartaoFechamento("5");
+    setNovoCartaoVencimento("10");
   };
 
   const removerCartaoConta = async (id) => {
@@ -373,13 +366,13 @@ export default function SmartPocket({ user }) {
     if (cartaoSelecionado === id) setCartaoSelecionado("");
   };
 
-  const salvarFechamentoCartao = async (id, dia) => {
+  const salvarVencimentoCartao = async (id, dia) => {
     setCartoes((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, dia_fechamento: dia } : c)),
+      prev.map((c) => (c.id === id ? { ...c, dia_vencimento: dia } : c)),
     );
     await supabase
       .from("financeiro_cartoes")
-      .update({ dia_fechamento: dia })
+      .update({ dia_vencimento: dia })
       .eq("id", id);
   };
 
@@ -440,6 +433,105 @@ export default function SmartPocket({ user }) {
     await supabase
       .from("financeiro_config")
       .upsert({ user_id: user.id, ...atualizado }, { onConflict: "user_id" });
+  };
+
+  const salvarSaldoInicial = async (valor) => {
+    setSaldoAcumulado(valor);
+    await supabase
+      .from("financeiro_saldo_inicial")
+      .upsert(
+        { user_id: user.id, mes, ano, valor },
+        { onConflict: "user_id,mes,ano" },
+      );
+  };
+
+  const clonarMesPassado = async () => {
+    if (clonandoMes) return;
+    setClonandoMes(true);
+    const mp = mes === 0 ? { mes: 11, ano: ano - 1 } : { mes: mes - 1, ano };
+    try {
+      if (clonarSelecao.gastos) {
+        const { data: ant } = await supabase
+          .from("financeiro_gastos")
+          .select("nome, valor, categoria")
+          .eq("user_id", user.id)
+          .eq("mes", mp.mes)
+          .eq("ano", mp.ano);
+        if (ant?.length)
+          await supabase.from("financeiro_gastos").insert(
+            ant.map((g) => ({
+              user_id: user.id,
+              mes,
+              ano,
+              nome: g.nome,
+              valor: g.valor,
+              categoria: g.categoria,
+            })),
+          );
+      }
+      if (clonarSelecao.cartao) {
+        const { data: ant } = await supabase
+          .from("financeiro_cartao")
+          .select("item, valor, categoria, cartao_id")
+          .eq("user_id", user.id)
+          .eq("mes", mp.mes)
+          .eq("ano", mp.ano)
+          .is("grupo_parcela_id", null);
+        if (ant?.length)
+          await supabase.from("financeiro_cartao").insert(
+            ant.map((c) => ({
+              user_id: user.id,
+              mes,
+              ano,
+              item: c.item,
+              valor: c.valor,
+              categoria: c.categoria,
+              cartao_id: c.cartao_id,
+            })),
+          );
+      }
+      if (clonarSelecao.investimentos) {
+        const { data: ant } = await supabase
+          .from("financeiro_investimentos")
+          .select("tipo, valor")
+          .eq("user_id", user.id)
+          .eq("mes", mp.mes)
+          .eq("ano", mp.ano);
+        if (ant?.length)
+          await supabase.from("financeiro_investimentos").insert(
+            ant.map((i) => ({
+              user_id: user.id,
+              mes,
+              ano,
+              tipo: i.tipo,
+              valor: i.valor,
+            })),
+          );
+      }
+      if (clonarSelecao.entradas) {
+        const { data: ant } = await supabase
+          .from("financeiro_entradas")
+          .select("nome, valor")
+          .eq("user_id", user.id)
+          .eq("mes", mp.mes)
+          .eq("ano", mp.ano);
+        if (ant?.length)
+          await supabase.from("financeiro_entradas").insert(
+            ant.map((e) => ({
+              user_id: user.id,
+              mes,
+              ano,
+              nome: e.nome,
+              valor: e.valor,
+            })),
+          );
+      }
+      setModalClonarMes(false);
+      await buscarTudo();
+    } catch (err) {
+      alert("Erro ao clonar: " + err.message);
+    }
+    setClonandoMes(false);
   };
 
   const adicionarInvestimento = async () => {
@@ -525,7 +617,9 @@ export default function SmartPocket({ user }) {
 
   // Fatura fechando — um cálculo por cartão
   const cartoesComResumo = cartoes.map((cta) => {
-    const diaFechamento = cta.dia_fechamento || 5;
+    const diaVencimento = cta.dia_vencimento || 10;
+    let diaFechamento = diaVencimento - 7;
+    if (diaFechamento <= 0) diaFechamento += diasNoMes;
     const diasParaFechar =
       diaFechamento >= diaAtual
         ? diaFechamento - diaAtual
@@ -533,7 +627,7 @@ export default function SmartPocket({ user }) {
     const totalDoCartao = cartao
       .filter((c) => c.cartao_id === cta.id)
       .reduce((s, c) => s + Number(c.valor), 0);
-    return { ...cta, diasParaFechar, totalDoCartao };
+    return { ...cta, diaFechamento, diasParaFechar, totalDoCartao };
   });
   const lancamentosSemCartao = cartao.filter((c) => !c.cartao_id);
   const totalSemCartao = lancamentosSemCartao.reduce(
@@ -584,10 +678,12 @@ export default function SmartPocket({ user }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: 8,
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0 }}>
-          💰 SmartPocket
+        <h2 className="title-divisao" style={{ margin: 0, fontSize: "1.2rem" }}>
+          💰 Finanças
         </h2>
         <div
           style={{
@@ -664,7 +760,7 @@ export default function SmartPocket({ user }) {
         </div>
       </div>
 
-      {saldoAcumulado !== 0 && (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <div
           style={{
             alignSelf: "flex-start",
@@ -677,25 +773,45 @@ export default function SmartPocket({ user }) {
                 : "rgba(239,68,68,0.1)",
             border: `1px solid ${saldoAcumulado >= 0 ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
             borderRadius: 99,
-            padding: "6px 12px",
+            padding: "6px 10px",
           }}
         >
           <span style={{ fontSize: 11, color: "#94a3b8" }}>
-            {saldoAcumulado >= 0
-              ? "💰 Sobrou de antes:"
-              : "⚠️ Faltando de antes:"}
+            Trazido do mês passado: R$
           </span>
-          <span
+          <input
+            type="number"
+            defaultValue={saldoAcumulado}
+            onBlur={(e) => salvarSaldoInicial(parseFloat(e.target.value) || 0)}
             style={{
+              width: 64,
+              background: "transparent",
+              border: "none",
+              borderBottom: "1px dashed #475569",
+              color: saldoAcumulado >= 0 ? "#10b981" : "#ef4444",
               fontSize: 12,
               fontWeight: 800,
-              color: saldoAcumulado >= 0 ? "#10b981" : "#ef4444",
+              padding: "0 2px",
+              textAlign: "right",
             }}
-          >
-            {fmtBRL(Math.abs(saldoAcumulado))}
-          </span>
+          />
         </div>
-      )}
+        <button
+          onClick={() => setModalClonarMes(true)}
+          style={{
+            background: "rgba(99,102,241,0.1)",
+            border: "1px solid rgba(99,102,241,0.3)",
+            borderRadius: 10,
+            color: "#a5b4fc",
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "6px 12px",
+            cursor: "pointer",
+          }}
+        >
+          📋 Clonar do mês passado
+        </button>
+      </div>
 
       {/* Cards resumo */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -1106,17 +1222,17 @@ export default function SmartPocket({ user }) {
                       }}
                     >
                       <span style={{ fontSize: 10, color: "#64748b" }}>
-                        Fecha dia
+                        Vence dia
                       </span>
                       <input
                         type="number"
                         min="1"
                         max="31"
-                        defaultValue={cta.dia_fechamento}
+                        defaultValue={cta.dia_vencimento}
                         onBlur={(e) =>
-                          salvarFechamentoCartao(
+                          salvarVencimentoCartao(
                             cta.id,
-                            parseInt(e.target.value, 10) || 5,
+                            parseInt(e.target.value, 10) || 10,
                           )
                         }
                         style={{
@@ -1137,7 +1253,7 @@ export default function SmartPocket({ user }) {
                           fontWeight: 700,
                         }}
                       >
-                        · {cta.diasParaFechar} dia
+                        · fecha em {cta.diasParaFechar} dia
                         {cta.diasParaFechar !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -1179,9 +1295,9 @@ export default function SmartPocket({ user }) {
                 type="number"
                 min="1"
                 max="31"
-                placeholder="Fecha dia"
-                value={novoCartaoFechamento}
-                onChange={(e) => setNovoCartaoFechamento(e.target.value)}
+                placeholder="Vence dia"
+                value={novoCartaoVencimento}
+                onChange={(e) => setNovoCartaoVencimento(e.target.value)}
                 style={{ flex: 1 }}
               />
               <button
@@ -1783,6 +1899,97 @@ export default function SmartPocket({ user }) {
               ))}
             </div>
           ))}
+        </div>
+      )}
+
+      {modalClonarMes && (
+        <div className="modal-overlay" onClick={() => setModalClonarMes(false)}>
+          <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: "1rem", marginBottom: 4 }}>
+              📋 Clonar do mês passado
+            </h2>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
+              Copia os lançamentos do mês anterior pra este mês (sem apagar o
+              que já tem aqui).
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                marginBottom: 16,
+              }}
+            >
+              {[
+                { id: "gastos", label: "💸 Gastos" },
+                {
+                  id: "cartao",
+                  label: "💳 Lançamentos de cartão (não parcelados)",
+                },
+                { id: "investimentos", label: "📈 Investimentos" },
+                { id: "entradas", label: "💰 Entradas" },
+              ].map((opt) => (
+                <label
+                  key={opt.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    fontSize: 13,
+                    color: "#e2e8f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={clonarSelecao[opt.id]}
+                    onChange={() =>
+                      setClonarSelecao((prev) => ({
+                        ...prev,
+                        [opt.id]: !prev[opt.id],
+                      }))
+                    }
+                    style={{ width: 17, height: 17, accentColor: "#6366f1" }}
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={clonarMesPassado}
+                disabled={clonandoMes}
+                style={{
+                  flex: 1,
+                  background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                  border: "none",
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: "12px 0",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                {clonandoMes ? "Clonando..." : "Clonar"}
+              </button>
+              <button
+                onClick={() => setModalClonarMes(false)}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "1px solid #ffffff0d",
+                  color: "#64748b",
+                  borderRadius: 8,
+                  padding: "11px 0",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
