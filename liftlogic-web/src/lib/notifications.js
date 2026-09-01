@@ -203,9 +203,9 @@ const IDS_NOTIF_ROTINA = {
 
 const HORARIOS_ROTINA = {
   Acordar: { hour: 6, minute: 30 },
-  Manhã: { hour: 8, minute: 0 },
-  Tarde: { hour: 13, minute: 0 },
-  Noite: { hour: 19, minute: 0 },
+  Manhã: { hour: 7, minute: 0 },
+  Tarde: { hour: 12, minute: 0 },
+  Noite: { hour: 17, minute: 0 },
 };
 
 function resumirTarefas(lista) {
