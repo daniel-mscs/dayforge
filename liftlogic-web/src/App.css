@@ -909,7 +909,7 @@ input::-webkit-inner-spin-button {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -918,19 +918,22 @@ input::-webkit-inner-spin-button {
 }
 
 .modal-resumo {
-  background: #1e1e2e;
-  border-radius: 16px;
+  background: linear-gradient(155deg, #22222f, #1a1a26);
+  border: 1px solid #ffffff10;
+  border-radius: 20px;
   padding: 28px 24px;
   width: 100%;
   max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
 .modal-resumo h2 {
   text-align: center;
   font-size: 1.3rem;
+  font-weight: 800;
   color: #fff;
 }
 

@@ -683,8 +683,31 @@ export default function Rotina({ user }) {
                 className="modal-resumo"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2 style={{ fontSize: "1rem", marginBottom: 14 }}>
-                  ⧉ Clonar para...
+                <h2
+                  style={{
+                    fontSize: "1rem",
+                    marginBottom: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 30,
+                      height: 30,
+                      borderRadius: 9,
+                      background: "rgba(99,102,241,0.15)",
+                      fontSize: 15,
+                    }}
+                  >
+                    ⧉
+                  </span>
+                  Clonar para...
                 </h2>
 
                 {(() => {
@@ -696,17 +719,33 @@ export default function Rotina({ user }) {
                   );
                   if (tarefasOrigemModal.length === 0) return null;
                   return (
-                    <div style={{ marginBottom: 16 }}>
+                    <div
+                      style={{
+                        marginBottom: 16,
+                        background: "#24282d",
+                        border: "1px solid #ffffff0d",
+                        borderRadius: 12,
+                        padding: 12,
+                      }}
+                    >
                       <div
                         style={{
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          marginBottom: 8,
+                          marginBottom: 10,
                         }}
                       >
-                        <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                          O que clonar:
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: "#64748b",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          O que clonar
                         </span>
                         <button
                           type="button"
@@ -718,10 +757,13 @@ export default function Rotina({ user }) {
                             )
                           }
                           style={{
-                            background: "none",
-                            border: "none",
-                            color: "#6366f1",
-                            fontSize: 12,
+                            background: "rgba(99,102,241,0.12)",
+                            border: "1px solid rgba(99,102,241,0.3)",
+                            borderRadius: 99,
+                            color: "#a5b4fc",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: "4px 10px",
                             cursor: "pointer",
                           }}
                         >
@@ -735,7 +777,7 @@ export default function Rotina({ user }) {
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          gap: 6,
+                          gap: 8,
                           maxHeight: 180,
                           overflowY: "auto",
                         }}
@@ -746,7 +788,7 @@ export default function Rotina({ user }) {
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              gap: 8,
+                              gap: 10,
                               fontSize: 13,
                               color: "#e2e8f0",
                               cursor: "pointer",
@@ -756,6 +798,12 @@ export default function Rotina({ user }) {
                               type="checkbox"
                               checked={tarefasSelecionadasClone.includes(t.id)}
                               onChange={() => toggleTarefaClone(t.id)}
+                              style={{
+                                width: 17,
+                                height: 17,
+                                accentColor: "#6366f1",
+                                flexShrink: 0,
+                              }}
                             />
                             <span
                               style={{
@@ -887,7 +935,7 @@ export default function Rotina({ user }) {
                               background: diasSelecionadosClone.includes(
                                 diaObj?.id,
                               )
-                                ? "#6366f1"
+                                ? "linear-gradient(135deg, #6366f1, #4f46e5)"
                                 : isOrigem
                                   ? "#334155"
                                   : isHoje
@@ -896,7 +944,7 @@ export default function Rotina({ user }) {
                               border: isHoje
                                 ? "1px solid #6366f1"
                                 : "1px solid #ffffff0d",
-                              borderRadius: 6,
+                              borderRadius: 8,
                               color: fora
                                 ? "#334155"
                                 : isOrigem
@@ -908,10 +956,15 @@ export default function Rotina({ user }) {
                               )
                                 ? 700
                                 : 400,
-                              padding: "6px 0",
+                              padding: "7px 0",
                               cursor: fora || isOrigem ? "default" : "pointer",
                               opacity: fora ? 0.3 : 1,
                               textAlign: "center",
+                              boxShadow: diasSelecionadosClone.includes(
+                                diaObj?.id,
+                              )
+                                ? "0 2px 8px rgba(99,102,241,0.4)"
+                                : "none",
                             }}
                           >
                             {dayNum}
@@ -934,19 +987,23 @@ export default function Rotina({ user }) {
                       flex: 1,
                       background:
                         diasSelecionadosClone.length > 0
-                          ? "#6366f1"
+                          ? "linear-gradient(135deg, #6366f1, #4f46e5)"
                           : "#1e293b",
                       border: "none",
                       color:
                         diasSelecionadosClone.length > 0 ? "#fff" : "#475569",
-                      borderRadius: 8,
-                      padding: "11px 0",
+                      borderRadius: 10,
+                      padding: "12px 0",
                       fontWeight: 700,
                       fontSize: 13,
                       cursor:
                         diasSelecionadosClone.length > 0
                           ? "pointer"
                           : "default",
+                      boxShadow:
+                        diasSelecionadosClone.length > 0
+                          ? "0 4px 16px rgba(99,102,241,0.35)"
+                          : "none",
                     }}
                   >
                     {clonando
