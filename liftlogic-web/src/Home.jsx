@@ -27,7 +27,10 @@ import {
 } from "./lib/skeleton";
 import Confetti from "react-confetti";
 import { toast } from "./lib/toast";
-import { verificarEAgendarLembretePendencias } from "./lib/notifications";
+import {
+  verificarEAgendarLembretePendencias,
+  agendarNotificacoesRotina,
+} from "./lib/notifications";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -550,6 +553,14 @@ export default function Home({
         .eq("dia_id", diasData.id)
         .order("ordem", { ascending: true });
       setRotina({ dia: diasData, tarefas: tarefasData || [] });
+
+      const agrupadoPorPeriodo = {};
+      (tarefasData || []).forEach((t) => {
+        const p = t.periodo || "Manhã";
+        if (!agrupadoPorPeriodo[p]) agrupadoPorPeriodo[p] = [];
+        agrupadoPorPeriodo[p].push(t);
+      });
+      agendarNotificacoesRotina(agrupadoPorPeriodo);
     }
 
     if (humorHoje) setHumor(humorHoje);
