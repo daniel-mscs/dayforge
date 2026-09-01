@@ -111,6 +111,7 @@ export default function SmartPocket({ user }) {
     meta_investimento_mensal: 0,
   });
   const [gastosMesPassado, setGastosMesPassado] = useState([]);
+  const [saldoAcumulado, setSaldoAcumulado] = useState(0);
   const [cartaoFuturo, setCartaoFuturo] = useState([]);
   const [novoLimiteCategoria, setNovoLimiteCategoria] = useState(CATEGORIAS[0]);
   const [novoLimiteValor, setNovoLimiteValor] = useState("");
@@ -141,6 +142,9 @@ export default function SmartPocket({ user }) {
       { data: gPassado },
       { data: cFuturo },
       { data: cts },
+      { data: entradasHist },
+      { data: gastosHist },
+      { data: investHist },
     ] = await Promise.all([
       supabase
         .from("financeiro_gastos")
@@ -201,6 +205,18 @@ export default function SmartPocket({ user }) {
         .eq("user_id", user.id)
         .eq("ativo", true)
         .order("created_at", { ascending: true }),
+      supabase
+        .from("financeiro_entradas")
+        .select("valor, mes, ano")
+        .eq("user_id", user.id),
+      supabase
+        .from("financeiro_gastos")
+        .select("valor, mes, ano")
+        .eq("user_id", user.id),
+      supabase
+        .from("financeiro_investimentos")
+        .select("valor, mes, ano")
+        .eq("user_id", user.id),
     ]);
 
     // Aplica os gastos recorrentes que ainda não foram lançados nesse mês
@@ -237,6 +253,18 @@ export default function SmartPocket({ user }) {
     if (cts && cts.length > 0 && !cartaoSelecionado) {
       setCartaoSelecionado(cts[0].id);
     }
+
+    // Saldo acumulado: soma tudo que sobrou (ou faltou) nos meses
+    // anteriores ao selecionado — vai empurrando de mês em mês.
+    const antesDoMesAtual = (a, m) => a < ano || (a === ano && m < mes);
+    const somaAntes = (lista) =>
+      (lista || [])
+        .filter((r) => antesDoMesAtual(r.ano, r.mes))
+        .reduce((s, r) => s + Number(r.valor), 0);
+    const acumulado =
+      somaAntes(entradasHist) - somaAntes(gastosHist) - somaAntes(investHist);
+    setSaldoAcumulado(acumulado);
+
     setCarregando(false);
   }, [user.id, mes, ano]);
 
@@ -635,6 +663,39 @@ export default function SmartPocket({ user }) {
           </button>
         </div>
       </div>
+
+      {saldoAcumulado !== 0 && (
+        <div
+          style={{
+            alignSelf: "flex-start",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            background:
+              saldoAcumulado >= 0
+                ? "rgba(16,185,129,0.1)"
+                : "rgba(239,68,68,0.1)",
+            border: `1px solid ${saldoAcumulado >= 0 ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+            borderRadius: 99,
+            padding: "6px 12px",
+          }}
+        >
+          <span style={{ fontSize: 11, color: "#94a3b8" }}>
+            {saldoAcumulado >= 0
+              ? "💰 Sobrou de antes:"
+              : "⚠️ Faltando de antes:"}
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              color: saldoAcumulado >= 0 ? "#10b981" : "#ef4444",
+            }}
+          >
+            {fmtBRL(Math.abs(saldoAcumulado))}
+          </span>
+        </div>
+      )}
 
       {/* Cards resumo */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>

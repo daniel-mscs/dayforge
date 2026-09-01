@@ -3163,87 +3163,104 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
             style={{
               background: "#1a1d21",
               borderRadius: 20,
-              padding: "24px 20px",
               width: "92%",
               maxWidth: 420,
               maxHeight: "85vh",
-              overflowY: "auto",
               border: "1px solid #6366f133",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
-                fontSize: 16,
-                fontWeight: 800,
-                color: "#f8fafc",
-                marginBottom: 3,
+                padding: "24px 20px 0",
+                overflowY: "auto",
               }}
             >
-              {previewPreset.nome}
-            </div>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
-              {previewPreset.descricao}
-            </div>
-
-            {Object.entries(previewPreset.dias).map(([letra, lista]) => (
-              <div key={letra} style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: "#818cf8",
-                    marginBottom: 6,
-                  }}
-                >
-                  TREINO {letra}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 4,
-                  }}
-                >
-                  {lista.map((ex, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        fontSize: 12,
-                        color: "#cbd5e1",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 8,
-                      }}
-                    >
-                      <span>{ex.nome}</span>
-                      <span style={{ color: "#64748b", flexShrink: 0 }}>
-                        {ex.series}x{ex.repeticoes}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 800,
+                  color: "#f8fafc",
+                  marginBottom: 3,
+                }}
+              >
+                {previewPreset.nome}
               </div>
-            ))}
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
+                {previewPreset.descricao}
+              </div>
+
+              {Object.entries(previewPreset.dias).map(([letra, lista]) => (
+                <div key={letra} style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 800,
+                      color: "#818cf8",
+                      marginBottom: 6,
+                    }}
+                  >
+                    TREINO {letra}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                    }}
+                  >
+                    {lista.map((ex, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          fontSize: 12,
+                          color: "#cbd5e1",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 8,
+                        }}
+                      >
+                        <span>{ex.nome}</span>
+                        <span style={{ color: "#64748b", flexShrink: 0 }}>
+                          {ex.series}x{ex.repeticoes}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#f59e0b",
+                  background: "rgba(245,158,11,0.1)",
+                  border: "1px solid rgba(245,158,11,0.25)",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                  marginBottom: 14,
+                  lineHeight: 1.4,
+                }}
+              >
+                ⚠️ Aplicar substitui TODOS os seus exercícios cadastrados
+                atualmente pelos desse treino. As cargas começam zeradas — você
+                ajusta pro seu peso.
+              </div>
+            </div>
 
             <div
               style={{
-                fontSize: 11,
-                color: "#f59e0b",
-                background: "rgba(245,158,11,0.1)",
-                border: "1px solid rgba(245,158,11,0.25)",
-                borderRadius: 8,
-                padding: "8px 10px",
-                marginBottom: 14,
-                lineHeight: 1.4,
+                display: "flex",
+                gap: 8,
+                padding: "14px 20px",
+                borderTop: "1px solid #ffffff0d",
+                background: "#1a1d21",
+                flexShrink: 0,
               }}
             >
-              ⚠️ Aplicar substitui TODOS os seus exercícios cadastrados
-              atualmente pelos desse treino. As cargas começam zeradas — você
-              ajusta pro seu peso.
-            </div>
-
-            <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => setPreviewPreset(null)}
                 style={{
@@ -3258,7 +3275,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   cursor: "pointer",
                 }}
               >
-                Só olhando
+                ← Voltar
               </button>
               <button
                 onClick={() => aplicarPreset(previewPreset)}
