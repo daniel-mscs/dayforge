@@ -60,7 +60,11 @@ import {
   cancelarNotificacaoDescanso,
   agendarNotificacaoAusencia,
 } from "./lib/notifications";
-import { extrairTextoPDF, parsearTreinoTexto } from "./lib/pdfImportarTreino";
+import {
+  extrairTextoPDF,
+  extrairTextoImagem,
+  parsearTreinoTexto,
+} from "./lib/pdfImportarTreino";
 
 // Fallback pra gerar um id único quando crypto.randomUUID() não existe
 // (acontece em alguns WebViews Android mais antigos, ou fora de HTTPS).
@@ -368,6 +372,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     useState(false);
   const [modalImportarPDF, setModalImportarPDF] = useState(false);
   const [processandoPDF, setProcessandoPDF] = useState(false);
+  const [progressoOCR, setProgressoOCR] = useState(0);
   const [treinoImportado, setTreinoImportado] = useState(null);
   const [aplicandoImportado, setAplicandoImportado] = useState(false);
   const [treinoAtivo, setTreinoAtivo] = useState(
@@ -1311,8 +1316,12 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const processarPDF = async (file) => {
     if (!file) return;
     setProcessandoPDF(true);
+    setProgressoOCR(0);
     try {
-      const texto = await extrairTextoPDF(file);
+      const ehImagem = file.type.startsWith("image/");
+      const texto = ehImagem
+        ? await extrairTextoImagem(file, (pct) => setProgressoOCR(pct))
+        : await extrairTextoPDF(file);
       const dias = parsearTreinoTexto(texto);
       const totalExercicios = Object.values(dias).reduce(
         (acc, lista) => acc + lista.length,
@@ -1320,18 +1329,21 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       );
       if (totalExercicios === 0) {
         toast(
-          "Não consegui reconhecer nenhum exercício nesse PDF. Tenta editar manualmente ou usar outro arquivo.",
+          ehImagem
+            ? "Não consegui reconhecer nenhum exercício nessa imagem. Se for letra de mão, o OCR costuma errar bastante — tenta uma foto mais nítida ou edita manualmente."
+            : "Não consegui reconhecer nenhum exercício nesse PDF. Tenta editar manualmente ou usar outro arquivo.",
           "warning",
-          5000,
+          6000,
         );
         setTreinoImportado({ A: [] });
       } else {
         setTreinoImportado(dias);
       }
     } catch (err) {
-      toast("Erro ao ler o PDF: " + err.message, "error");
+      toast("Erro ao ler o arquivo: " + err.message, "error");
     }
     setProcessandoPDF(false);
+    setProgressoOCR(0);
   };
 
   const atualizarExercicioImportado = (letra, index, campo, valor) => {
@@ -2344,9 +2356,15 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 <div
                   style={{ fontSize: 12, color: "#64748b", marginBottom: 18 }}
                 >
-                  Sobe o PDF da sua ficha de treino. Eu tento reconhecer os
-                  exercícios sozinho (procurando padrões tipo "3x12" e "40kg") —
-                  depois você confere e corrige antes de aplicar.
+                  Sobe o PDF ou uma foto da sua ficha de treino. Eu tento
+                  reconhecer os exercícios sozinho (procurando padrões tipo
+                  "3x12" e "40kg") — depois você confere e corrige antes de
+                  aplicar.
+                  <br />
+                  <span style={{ color: "#f59e0b" }}>
+                    ⚠️ Foto de texto impresso funciona bem. Letra de mão pode
+                    sair bem errado — é limitação do OCR, não do app.
+                  </span>
                 </div>
                 <label
                   style={{
@@ -2363,11 +2381,13 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   }}
                 >
                   {processandoPDF
-                    ? "Lendo o PDF..."
-                    : "📎 Toque pra escolher o arquivo PDF"}
+                    ? progressoOCR > 0
+                      ? `Lendo a imagem... ${progressoOCR}%`
+                      : "Lendo o arquivo..."
+                    : "📎 Toque pra escolher PDF ou foto"}
                   <input
                     type="file"
-                    accept="application/pdf"
+                    accept="application/pdf,image/*"
                     disabled={processandoPDF}
                     onChange={(e) => processarPDF(e.target.files?.[0])}
                     style={{ display: "none" }}
@@ -3442,7 +3462,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       cursor: "pointer",
                     }}
                   >
-                    📄 Importar treino em PDF
+                    📄 Importar treino (PDF/Foto)
                   </button>
                 </div>
               ) : (
@@ -3479,7 +3499,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         cursor: "pointer",
                       }}
                     >
-                      📄 PDF
+                      📄 Importar
                     </button>
                     <button
                       onClick={() => {

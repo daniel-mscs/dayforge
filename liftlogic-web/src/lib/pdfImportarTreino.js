@@ -1,3 +1,22 @@
+export async function extrairTextoImagem(file, onProgresso) {
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("por", 1, {
+    logger: (m) => {
+      if (m.status === "recognizing text" && onProgresso) {
+        onProgresso(Math.round(m.progress * 100));
+      }
+    },
+  });
+  try {
+    const {
+      data: { text },
+    } = await worker.recognize(file);
+    return text;
+  } finally {
+    await worker.terminate();
+  }
+}
+
 export async function extrairTextoPDF(file) {
   const pdfjsLib = await import("pdfjs-dist");
   const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
