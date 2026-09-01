@@ -21,6 +21,7 @@ export function useRoundTimer(config, mode) {
 
   const intervalRef = useRef(null);
   const warnedRef = useRef(false);
+  const wakeLockRef = useRef(null);
 
   const reset = useCallback(() => {
     clearInterval(intervalRef.current);
@@ -36,6 +37,54 @@ export function useRoundTimer(config, mode) {
     reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
+
+  // Mantém a tela acesa enquanto o timer tá rodando
+  useEffect(() => {
+    if (!("wakeLock" in navigator)) return;
+
+    if (isRunning) {
+      navigator.wakeLock
+        .request("screen")
+        .then((lock) => {
+          wakeLockRef.current = lock;
+        })
+        .catch(() => {
+          // Wake Lock indisponível (sem suporte ou fora de contexto seguro)
+        });
+    } else if (wakeLockRef.current) {
+      wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, [isRunning]);
+
+  // Se a tela apagou por algum outro motivo e o usuário volta com o
+  // timer ainda rodando, tenta pedir o wake lock de novo.
+  useEffect(() => {
+    const reativar = () => {
+      if (
+        isRunning &&
+        document.visibilityState === "visible" &&
+        "wakeLock" in navigator &&
+        !wakeLockRef.current
+      ) {
+        navigator.wakeLock
+          .request("screen")
+          .then((lock) => {
+            wakeLockRef.current = lock;
+          })
+          .catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", reativar);
+    return () => document.removeEventListener("visibilitychange", reativar);
+  }, [isRunning]);
 
   useEffect(() => {
     if (!isRunning) {

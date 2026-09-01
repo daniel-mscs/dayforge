@@ -804,6 +804,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setDescansoPausado(false);
     alerta10sDisparadoRef.current = false;
     agendarNotificacaoDescanso(segundos);
+    falar("Iniciando intervalo");
     descansoRef.current = setInterval(() => {
       const restante =
         duracaoDescansoRef.current -
