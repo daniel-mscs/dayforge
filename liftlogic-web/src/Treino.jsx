@@ -2694,7 +2694,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   }}
                 >
                   ⚠️ Aplicar substitui TODOS os seus exercícios cadastrados
-                  atualmente pelos desse PDF.
+                  atualmente pelos desse arquivo.
                 </div>
 
                 <div style={{ display: "flex", gap: 8 }}>
@@ -2714,7 +2714,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       cursor: "pointer",
                     }}
                   >
-                    Tentar outro PDF
+                    Tentar outro arquivo
                   </button>
                   <button
                     onClick={aplicarTreinoImportado}
