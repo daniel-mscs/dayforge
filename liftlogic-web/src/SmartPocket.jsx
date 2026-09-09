@@ -138,6 +138,15 @@ export default function SmartPocket({ user }) {
   const [entradaNome, setEntradaNome] = useState("");
   const [entradaValor, setEntradaValor] = useState("");
 
+  const [contas, setContas] = useState([]);
+  const [contaNome, setContaNome] = useState("");
+  const [contaPlanejado, setContaPlanejado] = useState("");
+
+  const [metas, setMetas] = useState([]);
+  const [metaNome, setMetaNome] = useState("");
+  const [metaValorAlvo, setMetaValorAlvo] = useState("");
+  const [contribuicaoInput, setContribuicaoInput] = useState({});
+
   const buscarTudo = useCallback(async () => {
     setCarregando(true);
     const mesPassadoData =
@@ -154,6 +163,8 @@ export default function SmartPocket({ user }) {
       { data: cFuturo },
       { data: cts },
       { data: saldoIniData },
+      { data: contasData },
+      { data: metasData },
     ] = await Promise.all([
       supabase
         .from("financeiro_gastos")
@@ -221,6 +232,18 @@ export default function SmartPocket({ user }) {
         .eq("mes", mes)
         .eq("ano", ano)
         .maybeSingle(),
+      supabase
+        .from("financeiro_contas")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mes)
+        .eq("ano", ano)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("financeiro_metas")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
     ]);
 
     // Aplica os gastos recorrentes que ainda não foram lançados nesse mês
@@ -259,6 +282,8 @@ export default function SmartPocket({ user }) {
     }
 
     setSaldoAcumulado(saldoIniData?.valor ?? 0);
+    setContas(contasData || []);
+    setMetas(metasData || []);
 
     setCarregando(false);
   }, [user.id, mes, ano]);
@@ -266,6 +291,8 @@ export default function SmartPocket({ user }) {
   useEffect(() => {
     buscarTudo();
   }, [buscarTudo]);
+
+  const [gastoEssencial, setGastoEssencial] = useState(true);
 
   const adicionarGasto = async () => {
     if (!gastoNome || !gastoValor) return toast("Preencha os campos!", "error");
@@ -280,6 +307,7 @@ export default function SmartPocket({ user }) {
           valor: parseFloat(gastoValor),
           data: gastoData || null,
           categoria: gastoCategoria,
+          essencial: gastoEssencial,
         },
       ])
       .select();
@@ -445,6 +473,92 @@ export default function SmartPocket({ user }) {
         { user_id: user.id, mes, ano, valor },
         { onConflict: "user_id,mes,ano" },
       );
+  };
+
+  const adicionarConta = async () => {
+    if (!contaNome || !contaPlanejado)
+      return toast("Preencha nome e valor planejado!", "error");
+    const { data, error } = await supabase
+      .from("financeiro_contas")
+      .insert([
+        {
+          user_id: user.id,
+          mes,
+          ano,
+          nome: contaNome,
+          planejado: parseFloat(contaPlanejado),
+        },
+      ])
+      .select();
+    if (error) return toast(error.message, "error");
+    setContas((prev) => [...prev, data[0]]);
+    setContaNome("");
+    setContaPlanejado("");
+  };
+
+  const marcarContaPaga = async (conta, valorPago) => {
+    const val = parseFloat(valorPago);
+    if (!val) return toast("Informe o valor pago!", "error");
+    const hojeStr = new Date().toISOString().split("T")[0];
+    const { error } = await supabase
+      .from("financeiro_contas")
+      .update({ valor_pago: val, data_pago: hojeStr })
+      .eq("id", conta.id);
+    if (error) return toast(error.message, "error");
+    setContas((prev) =>
+      prev.map((c) =>
+        c.id === conta.id
+          ? { ...c, valor_pago: val, data_pago: hojeStr }
+          : c,
+      ),
+    );
+  };
+
+  const desmarcarContaPaga = async (id) => {
+    await supabase
+      .from("financeiro_contas")
+      .update({ valor_pago: null, data_pago: null })
+      .eq("id", id);
+    setContas((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, valor_pago: null, data_pago: null } : c,
+      ),
+    );
+  };
+
+  const adicionarMeta = async () => {
+    if (!metaNome || !metaValorAlvo)
+      return toast("Preencha nome e valor da meta!", "error");
+    const { data, error } = await supabase
+      .from("financeiro_metas")
+      .insert([
+        {
+          user_id: user.id,
+          nome: metaNome,
+          valor_meta: parseFloat(metaValorAlvo),
+        },
+      ])
+      .select();
+    if (error) return toast(error.message, "error");
+    setMetas((prev) => [...prev, data[0]]);
+    setMetaNome("");
+    setMetaValorAlvo("");
+  };
+
+  const contribuirMeta = async (meta) => {
+    const val = parseFloat(contribuicaoInput[meta.id]);
+    if (!val || val <= 0) return toast("Digite um valor válido!", "error");
+    const novoValor = Number(meta.valor_atual) + val;
+    const { error } = await supabase
+      .from("financeiro_metas")
+      .update({ valor_atual: novoValor })
+      .eq("id", meta.id);
+    if (error) return toast(error.message, "error");
+    setMetas((prev) =>
+      prev.map((m) => (m.id === meta.id ? { ...m, valor_atual: novoValor } : m)),
+    );
+    setContribuicaoInput((prev) => ({ ...prev, [meta.id]: "" }));
+    toast("Contribuição registrada! 🎯", "success");
   };
 
   const clonarMesPassado = async () => {
@@ -914,6 +1028,7 @@ export default function SmartPocket({ user }) {
           background: "linear-gradient(155deg, #1c2026, #17191d)",
           padding: 5,
           borderRadius: 12,
+          overflowX: "auto",
         }}
       >
         {[
@@ -921,13 +1036,16 @@ export default function SmartPocket({ user }) {
           { id: "cartao", label: "💳 Cartão" },
           { id: "invest", label: "📈 Invest" },
           { id: "entradas", label: "💰 Entradas" },
+          { id: "contas", label: "🧾 Contas" },
+          { id: "metas", label: "🎯 Metas" },
           { id: "resumo", label: "📊 Resumo" },
         ].map((a) => (
           <button
             key={a.id}
             onClick={() => setAba(a.id)}
             style={{
-              flex: 1,
+              flex: "0 0 auto",
+              minWidth: 68,
               background:
                 aba === a.id
                   ? "linear-gradient(135deg, #6366f1, #4f46e5)"
@@ -937,7 +1055,7 @@ export default function SmartPocket({ user }) {
               color: aba === a.id ? "#fff" : "#64748b",
               fontSize: 10,
               fontWeight: 700,
-              padding: "8px 2px",
+              padding: "8px 6px",
               cursor: "pointer",
               boxShadow:
                 aba === a.id ? "0 3px 12px rgba(99,102,241,0.4)" : "none",
@@ -1038,6 +1156,25 @@ export default function SmartPocket({ user }) {
                 }}
               />
             </div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 10,
+                fontSize: 12,
+                color: "#cbd5e1",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={gastoEssencial}
+                onChange={(e) => setGastoEssencial(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              Essencial (moradia, contas fixas, mercado...)
+            </label>
             <button
               onClick={adicionarGasto}
               style={{
@@ -1092,6 +1229,11 @@ export default function SmartPocket({ user }) {
                       }}
                     >
                       {g.categoria}
+                      {g.essencial === false && (
+                        <span style={{ color: "#f59e0b", marginLeft: 6 }}>
+                          · extra
+                        </span>
+                      )}
                     </span>
                   )}
                   {g.data && (
@@ -1778,7 +1920,400 @@ export default function SmartPocket({ user }) {
                   </button>
                 </div>
               </div>
-            ))
+      {/* ABA CONTAS */}
+      {aba === "contas" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: 18,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 12,
+              }}
+            >
+              ADICIONAR CONTA
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#94a3b8",
+                marginBottom: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              Diferente de "Gastos": aqui você planeja o valor esperado (ex:
+              conta de luz ≈ R$150) e depois confirma quanto pagou de verdade.
+            </div>
+            <input
+              placeholder="Nome (ex: Conta de luz)"
+              value={contaNome}
+              onChange={(e) => setContaNome(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" &&
+                document.getElementById("conta-planejado")?.focus()
+              }
+            />
+            <input
+              id="conta-planejado"
+              type="number"
+              placeholder="Valor planejado R$"
+              value={contaPlanejado}
+              onChange={(e) => setContaPlanejado(e.target.value)}
+              style={{ marginTop: 8 }}
+              onKeyDown={(e) => e.key === "Enter" && adicionarConta()}
+            />
+            <button
+              onClick={adicionarConta}
+              style={{
+                marginTop: 10,
+                width: "100%",
+                background: "#6366f1",
+                border: "none",
+                borderRadius: 10,
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                padding: 12,
+                cursor: "pointer",
+              }}
+            >
+              + Adicionar Conta
+            </button>
+          </div>
+          {contas.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#475569", fontSize: 13 }}>
+              Nenhuma conta planejada esse mês.
+            </p>
+          ) : (
+            contas.map((c) => {
+              const paga = c.valor_pago !== null && c.valor_pago !== undefined;
+              return (
+                <div
+                  key={c.id}
+                  style={{
+                    background: "linear-gradient(155deg, #1c2026, #17191d)",
+                    border: "1px solid #ffffff10",
+                    borderLeft: `3px solid ${paga ? "#10b981" : "#f59e0b"}`,
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: "#f8fafc",
+                        }}
+                      >
+                        {c.nome}
+                      </div>
+                      <div
+                        style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
+                      >
+                        Planejado: {fmtBRL(c.planejado)}
+                        {paga && c.data_pago && (
+                          <>
+                            {" "}
+                            ·{" "}
+                            {new Date(
+                              c.data_pago + "T00:00:00",
+                            ).toLocaleDateString("pt-BR")}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    >
+                      {paga ? (
+                        <span
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: "#10b981",
+                          }}
+                        >
+                          ✓ {fmtBRL(c.valor_pago)}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11, color: "#f59e0b" }}>
+                          Pendente
+                        </span>
+                      )}
+                      <button
+                        onClick={() =>
+                          deletar("financeiro_contas", c.id, setContas)
+                        }
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          opacity: 0.4,
+                          fontSize: 16,
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  {paga ? (
+                    <button
+                      onClick={() => desmarcarContaPaga(c.id)}
+                      style={{
+                        marginTop: 8,
+                        background: "none",
+                        border: "1px solid #ffffff10",
+                        borderRadius: 8,
+                        color: "#64748b",
+                        fontSize: 11,
+                        padding: "5px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Desmarcar
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                      <input
+                        type="number"
+                        placeholder={`Pago (planejado: ${c.planejado})`}
+                        defaultValue={c.planejado}
+                        id={`pago-${c.id}`}
+                        style={{ flex: 1, marginTop: 0 }}
+                      />
+                      <button
+                        onClick={() =>
+                          marcarContaPaga(
+                            c,
+                            document.getElementById(`pago-${c.id}`)?.value,
+                          )
+                        }
+                        style={{
+                          background: "#10b981",
+                          border: "none",
+                          borderRadius: 8,
+                          color: "#fff",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: "0 14px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ✓ Paguei
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* ABA METAS */}
+      {aba === "metas" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: 18,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 12,
+              }}
+            >
+              NOVA META
+            </div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>
+              Ex: Reserva de emergência, Moto, Viagem — metas continuam entre os
+              meses, não zeram.
+            </div>
+            <input
+              placeholder="Nome (ex: Reserva de emergência)"
+              value={metaNome}
+              onChange={(e) => setMetaNome(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" &&
+                document.getElementById("meta-valor")?.focus()
+              }
+            />
+            <input
+              id="meta-valor"
+              type="number"
+              placeholder="Valor da meta R$"
+              value={metaValorAlvo}
+              onChange={(e) => setMetaValorAlvo(e.target.value)}
+              style={{ marginTop: 8 }}
+              onKeyDown={(e) => e.key === "Enter" && adicionarMeta()}
+            />
+            <button
+              onClick={adicionarMeta}
+              style={{
+                marginTop: 10,
+                width: "100%",
+                background: "#6366f1",
+                border: "none",
+                borderRadius: 10,
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                padding: 12,
+                cursor: "pointer",
+              }}
+            >
+              + Criar Meta
+            </button>
+          </div>
+          {metas.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#475569", fontSize: 13 }}>
+              Nenhuma meta criada ainda.
+            </p>
+          ) : (
+            metas.map((m) => {
+              const pct = Math.min(
+                100,
+                Math.round(
+                  (Number(m.valor_atual) / Number(m.valor_meta)) * 100,
+                ),
+              );
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    background: "linear-gradient(155deg, #1c2026, #17191d)",
+                    border: "1px solid #ffffff10",
+                    borderRadius: 16,
+                    padding: 16,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#f8fafc",
+                      }}
+                    >
+                      🎯 {m.nome}
+                    </span>
+                    <button
+                      onClick={() =>
+                        deletar("financeiro_metas", m.id, setMetas)
+                      }
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        opacity: 0.4,
+                        fontSize: 16,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: 13,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span style={{ color: "#10b981", fontWeight: 700 }}>
+                      {fmtBRL(m.valor_atual)}
+                    </span>
+                    <span style={{ color: "#64748b" }}>
+                      de {fmtBRL(m.valor_meta)} · {pct}%
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: 8,
+                      borderRadius: 99,
+                      background: "#ffffff0d",
+                      overflow: "hidden",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${pct}%`,
+                        background: "#10b981",
+                        borderRadius: 99,
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      type="number"
+                      placeholder="Contribuir R$"
+                      value={contribuicaoInput[m.id] || ""}
+                      onChange={(e) =>
+                        setContribuicaoInput((prev) => ({
+                          ...prev,
+                          [m.id]: e.target.value,
+                        }))
+                      }
+                      style={{ flex: 1, marginTop: 0 }}
+                      onKeyDown={(e) => e.key === "Enter" && contribuirMeta(m)}
+                    />
+                    <button
+                      onClick={() => contribuirMeta(m)}
+                      style={{
+                        background: "#10b981",
+                        border: "none",
+                        borderRadius: 8,
+                        color: "#fff",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: "0 14px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      + Add
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       )}
