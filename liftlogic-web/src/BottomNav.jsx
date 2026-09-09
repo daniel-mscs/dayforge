@@ -25,6 +25,7 @@ const CATEGORIAS = [
       { id: "agua", icon: "💧", label: "Água" },
       { id: "peso", icon: "⚖️", label: "Peso" },
       { id: "sono", icon: "😴", label: "Sono" },
+      { id: "insights", icon: "🔍", label: "Insights" },
     ],
   },
   {

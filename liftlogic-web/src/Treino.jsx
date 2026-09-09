@@ -35,6 +35,7 @@ import Habitos from "./Habitos";
 import Agua from "./Agua";
 import Peso from "./Peso";
 import Suplementos from "./Suplementos";
+import Insights from "./Insights";
 import Dieta from "./Dieta";
 import Macros from "./Macros";
 import Passos from "./Passos";
@@ -3363,6 +3364,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       )}
       {abaPrincipal === "agua" && <Agua user={user} onAjuda={abrirAjuda} />}
       {abaPrincipal === "peso" && <Peso user={user} onAjuda={abrirAjuda} />}
+      {abaPrincipal === "insights" && <Insights user={user} />}
       {abaPrincipal === "suplementos" && (
         <Suplementos user={user} onAjuda={abrirAjuda} />
       )}
