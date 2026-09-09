@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { ganharXP } from "./lib/rpg";
 import { toast } from "./lib/toast";
+import { askConfirm } from "./lib/confirm";
 import { SkeletonMacros } from "./lib/skeleton";
 
 function formatarData(date) {
@@ -1237,7 +1238,8 @@ export default function Macros({ user, onAjuda }) {
             <button
               className="macros-btn-limpar"
               onClick={async () => {
-                if (!confirm("Zerar todos os registros de hoje?")) return;
+                if (!(await askConfirm("Zerar todos os registros de hoje?")))
+                  return;
                 await supabase
                   .from("macros_registro")
                   .delete()

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "./lib/toast";
 import { supabase } from "./lib/supabase";
 
 const NIVEIS = [
@@ -508,7 +509,7 @@ export default function RPG({ user, xpExterno }) {
       avatar_pele: peleSel,
       itens_equipados: itensSel,
     }));
-    alert("Personagem salvo! ✅");
+    toast("Personagem salvo! ✅", "success");
   };
 
   const toggleItem = (itemId) => {

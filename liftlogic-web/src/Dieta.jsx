@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { agendarNotificacoesDieta } from "./lib/notifications";
 
 const REFEICOES = [
   {
@@ -48,6 +49,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
   const [objetivo, setObjetivo] = useState("emagrecer");
   const [renda, setRenda] = useState("baixa");
   const [perfil, setPerfil] = useState(null);
+  const [editandoRefeicao, setEditandoRefeicao] = useState(null);
 
   const buscarDieta = useCallback(async () => {
     setCarregando(true);
@@ -66,6 +68,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
     });
     setPlano(mapa);
     setCarregando(false);
+    agendarNotificacoesDieta(REFEICOES, mapa);
   }, [user.id]);
 
   useEffect(() => {
@@ -83,7 +86,11 @@ export default function Dieta({ user, compact = false, onAjuda }) {
       },
       { onConflict: "user_id,refeicao" },
     );
-    setPlano((prev) => ({ ...prev, [refeicaoId]: conteudo }));
+    setPlano((prev) => {
+      const novo = { ...prev, [refeicaoId]: conteudo };
+      agendarNotificacoesDieta(REFEICOES, novo);
+      return novo;
+    });
     setSalvando(false);
   };
 
@@ -408,6 +415,12 @@ export default function Dieta({ user, compact = false, onAjuda }) {
       {REFEICOES.map((r) => {
         const hora = new Date().getHours();
         const isAtual = hora >= r.horaDe && hora <= r.horeAte;
+        const conteudo = (plano[r.id] || "").trim();
+        const itens = conteudo
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        const emEdicao = editandoRefeicao === r.id;
         return (
           <div key={r.id} className={`dieta-card ${isAtual ? "atual" : ""}`}>
             <div className="dieta-card-header">
@@ -415,20 +428,76 @@ export default function Dieta({ user, compact = false, onAjuda }) {
                 <div className="dieta-card-label">{r.label}</div>
                 {isAtual && <span className="dieta-card-badge">Agora</span>}
               </div>
-              <div className="dieta-card-horario">
-                {r.horaDe}h – {r.horeAte}h
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="dieta-card-horario">
+                  {r.horaDe}h – {r.horeAte}h
+                </div>
+                <button
+                  onClick={() => setEditandoRefeicao(emEdicao ? null : r.id)}
+                  style={{
+                    background: "none",
+                    border: "1px solid #ffffff0d",
+                    borderRadius: 8,
+                    color: emEdicao ? "#6366f1" : "#64748b",
+                    fontSize: 11,
+                    padding: "3px 8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {emEdicao ? "✓ Pronto" : "✏️ Editar"}
+                </button>
               </div>
             </div>
-            <textarea
-              className="dieta-textarea"
-              placeholder={r.placeholder}
-              value={plano[r.id] || ""}
-              rows={4}
-              onChange={(e) =>
-                setPlano((prev) => ({ ...prev, [r.id]: e.target.value }))
-              }
-              onBlur={(e) => salvarRefeicao(r.id, e.target.value)}
-            />
+            {emEdicao ? (
+              <textarea
+                className="dieta-textarea"
+                placeholder={r.placeholder}
+                value={plano[r.id] || ""}
+                rows={4}
+                autoFocus
+                onChange={(e) =>
+                  setPlano((prev) => ({ ...prev, [r.id]: e.target.value }))
+                }
+                onBlur={(e) => salvarRefeicao(r.id, e.target.value)}
+              />
+            ) : itens.length > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  padding: "4px 2px",
+                }}
+              >
+                {itens.map((item, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      fontSize: 14,
+                      color: "#e2e8f0",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    <span style={{ color: "#6366f1", flexShrink: 0 }}>•</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                onClick={() => setEditandoRefeicao(r.id)}
+                style={{
+                  fontSize: 13,
+                  color: "#475569",
+                  padding: "8px 2px",
+                  cursor: "pointer",
+                }}
+              >
+                Toque em "Editar" pra cadastrar essa refeição
+              </div>
+            )}
           </div>
         );
       })}

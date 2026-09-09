@@ -125,10 +125,11 @@ export async function agendarNotificacoes(idsAtivos) {
 
 export async function cancelarNotificacoes() {
   if (!Capacitor.isNativePlatform()) return;
-  const pending = await LocalNotifications.getPending();
-  if (pending.notifications.length > 0) {
-    await LocalNotifications.cancel({ notifications: pending.notifications });
-  }
+  // Cancela só os ids 1-7 (as notificações diárias fixas) — antes isso
+  // cancelava TUDO que estava pendente no app (Rotina, ausência,
+  // pendências etc), apagando avisos que ainda iam disparar.
+  const idsFixos = getNotificacoes().map((n) => ({ id: n.id }));
+  await LocalNotifications.cancel({ notifications: idsFixos });
 }
 
 // ID reservado só pra notificação de descanso do treino, longe dos
@@ -299,4 +300,101 @@ export async function verificarEAgendarLembretePendencias(
       },
     ],
   });
+}
+
+// Notificação por refeição da Dieta — dispara no início da janela de
+// horário de cada refeição (ex: Café da manhã às 5h), mostrando os
+// itens cadastrados naquela refeição, um por linha.
+const IDS_NOTIF_DIETA = {
+  cafe: 9401,
+  lanche1: 9402,
+  almoco: 9403,
+  cafetarde: 9404,
+  janta: 9405,
+};
+
+export async function agendarNotificacoesDieta(refeicoes, plano) {
+  if (!Capacitor.isNativePlatform()) return;
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return;
+
+  await LocalNotifications.cancel({
+    notifications: Object.values(IDS_NOTIF_DIETA).map((id) => ({ id })),
+  });
+
+  const agora = new Date();
+  const agendamentos = [];
+
+  refeicoes.forEach((r) => {
+    const conteudo = (plano[r.id] || "").trim();
+    if (!conteudo) return;
+
+    const quando = new Date();
+    quando.setHours(r.horaDe, 0, 0, 0);
+    if (quando <= agora) return; // já passou essa refeição hoje
+
+    const itens = conteudo
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (itens.length === 0) return;
+
+    agendamentos.push({
+      id: IDS_NOTIF_DIETA[r.id],
+      title: r.label,
+      body: itens.map((i) => `• ${i}`).join("\n"),
+      smallIcon: "ic_notification",
+      schedule: { at: quando, allowWhileIdle: true },
+    });
+  });
+
+  if (agendamentos.length > 0) {
+    await LocalNotifications.schedule({ notifications: agendamentos });
+  }
+}
+
+// Lembrete por suplemento — cada um pode ter seu próprio horário
+// (ex: Vitamina D às 12h). Como a lista de suplementos é dinâmica
+// (o usuário cadastra quantos quiser), reservamos uma faixa de 400
+// ids (9500-9899) e derivamos um id fixo por suplemento a partir do
+// seu UUID, pra sempre cancelar/reagendar o mesmo id certinho.
+const BASE_ID_SUPLEMENTOS = 9500;
+const FAIXA_ID_SUPLEMENTOS = 400;
+
+function idNotifSuplemento(suplementoId) {
+  let h = 0;
+  for (let i = 0; i < suplementoId.length; i++) {
+    h = (h * 31 + suplementoId.charCodeAt(i)) % FAIXA_ID_SUPLEMENTOS;
+  }
+  return BASE_ID_SUPLEMENTOS + h;
+}
+
+export async function agendarNotificacoesSuplementos(suplementos) {
+  if (!Capacitor.isNativePlatform()) return;
+  const { display } = await LocalNotifications.requestPermissions();
+  if (display !== "granted") return;
+
+  const todosIds = Array.from({ length: FAIXA_ID_SUPLEMENTOS }, (_, i) => ({
+    id: BASE_ID_SUPLEMENTOS + i,
+  }));
+  await LocalNotifications.cancel({ notifications: todosIds });
+
+  const comLembrete = suplementos.filter((s) => s.horario_lembrete);
+  if (comLembrete.length === 0) return;
+
+  const agendamentos = comLembrete.map((s) => {
+    const [hora, minuto] = s.horario_lembrete.split(":").map(Number);
+    return {
+      id: idNotifSuplemento(s.id),
+      title: `💊 ${s.nome}`,
+      body: `Hora de tomar — ${s.dose}`,
+      smallIcon: "ic_notification",
+      schedule: {
+        on: { hour: hora, minute: minuto || 0 },
+        allowWhileIdle: true,
+      },
+    };
+  });
+
+  await LocalNotifications.schedule({ notifications: agendamentos });
 }

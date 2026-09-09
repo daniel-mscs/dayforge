@@ -55,11 +55,12 @@ import { toast } from "./lib/toast";
 import Tour from "./lib/tour";
 import { useTour } from "./lib/useTour";
 import {
-  NOTIFICACOES,
+  getNotificacoes,
   agendarNotificacaoDescanso,
   cancelarNotificacaoDescanso,
   agendarNotificacaoAusencia,
 } from "./lib/notifications";
+import { askPrompt } from "./lib/confirm";
 import {
   extrairTextoPDF,
   extrairTextoImagem,
@@ -401,7 +402,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [novosRecordes, setNovosRecordes] = useState([]);
   const [notifAtivas, setNotifAtivas] = useState(() => {
     const salvo = localStorage.getItem("df_notif_ativas");
-    return salvo ? JSON.parse(salvo) : NOTIFICACOES.map((n) => n.id);
+    return salvo ? JSON.parse(salvo) : getNotificacoes().map((n) => n.id);
   });
   const [notifPermissao, setNotifPermissao] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "default",
@@ -735,10 +736,16 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = "100%";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.overscrollBehavior = "none";
     return () => {
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
+      document.body.style.overscrollBehavior = "";
+      document.documentElement.style.overflow = "";
+      document.documentElement.style.overscrollBehavior = "";
       window.scrollTo(0, scrollY);
     };
   }, [modalDescanso]);
@@ -4235,8 +4242,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         <span>TEMPO</span>
                         <strong>{formatarTempo(t.tempo_segundos)}</strong>
                         <button
-                          onClick={() => {
-                            const input = prompt(
+                          onClick={async () => {
+                            const input = await askPrompt(
                               "Novo tempo em minutos:",
                               Math.round((t.tempo_segundos || 0) / 60),
                             );

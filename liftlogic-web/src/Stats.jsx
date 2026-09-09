@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "./lib/toast";
 import { supabase } from "./lib/supabase";
 import {
   BarChart,
@@ -1591,7 +1592,7 @@ export default function Stats({ user }) {
                       }
                     });
                   } catch (e) {
-                    alert("Erro ao gerar imagem: " + e.message);
+                    toast("Erro ao gerar imagem: " + e.message, "error");
                   }
                   setCompartilhando(false);
                 }}

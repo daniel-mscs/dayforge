@@ -31,7 +31,7 @@ const CATEGORIAS = [
     label: "🎮 Outros",
     items: [
       { id: "coach", icon: "🤖", label: "Coach" },
-      { id: "smartpocket", icon: "💰", label: "SmartPocket" },
+      { id: "smartpocket", icon: "💰", label: "Finanças" },
       { id: "rpg", icon: "⚔️", label: "RPG" },
     ],
   },

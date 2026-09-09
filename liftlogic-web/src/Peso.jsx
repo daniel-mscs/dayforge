@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { ganharXP } from "./lib/rpg";
 import { toast } from "./lib/toast";
+import { askConfirm } from "./lib/confirm";
 import { SkeletonPeso } from "./lib/skeleton";
 
 function formatarData(date) {
@@ -249,7 +250,8 @@ export default function Peso({ user, onAjuda }) {
     }
     const existing = registros.find((r) => r.data === hoje);
     if (existing) {
-      if (!confirm("Já existe um registro hoje. Substituir?")) return;
+      if (!(await askConfirm("Já existe um registro hoje. Substituir?")))
+        return;
       const { error } = await supabase
         .from("peso_registro")
         .update({ peso: val })

@@ -5,6 +5,7 @@ import RedefinirSenha from "./pages/RedefinirSenha";
 import Treino from "./Treino";
 import Onboarding from "./Onboarding";
 import { ToastContainer } from "./lib/toast";
+import { ConfirmContainer } from "./lib/confirm";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -174,6 +175,7 @@ function App() {
   return (
     <>
       <ToastContainer />
+      <ConfirmContainer />
       <Treino
         logout={logout}
         user={session.user}

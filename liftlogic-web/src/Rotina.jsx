@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { askConfirm } from "./lib/confirm";
 import { agendarNotificacoesRotina } from "./lib/notifications";
 import {
   DndContext,
@@ -324,7 +325,7 @@ export default function Rotina({ user }) {
     }
 
     if (dias.length > 0) {
-      const confirmado = window.confirm(
+      const confirmado = await askConfirm(
         "Você já tem uma rotina! Deseja apagar tudo e criar uma nova?",
       );
       if (!confirmado) return;
@@ -450,8 +451,10 @@ export default function Rotina({ user }) {
   };
 
   const resetarRotina = async () => {
-    if (!window.confirm("Apagar toda a rotina? Isso não pode ser desfeito."))
-      return;
+    const ok = await askConfirm(
+      "Apagar toda a rotina? Isso não pode ser desfeito.",
+    );
+    if (!ok) return;
     const ids = dias.map((d) => d.id);
     await supabase.from("rotina_tarefas").delete().in("dia_id", ids);
     await supabase.from("rotina_dias").delete().eq("user_id", user.id);

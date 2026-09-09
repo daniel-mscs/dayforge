@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from "./lib/toast";
 import { supabase } from "./lib/supabase";
 
 const ETAPAS = [
@@ -35,9 +36,9 @@ export default function Onboarding({ user, onConcluir }) {
   const avancar = () => setEtapa((p) => p + 1);
   const voltar = () => setEtapa((p) => p - 1);
 
-  const salvar = async () => {
-    if (!form.nome.trim()) {
-      alert("Digite seu nome!");
+    if (error) {
+      toast("Erro ao salvar: " + error.message, "error");
+      setSalvando(false);
       return;
     }
     setSalvando(true);

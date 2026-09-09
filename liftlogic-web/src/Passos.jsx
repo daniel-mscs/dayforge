@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "./lib/toast";
+import { askConfirm } from "./lib/confirm";
 import { supabase } from "./lib/supabase";
 import {
   BarChart,
@@ -66,19 +68,20 @@ export default function Passos({ user, onAjuda }) {
   const registrarPassos = async () => {
     const val = parseInt(passosInput);
     if (!val || val <= 0) {
-      alert("Digite um valor válido!");
+      toast("Digite um valor válido!", "error");
       return;
     }
 
     const existing = registros.find((r) => r.data === hoje);
     if (existing) {
-      if (!confirm("Já existe um registro hoje. Substituir?")) return;
+      if (!(await askConfirm("Já existe um registro hoje. Substituir?")))
+        return;
       const { error } = await supabase
         .from("passos_registro")
         .update({ passos: val })
         .eq("id", existing.id);
       if (error) {
-        alert("Erro: " + error.message);
+        toast("Erro: " + error.message, "error");
         return;
       }
       setRegistros((prev) =>
@@ -96,7 +99,7 @@ export default function Passos({ user, onAjuda }) {
         ])
         .select();
       if (error) {
-        alert("Erro: " + error.message);
+        toast("Erro: " + error.message, "error");
         return;
       }
       setRegistros((prev) => [data[0], ...prev]);
@@ -113,7 +116,7 @@ export default function Passos({ user, onAjuda }) {
   const salvarMeta = async () => {
     const val = parseInt(metaInput);
     if (!val || val < 100) {
-      alert("Meta inválida!");
+      toast("Meta inválida!", "error");
       return;
     }
     await supabase

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "./lib/toast";
+import { askConfirm } from "./lib/confirm";
 import { supabase } from "./lib/supabase";
 import { ganharXP } from "./lib/rpg";
 
@@ -146,7 +148,7 @@ export default function Habitos({ user, compact = false, onAjuda }) {
 
   const adicionarCustom = async () => {
     if (!novoLabel.trim()) {
-      alert("Digite o nome do hábito!");
+      toast("Digite o nome do hábito!", "error");
       return;
     }
     const { data, error } = await supabase
@@ -161,7 +163,7 @@ export default function Habitos({ user, compact = false, onAjuda }) {
       ])
       .select();
     if (error) {
-      alert("Erro: " + error.message);
+      toast("Erro: " + error.message, "error");
       return;
     }
     setCustom((prev) => [...prev, data[0]]);
@@ -172,7 +174,8 @@ export default function Habitos({ user, compact = false, onAjuda }) {
   };
 
   const deletarCustom = async (customId) => {
-    if (!confirm("Remover este hábito?")) return;
+    const ok = await askConfirm("Remover este hábito?");
+    if (!ok) return;
     await supabase.from("habitos_custom").delete().eq("id", customId);
     setCustom((prev) => prev.filter((c) => c.id !== customId));
   };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { agendarNotificacoesSuplementos } from "./lib/notifications";
 import { SkeletonSupl } from "./lib/skeleton";
 
 function formatarData(date) {
@@ -27,6 +28,7 @@ export default function Suplementos({
   const [calcioInput, setCalcioInput] = useState("");
   const [ferroInput, setFerroInput] = useState("");
   const [fibraInput, setFibraInput] = useState("");
+  const [horarioInput, setHorarioInput] = useState("");
   const [mostrarVitaminas, setMostrarVitaminas] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const dataAtualRef = React.useRef(formatarData(new Date()));
@@ -54,6 +56,7 @@ export default function Suplementos({
     });
     setChecks(mapa);
     setCarregando(false);
+    agendarNotificacoesSuplementos(suplementos || []);
   }, [user.id]);
 
   useEffect(() => {
@@ -147,6 +150,7 @@ export default function Suplementos({
           calcio: Number(calcioInput) || 0,
           ferro: Number(ferroInput) || 0,
           fibra: Number(fibraInput) || 0,
+          horario_lembrete: horarioInput || null,
         },
       ])
       .select();
@@ -154,7 +158,8 @@ export default function Suplementos({
       toast("Erro: " + error.message, "error");
       return;
     }
-    setLista((prev) => [...prev, data[0]]);
+    const novaLista = [...lista, data[0]];
+    setLista(novaLista);
     setNomeInput("");
     setDoseInput("");
     setEstoqueInput("");
@@ -164,8 +169,10 @@ export default function Suplementos({
     setCalcioInput("");
     setFerroInput("");
     setFibraInput("");
+    setHorarioInput("");
     setMostrarVitaminas(false);
     toast("Suplemento adicionado!", "success");
+    agendarNotificacoesSuplementos(novaLista);
   };
 
   const deletarSupl = async (id) => {
@@ -445,6 +452,11 @@ export default function Suplementos({
                             · restam {s.estoque_atual}
                           </span>
                         )}
+                      {s.horario_lembrete && (
+                        <span style={{ color: "#f59e0b", marginLeft: 6 }}>
+                          · ⏰ {s.horario_lembrete}
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -492,6 +504,42 @@ export default function Suplementos({
             value={estoqueInput}
             onChange={(e) => setEstoqueInput(e.target.value)}
           />
+          <div
+            style={{
+              marginTop: 8,
+              background: "#24282d",
+              border: "1px solid #ffffff10",
+              borderRadius: 8,
+              padding: "10px 12px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 4,
+              }}
+            >
+              LEMBRETE DE HORÁRIO (opcional)
+            </div>
+            <input
+              type="time"
+              value={horarioInput}
+              onChange={(e) => setHorarioInput(e.target.value)}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                color: "#f8fafc",
+                fontSize: 14,
+                padding: 0,
+                boxSizing: "border-box",
+                outline: "none",
+              }}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setMostrarVitaminas((v) => !v)}
