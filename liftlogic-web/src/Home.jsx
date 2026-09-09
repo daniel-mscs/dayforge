@@ -28,6 +28,19 @@ import {
 import Confetti from "react-confetti";
 import { toast } from "./lib/toast";
 import {
+  Droplet,
+  Scale,
+  Flame,
+  Zap,
+  Footprints,
+  Pill,
+  Moon,
+  ClipboardList,
+  Salad,
+  Dumbbell,
+  Brain,
+} from "lucide-react";
+import {
   verificarEAgendarLembretePendencias,
   agendarNotificacoesRotina,
 } from "./lib/notifications";
@@ -867,8 +880,20 @@ export default function Home({
           </p>
         </div>
         {streak > 0 && (
-          <div className="home-streak">
-            🔥 {streak} dia{streak > 1 ? "s" : ""}
+          <div
+            className="home-streak"
+            style={{ display: "flex", alignItems: "center", gap: 5 }}
+          >
+            <Flame
+              size={14}
+              color="#f97316"
+              strokeWidth={2.5}
+              fill="#f97316"
+              style={{
+                filter: "drop-shadow(0 0 6px rgba(249,115,22,0.8))",
+              }}
+            />
+            {streak} dia{streak > 1 ? "s" : ""}
           </div>
         )}
       </div>
@@ -1489,7 +1514,15 @@ export default function Home({
                     onClick={() => !editandoHome && onNavegar("agua")}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="home-mini-icon">💧</div>
+                    <div
+                      className="home-mini-icon"
+                      style={{
+                        background: "rgba(59,130,246,0.15)",
+                        boxShadow: "0 0 16px rgba(59,130,246,0.35)",
+                      }}
+                    >
+                      <Droplet size={19} color="#3b82f6" strokeWidth={2} />
+                    </div>
                     <div className="home-mini-info">
                       <div className="home-mini-label">ÁGUA HOJE</div>
                       <div className="home-mini-val">
@@ -1512,7 +1545,15 @@ export default function Home({
                     onClick={() => !editandoHome && onNavegar("peso")}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="home-mini-icon">⚖️</div>
+                    <div
+                      className="home-mini-icon"
+                      style={{
+                        background: "rgba(99,102,241,0.15)",
+                        boxShadow: "0 0 16px rgba(99,102,241,0.35)",
+                      }}
+                    >
+                      <Scale size={19} color="#6366f1" strokeWidth={2} />
+                    </div>
                     <div className="home-mini-info">
                       <div className="home-mini-label">PESO HOJE</div>
                       <div className="home-mini-val">
@@ -1555,7 +1596,15 @@ export default function Home({
                     onClick={() => !editandoHome && onNavegar("macros")}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="home-mini-icon">🔥</div>
+                    <div
+                      className="home-mini-icon"
+                      style={{
+                        background: "rgba(249,115,22,0.15)",
+                        boxShadow: "0 0 16px rgba(249,115,22,0.35)",
+                      }}
+                    >
+                      <Flame size={19} color="#f97316" strokeWidth={2} />
+                    </div>
                     <div className="home-mini-info">
                       <div className="home-mini-label">KCAL HOJE</div>
                       <div className="home-mini-val">
@@ -1591,7 +1640,15 @@ export default function Home({
                     onClick={() => !editandoHome && onNavegar("macros")}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="home-mini-icon">⚡</div>
+                    <div
+                      className="home-mini-icon"
+                      style={{
+                        background: "rgba(234,179,8,0.15)",
+                        boxShadow: "0 0 16px rgba(234,179,8,0.35)",
+                      }}
+                    >
+                      <Zap size={19} color="#eab308" strokeWidth={2} />
+                    </div>
                     <div className="home-mini-info">
                       <div className="home-mini-label">SALDO</div>
                       {(() => {
@@ -1630,7 +1687,20 @@ export default function Home({
               )}
               {bloco.id === "refeicao" && (
                 <div className="home-card">
-                  <div className="home-section-title">🥗 REFEIÇÃO ATUAL</div>
+                  <div
+                    className="home-section-title"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Salad
+                      size={13}
+                      color="#10b981"
+                      strokeWidth={2.5}
+                      style={{
+                        filter: "drop-shadow(0 0 4px rgba(16,185,129,0.6))",
+                      }}
+                    />
+                    REFEIÇÃO ATUAL
+                  </div>
                   <Dieta user={user} compact={true} />
                 </div>
               )}
@@ -1642,7 +1712,15 @@ export default function Home({
                     onClick={() => !editandoHome && onNavegar("passos")}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="home-mini-icon">👟</div>
+                    <div
+                      className="home-mini-icon"
+                      style={{
+                        background: "rgba(99,102,241,0.15)",
+                        boxShadow: "0 0 16px rgba(99,102,241,0.35)",
+                      }}
+                    >
+                      <Footprints size={19} color="#6366f1" strokeWidth={2} />
+                    </div>
                     <div className="home-mini-info">
                       <div className="home-mini-label">PASSOS HOJE</div>
                       <div className="home-mini-val">
@@ -1674,7 +1752,15 @@ export default function Home({
                     onClick={() => !editandoHome && onNavegar("suplementos")}
                     style={{ cursor: "pointer" }}
                   >
-                    <div className="home-mini-icon">💊</div>
+                    <div
+                      className="home-mini-icon"
+                      style={{
+                        background: "rgba(16,185,129,0.15)",
+                        boxShadow: "0 0 16px rgba(16,185,129,0.35)",
+                      }}
+                    >
+                      <Pill size={19} color="#10b981" strokeWidth={2} />
+                    </div>
                     <div className="home-mini-info">
                       <div className="home-mini-label">SUPLEMENTOS</div>
                       <Suplementos user={user} compact={true} minimode={true} />
@@ -1685,8 +1771,19 @@ export default function Home({
 
               {bloco.id === "humor" && (
                 <div className="home-card">
-                  <div className="home-section-title">
-                    🧠 COMO VOCÊ TÁ HOJE?
+                  <div
+                    className="home-section-title"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Brain
+                      size={13}
+                      color="#ec4899"
+                      strokeWidth={2.5}
+                      style={{
+                        filter: "drop-shadow(0 0 4px rgba(236,72,153,0.6))",
+                      }}
+                    />
+                    COMO VOCÊ TÁ HOJE?
                   </div>
                   <div
                     style={{
@@ -1769,7 +1866,15 @@ export default function Home({
                   onClick={() => !editandoHome && onNavegar("sono")}
                   style={{ cursor: "pointer" }}
                 >
-                  <div className="home-mini-icon">😴</div>
+                  <div
+                    className="home-mini-icon"
+                    style={{
+                      background: "rgba(129,140,248,0.15)",
+                      boxShadow: "0 0 16px rgba(129,140,248,0.35)",
+                    }}
+                  >
+                    <Moon size={19} color="#818cf8" strokeWidth={2} />
+                  </div>
                   <div className="home-mini-info">
                     <div className="home-mini-label">SONO HOJE</div>
                     {sonoHoje ? (
@@ -1820,7 +1925,20 @@ export default function Home({
                   onClick={() => !editandoHome && onNavegar("treino")}
                   style={{ cursor: "pointer" }}
                 >
-                  <div className="home-section-title">🏋️ SEMANA DE TREINO</div>
+                  <div
+                    className="home-section-title"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Dumbbell
+                      size={13}
+                      color="#6366f1"
+                      strokeWidth={2.5}
+                      style={{
+                        filter: "drop-shadow(0 0 4px rgba(99,102,241,0.6))",
+                      }}
+                    />
+                    SEMANA DE TREINO
+                  </div>
                   <div
                     style={{
                       display: "flex",

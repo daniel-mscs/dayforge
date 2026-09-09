@@ -1046,8 +1046,9 @@ export default function SmartPocket({ user }) {
       {/* Abas */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
           gap: 6,
           background: "linear-gradient(155deg, #1c2026, #17191d)",
           padding: 6,
@@ -1067,12 +1068,14 @@ export default function SmartPocket({ user }) {
             key={a.id}
             onClick={() => setAba(a.id)}
             style={{
-              aspectRatio: "1",
+              flex: "0 0 auto",
+              width: "22%",
+              aspectRatio: "1.3",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 4,
+              gap: 3,
               background:
                 aba === a.id
                   ? "linear-gradient(135deg, #6366f1, #4f46e5)"
@@ -1080,7 +1083,7 @@ export default function SmartPocket({ user }) {
               border: "1px solid #ffffff0d",
               borderRadius: 10,
               color: aba === a.id ? "#fff" : "#94a3b8",
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 700,
               cursor: "pointer",
               boxShadow:
@@ -1088,7 +1091,7 @@ export default function SmartPocket({ user }) {
               transition: "all 0.2s",
             }}
           >
-            <span style={{ fontSize: 18 }}>{a.icon}</span>
+            <span style={{ fontSize: 15 }}>{a.icon}</span>
             {a.label}
           </button>
         ))}
@@ -2719,10 +2722,7 @@ export default function SmartPocket({ user }) {
       )}
 
       {categoriaAberta && (
-        <div
-          className="modal-overlay"
-          onClick={() => setCategoriaAberta(null)}
-        >
+        <div className="modal-overlay" onClick={() => setCategoriaAberta(null)}>
           <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
             {(() => {
               const itens = itensPorCategoria[categoriaAberta] || [];
