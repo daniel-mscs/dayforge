@@ -507,9 +507,7 @@ export default function SmartPocket({ user }) {
     if (error) return toast(error.message, "error");
     setContas((prev) =>
       prev.map((c) =>
-        c.id === conta.id
-          ? { ...c, valor_pago: val, data_pago: hojeStr }
-          : c,
+        c.id === conta.id ? { ...c, valor_pago: val, data_pago: hojeStr } : c,
       ),
     );
   };
@@ -555,7 +553,9 @@ export default function SmartPocket({ user }) {
       .eq("id", meta.id);
     if (error) return toast(error.message, "error");
     setMetas((prev) =>
-      prev.map((m) => (m.id === meta.id ? { ...m, valor_atual: novoValor } : m)),
+      prev.map((m) =>
+        m.id === meta.id ? { ...m, valor_atual: novoValor } : m,
+      ),
     );
     setContribuicaoInput((prev) => ({ ...prev, [meta.id]: "" }));
     toast("Contribuição registrada! 🎯", "success");
@@ -1023,45 +1023,49 @@ export default function SmartPocket({ user }) {
       {/* Abas */}
       <div
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
           gap: 6,
           background: "linear-gradient(155deg, #1c2026, #17191d)",
-          padding: 5,
-          borderRadius: 12,
-          overflowX: "auto",
+          padding: 6,
+          borderRadius: 14,
         }}
       >
         {[
-          { id: "gastos", label: "💸 Gastos" },
-          { id: "cartao", label: "💳 Cartão" },
-          { id: "invest", label: "📈 Invest" },
-          { id: "entradas", label: "💰 Entradas" },
-          { id: "contas", label: "🧾 Contas" },
-          { id: "metas", label: "🎯 Metas" },
-          { id: "resumo", label: "📊 Resumo" },
+          { id: "gastos", icon: "💸", label: "Gastos" },
+          { id: "cartao", icon: "💳", label: "Cartão" },
+          { id: "invest", icon: "📈", label: "Invest" },
+          { id: "entradas", icon: "💰", label: "Entradas" },
+          { id: "contas", icon: "🧾", label: "Contas" },
+          { id: "metas", icon: "🎯", label: "Metas" },
+          { id: "resumo", icon: "📊", label: "Resumo" },
         ].map((a) => (
           <button
             key={a.id}
             onClick={() => setAba(a.id)}
             style={{
-              flex: "0 0 auto",
-              minWidth: 68,
+              aspectRatio: "1",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 4,
               background:
                 aba === a.id
                   ? "linear-gradient(135deg, #6366f1, #4f46e5)"
-                  : "transparent",
-              border: "none",
-              borderRadius: 8,
-              color: aba === a.id ? "#fff" : "#64748b",
+                  : "#1c2026",
+              border: "1px solid #ffffff0d",
+              borderRadius: 10,
+              color: aba === a.id ? "#fff" : "#94a3b8",
               fontSize: 10,
               fontWeight: 700,
-              padding: "8px 6px",
               cursor: "pointer",
               boxShadow:
                 aba === a.id ? "0 3px 12px rgba(99,102,241,0.4)" : "none",
               transition: "all 0.2s",
             }}
           >
+            <span style={{ fontSize: 18 }}>{a.icon}</span>
             {a.label}
           </button>
         ))}
@@ -1920,6 +1924,11 @@ export default function SmartPocket({ user }) {
                   </button>
                 </div>
               </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* ABA CONTAS */}
       {aba === "contas" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

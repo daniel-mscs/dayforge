@@ -36,9 +36,9 @@ export default function Onboarding({ user, onConcluir }) {
   const avancar = () => setEtapa((p) => p + 1);
   const voltar = () => setEtapa((p) => p - 1);
 
-    if (error) {
-      toast("Erro ao salvar: " + error.message, "error");
-      setSalvando(false);
+  const salvar = async () => {
+    if (!form.nome.trim()) {
+      toast("Digite seu nome!", "error");
       return;
     }
     setSalvando(true);
@@ -59,7 +59,7 @@ export default function Onboarding({ user, onConcluir }) {
       { onConflict: "user_id" },
     );
     if (error) {
-      alert("Erro ao salvar: " + error.message);
+      toast("Erro ao salvar: " + error.message, "error");
       setSalvando(false);
       return;
     }
