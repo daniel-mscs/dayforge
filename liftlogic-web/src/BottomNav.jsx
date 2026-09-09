@@ -1,39 +1,62 @@
 import React from "react";
+import {
+  Home as HomeIcon,
+  Dumbbell,
+  BarChart3,
+  LayoutGrid,
+  User,
+  LogOut,
+  CheckCircle2,
+  Footprints,
+  Activity,
+  Timer,
+  ClipboardList,
+  Salad,
+  UtensilsCrossed,
+  Pill,
+  Droplet,
+  Scale,
+  Moon,
+  Sparkles,
+  Bot,
+  Wallet,
+  Swords,
+} from "lucide-react";
 
 const CATEGORIAS = [
   {
-    label: "💪 Treino & Movimento",
+    label: "Treino & Movimento",
     items: [
-      { id: "habitos", icon: "✅", label: "Hábitos" },
-      { id: "passos", icon: "👟", label: "Passos" },
-      { id: "cardio", icon: "🏃", label: "Cardio" },
-      { id: "roundtimer", icon: "🥊", label: "Round Timer" },
-      { id: "rotina", icon: "📋", label: "Rotina" },
+      { id: "habitos", icon: CheckCircle2, label: "Hábitos" },
+      { id: "passos", icon: Footprints, label: "Passos" },
+      { id: "cardio", icon: Activity, label: "Cardio" },
+      { id: "roundtimer", icon: Timer, label: "Round Timer" },
+      { id: "rotina", icon: ClipboardList, label: "Rotina" },
     ],
   },
   {
-    label: "🥗 Nutrição",
+    label: "Nutrição",
     items: [
-      { id: "dieta", icon: "🥗", label: "Dieta" },
-      { id: "macros", icon: "🍽️", label: "Macros" },
-      { id: "suplementos", icon: "💊", label: "Suplementos" },
+      { id: "dieta", icon: Salad, label: "Dieta" },
+      { id: "macros", icon: UtensilsCrossed, label: "Macros" },
+      { id: "suplementos", icon: Pill, label: "Suplementos" },
     ],
   },
   {
-    label: "❤️ Saúde",
+    label: "Saúde",
     items: [
-      { id: "agua", icon: "💧", label: "Água" },
-      { id: "peso", icon: "⚖️", label: "Peso" },
-      { id: "sono", icon: "😴", label: "Sono" },
-      { id: "insights", icon: "🔍", label: "Insights" },
+      { id: "agua", icon: Droplet, label: "Água" },
+      { id: "peso", icon: Scale, label: "Peso" },
+      { id: "sono", icon: Moon, label: "Sono" },
+      { id: "insights", icon: Sparkles, label: "Insights" },
     ],
   },
   {
-    label: "🎮 Outros",
+    label: "Outros",
     items: [
-      { id: "coach", icon: "🤖", label: "Coach" },
-      { id: "smartpocket", icon: "💰", label: "Finanças" },
-      { id: "rpg", icon: "⚔️", label: "RPG" },
+      { id: "coach", icon: Bot, label: "Coach" },
+      { id: "smartpocket", icon: Wallet, label: "Finanças" },
+      { id: "rpg", icon: Swords, label: "RPG" },
     ],
   },
 ];
@@ -59,7 +82,7 @@ export default function BottomNav({
           className={`bottom-nav-btn ${abaPrincipal === "home" ? "active" : ""}`}
           onClick={() => navegar("home")}
         >
-          <span>🏠</span>
+          <HomeIcon size={20} strokeWidth={2} />
           <span>Home</span>
         </button>
 
@@ -67,7 +90,7 @@ export default function BottomNav({
           className={`bottom-nav-btn ${abaPrincipal === "treino" ? "active" : ""}`}
           onClick={() => navegar("treino")}
         >
-          <span>🏋️</span>
+          <Dumbbell size={20} strokeWidth={2} />
           <span>Treino</span>
         </button>
 
@@ -75,7 +98,7 @@ export default function BottomNav({
           className={`bottom-nav-btn ${abaPrincipal === "stats" ? "active" : ""}`}
           onClick={() => navegar("stats")}
         >
-          <span>📊</span>
+          <BarChart3 size={20} strokeWidth={2} />
           <span>Stats</span>
         </button>
 
@@ -84,7 +107,7 @@ export default function BottomNav({
             className={`bottom-nav-btn ${MAIS_IDS.includes(abaPrincipal) ? "active" : ""}`}
             onClick={() => setShowMore((p) => !p)}
           >
-            <span>🗃️</span>
+            <LayoutGrid size={20} strokeWidth={2} />
             <span>Mais</span>
           </button>
 
@@ -103,16 +126,19 @@ export default function BottomNav({
                   >
                     {cat.label}
                   </div>
-                  {cat.items.map((item) => (
-                    <button
-                      key={item.id}
-                      className={`more-menu-item ${abaPrincipal === item.id ? "active" : ""}`}
-                      onClick={() => navegar(item.id)}
-                    >
-                      <span>{item.icon}</span>
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
+                  {cat.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        className={`more-menu-item ${abaPrincipal === item.id ? "active" : ""}`}
+                        onClick={() => navegar(item.id)}
+                      >
+                        <Icon size={17} strokeWidth={2} />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               ))}
               <div
@@ -126,7 +152,7 @@ export default function BottomNav({
                   className="more-menu-item more-menu-logout"
                   onClick={logout}
                 >
-                  <span>🚪</span>
+                  <LogOut size={17} strokeWidth={2} />
                   <span>Sair</span>
                 </button>
               </div>
@@ -138,7 +164,7 @@ export default function BottomNav({
           className={`bottom-nav-btn ${abaPrincipal === "perfil" ? "active" : ""}`}
           onClick={() => navegar("perfil")}
         >
-          <span>👤</span>
+          <User size={20} strokeWidth={2} />
           <span>Perfil</span>
         </button>
       </nav>
