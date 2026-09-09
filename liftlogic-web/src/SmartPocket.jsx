@@ -125,6 +125,7 @@ export default function SmartPocket({ user }) {
   const [saldoAcumulado, setSaldoAcumulado] = useState(0);
   const [cartaoFuturo, setCartaoFuturo] = useState([]);
   const [novoLimiteCategoria, setNovoLimiteCategoria] = useState(CATEGORIAS[0]);
+  const [categoriaAberta, setCategoriaAberta] = useState(null);
   const [novoLimiteValor, setNovoLimiteValor] = useState("");
   const [novoRecorrenteNome, setNovoRecorrenteNome] = useState("");
   const [novoRecorrenteValor, setNovoRecorrenteValor] = useState("");
@@ -720,11 +721,33 @@ export default function SmartPocket({ user }) {
     : totalGastos;
   const projecaoSaldo = totalEntradas - projecaoGastos - totalInvest;
 
-  // Gastos por categoria (gráfico de pizza)
+  // Gastos por categoria (Gastos + Cartão somados juntos — é assim que faz
+  // sentido pra quem separa um valor por categoria tipo "R$300 de lazer")
   const gastosPorCategoria = {};
+  const itensPorCategoria = {};
   gastos.forEach((g) => {
     const cat = g.categoria || "Outros";
     gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + Number(g.valor);
+    if (!itensPorCategoria[cat]) itensPorCategoria[cat] = [];
+    itensPorCategoria[cat].push({
+      id: g.id,
+      nome: g.nome,
+      valor: Number(g.valor),
+      origem: "Gasto",
+      data: g.data,
+    });
+  });
+  cartao.forEach((c) => {
+    const cat = c.categoria || "Outros";
+    gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + Number(c.valor);
+    if (!itensPorCategoria[cat]) itensPorCategoria[cat] = [];
+    itensPorCategoria[cat].push({
+      id: c.id,
+      nome: c.item,
+      valor: Number(c.valor),
+      origem: "Cartão",
+      data: null,
+    });
   });
   const dadosPizza = Object.entries(gastosPorCategoria).map(([nome, val]) => ({
     name: nome,
@@ -2364,6 +2387,161 @@ export default function SmartPocket({ user }) {
             </div>
           </div>
 
+          {/* Limites por categoria */}
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 12,
+              }}
+            >
+              LIMITES POR CATEGORIA
+            </div>
+            {limites.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  marginBottom: 14,
+                }}
+              >
+                {limites.map((l) => {
+                  const gasto = gastosPorCategoria[l.categoria] || 0;
+                  const pct = Math.min(
+                    100,
+                    (gasto / Number(l.valor_limite)) * 100,
+                  );
+                  const estourou = gasto > Number(l.valor_limite);
+                  return (
+                    <div
+                      key={l.id}
+                      onClick={() => setCategoriaAberta(l.categoria)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: 12,
+                          color: "#cbd5e1",
+                          marginBottom: 3,
+                        }}
+                      >
+                        <span>
+                          {l.categoria}{" "}
+                          {estourou && (
+                            <span style={{ color: "#ef4444" }}>
+                              ⚠️ estourou
+                            </span>
+                          )}
+                        </span>
+                        <span style={{ display: "flex", gap: 6 }}>
+                          <span
+                            style={{
+                              color: estourou ? "#ef4444" : "#818cf8",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {fmtBRL(gasto)} / {fmtBRL(l.valor_limite)}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removerLimite(l.id);
+                            }}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#475569",
+                              cursor: "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          height: 6,
+                          borderRadius: 99,
+                          background: "#ffffff0d",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${pct}%`,
+                            background: estourou ? "#ef4444" : "#6366f1",
+                            borderRadius: 99,
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "#475569",
+                          marginTop: 3,
+                        }}
+                      >
+                        Restam {fmtBRL(Math.max(0, l.valor_limite - gasto))} ·
+                        toque para ver os lançamentos
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 6 }}>
+              <select
+                value={novoLimiteCategoria}
+                onChange={(e) => setNovoLimiteCategoria(e.target.value)}
+                style={{ flex: 1 }}
+              >
+                {CATEGORIAS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="R$"
+                value={novoLimiteValor}
+                onChange={(e) => setNovoLimiteValor(e.target.value)}
+                style={{ width: 90 }}
+              />
+              <button
+                onClick={salvarLimite}
+                style={{
+                  background: "#6366f1",
+                  border: "none",
+                  borderRadius: 8,
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "0 14px",
+                  cursor: "pointer",
+                }}
+              >
+                Definir
+              </button>
+            </div>
+          </div>
+
           {[
             {
               label: "💰 Total de Entradas",
@@ -2536,6 +2714,148 @@ export default function SmartPocket({ user }) {
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {categoriaAberta && (
+        <div
+          className="modal-overlay"
+          onClick={() => setCategoriaAberta(null)}
+        >
+          <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
+            {(() => {
+              const itens = itensPorCategoria[categoriaAberta] || [];
+              const total = gastosPorCategoria[categoriaAberta] || 0;
+              const limite = limites.find(
+                (l) => l.categoria === categoriaAberta,
+              );
+              const restante = limite
+                ? Number(limite.valor_limite) - total
+                : null;
+              return (
+                <>
+                  <h2 style={{ fontSize: "1rem", marginBottom: 4 }}>
+                    {categoriaAberta}
+                  </h2>
+                  <div
+                    style={{
+                      textAlign: "center",
+                      marginBottom: 16,
+                    }}
+                  >
+                    {limite ? (
+                      <>
+                        <div
+                          style={{
+                            fontSize: 28,
+                            fontWeight: 700,
+                            color: restante >= 0 ? "#10b981" : "#ef4444",
+                          }}
+                        >
+                          {fmtBRL(Math.abs(restante))}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                          {restante >= 0
+                            ? `restam de ${fmtBRL(limite.valor_limite)}`
+                            : `${fmtBRL(Math.abs(restante))} acima do limite de ${fmtBRL(limite.valor_limite)}`}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            fontSize: 28,
+                            fontWeight: 700,
+                            color: "#f8fafc",
+                          }}
+                        >
+                          {fmtBRL(total)}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                          gastos esse mês · sem limite definido
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      maxHeight: 280,
+                      overflowY: "auto",
+                      marginBottom: 16,
+                    }}
+                  >
+                    {itens.length === 0 ? (
+                      <p
+                        style={{
+                          textAlign: "center",
+                          color: "#475569",
+                          fontSize: 13,
+                        }}
+                      >
+                        Nenhum lançamento nessa categoria esse mês.
+                      </p>
+                    ) : (
+                      itens.map((it) => (
+                        <div
+                          key={`${it.origem}-${it.id}`}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            background: "#24282d",
+                            borderRadius: 10,
+                            padding: "10px 12px",
+                          }}
+                        >
+                          <div>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: "#f8fafc",
+                              }}
+                            >
+                              {it.nome}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#64748b" }}>
+                              {it.origem}
+                            </div>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: "#f8fafc",
+                            }}
+                          >
+                            {fmtBRL(it.valor)}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setCategoriaAberta(null)}
+                    style={{
+                      width: "100%",
+                      background: "transparent",
+                      border: "1px solid #ffffff0d",
+                      color: "#64748b",
+                      borderRadius: 8,
+                      padding: "11px 0",
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Fechar
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
