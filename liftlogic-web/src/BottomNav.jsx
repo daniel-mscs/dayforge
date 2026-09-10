@@ -124,8 +124,6 @@ export default function BottomNav({
         >
           <Target size={20} strokeWidth={2} />
           <span>Metas</span>
-        </button> strokeWidth={2} />
-          <span>Metas</span>
         </button>
 
         <div className="bottom-nav-more-wrap">
