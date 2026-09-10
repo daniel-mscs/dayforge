@@ -12,6 +12,14 @@ import {
 import { ganharXP } from "./lib/rpg";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
+import {
+  Scale,
+  Ruler,
+  Dna,
+  Target,
+  CalendarDays,
+  Lightbulb,
+} from "lucide-react";
 import { SkeletonPeso } from "./lib/skeleton";
 
 function formatarData(date) {
@@ -384,8 +392,21 @@ export default function Peso({ user, onAjuda }) {
           marginBottom: 16,
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0 }}>
-          ⚖️ Controle de Peso
+        <h2
+          className="title-divisao"
+          style={{
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Scale
+            size={20}
+            color="#818cf8"
+            style={{ filter: "drop-shadow(0 0 6px rgba(129,140,248,0.5))" }}
+          />
+          Controle de Peso
         </h2>
         <div style={{ position: "relative" }}>
           <button
@@ -484,24 +505,29 @@ export default function Peso({ user, onAjuda }) {
         }}
       >
         {[
-          { id: "peso", label: "⚖️ Peso" },
-          { id: "medidas", label: "📏 Medidas" },
+          { id: "peso", icon: Scale, label: "Peso", cor: "#818cf8" },
+          { id: "medidas", icon: Ruler, label: "Medidas", cor: "#14b8a6" },
         ].map((a) => (
           <button
             key={a.id}
             onClick={() => setSubAba(a.id)}
             style={{
               flex: 1,
-              background: subAba === a.id ? "#24282d" : "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              background: subAba === a.id ? a.cor : "transparent",
               border: "none",
               borderRadius: 8,
-              color: subAba === a.id ? "#f8fafc" : "#64748b",
+              color: subAba === a.id ? "#fff" : a.cor,
               fontSize: 12,
               fontWeight: 600,
               padding: "8px 2px",
               cursor: "pointer",
             }}
           >
+            <a.icon size={14} />
             {a.label}
           </button>
         ))}
@@ -597,9 +623,13 @@ export default function Peso({ user, onAjuda }) {
                     fontWeight: 700,
                     color: "#6366f1",
                     marginBottom: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  📏 Como medir corretamente
+                  <Ruler size={13} />
+                  Como medir corretamente
                 </div>
                 <div
                   style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.7 }}
@@ -1503,8 +1533,12 @@ export default function Peso({ user, onAjuda }) {
 
               return (
                 <div className="peso-card">
-                  <div className="peso-card-title">
-                    🧬 COMPOSIÇÃO CORPORAL ESTIMADA
+                  <div
+                    className="peso-card-title"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Dna size={13} />
+                    COMPOSIÇÃO CORPORAL ESTIMADA
                   </div>
                   <div
                     style={{
@@ -1637,10 +1671,21 @@ export default function Peso({ user, onAjuda }) {
                     />
                   </div>
                   <p
-                    style={{ fontSize: 11, color: "#475569", lineHeight: 1.5 }}
+                    style={{
+                      fontSize: 11,
+                      color: "#475569",
+                      lineHeight: 1.5,
+                      display: "flex",
+                      gap: 5,
+                    }}
                   >
-                    💡 Estimativa pela fórmula de Deurenberg (IMC + idade +
-                    sexo). Para maior precisão use bioimpedância ou DEXA.
+                    <Lightbulb
+                      size={12}
+                      color="#f59e0b"
+                      style={{ flexShrink: 0, marginTop: 1 }}
+                    />
+                    Estimativa pela fórmula de Deurenberg (IMC + idade + sexo).
+                    Para maior precisão use bioimpedância ou DEXA.
                   </p>
                 </div>
               );
@@ -1662,7 +1707,13 @@ export default function Peso({ user, onAjuda }) {
             </div>
             {meta && !editandoMeta ? (
               <div className="peso-meta-display">
-                <div className="peso-meta-val">🎯 {meta} kg</div>
+                <div
+                  className="peso-meta-val"
+                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <Target size={15} color="#10b981" />
+                  {meta} kg
+                </div>
                 {diffMeta !== null &&
                   (Number(diffMeta) <= 0 ? (
                     <span className="peso-meta-badge done">
@@ -1735,7 +1786,13 @@ export default function Peso({ user, onAjuda }) {
               const cor = sentidoCerto ? "#10b981" : "#ef4444";
               return (
                 <div className="peso-card">
-                  <div className="peso-card-title">📅 PREVISÃO DE META</div>
+                  <div
+                    className="peso-card-title"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <CalendarDays size={13} />
+                    PREVISÃO DE META
+                  </div>
                   {!sentidoCerto ? (
                     <div
                       style={{
@@ -1839,10 +1896,17 @@ export default function Peso({ user, onAjuda }) {
                       color: "#475569",
                       marginTop: 8,
                       lineHeight: 1.5,
+                      display: "flex",
+                      gap: 5,
                     }}
                   >
-                    💡 Baseado na tendência dos últimos {periodoGrafico} dias.
-                    Pode variar conforme sua consistência.
+                    <Lightbulb
+                      size={12}
+                      color="#f59e0b"
+                      style={{ flexShrink: 0, marginTop: 1 }}
+                    />
+                    Baseado na tendência dos últimos {periodoGrafico} dias. Pode
+                    variar conforme sua consistência.
                   </p>
                 </div>
               );
@@ -1868,8 +1932,21 @@ export default function Peso({ user, onAjuda }) {
                 + Registrar
               </button>
             </div>
-            <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
-              💡 Pese-se sempre em jejum logo ao acordar para resultados
+            <p
+              style={{
+                fontSize: 12,
+                color: "#64748b",
+                marginTop: 8,
+                display: "flex",
+                gap: 5,
+              }}
+            >
+              <Lightbulb
+                size={13}
+                color="#f59e0b"
+                style={{ flexShrink: 0, marginTop: 1 }}
+              />
+              Pese-se sempre em jejum logo ao acordar para resultados
               consistentes.
             </p>
           </div>
@@ -1899,7 +1976,9 @@ export default function Peso({ user, onAjuda }) {
             <div className="peso-card-title">HISTÓRICO</div>
             {registros.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>⚖️</div>
+                <div style={{ marginBottom: 8 }}>
+                  <Scale size={36} color="#334155" />
+                </div>
                 <div
                   style={{
                     fontSize: 14,
