@@ -3,6 +3,16 @@ import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import {
+  Wallet,
+  Banknote,
+  CreditCard,
+  TrendingUp,
+  Receipt,
+  Target,
+  BarChart3,
+  Calendar,
+} from "lucide-react";
+import {
   BarChart,
   Bar,
   PieChart,
@@ -799,7 +809,7 @@ export default function SmartPocket({ user }) {
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 40 }}>
-        Carregando SmartPocket... 💰
+        Carregando Finanças...
       </div>
     );
 
@@ -822,8 +832,22 @@ export default function SmartPocket({ user }) {
           gap: 8,
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0, fontSize: "1.2rem" }}>
-          💰 Finanças
+        <h2
+          className="title-divisao"
+          style={{
+            margin: 0,
+            fontSize: "1.2rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Wallet
+            size={20}
+            color="#818cf8"
+            style={{ filter: "drop-shadow(0 0 6px rgba(129,140,248,0.6))" }}
+          />
+          Finanças
         </h2>
         <div
           style={{
@@ -1056,13 +1080,13 @@ export default function SmartPocket({ user }) {
         }}
       >
         {[
-          { id: "gastos", icon: "💸", label: "Gastos" },
-          { id: "cartao", icon: "💳", label: "Cartão" },
-          { id: "invest", icon: "📈", label: "Invest" },
-          { id: "entradas", icon: "💰", label: "Entradas" },
-          { id: "contas", icon: "🧾", label: "Contas" },
-          { id: "metas", icon: "🎯", label: "Metas" },
-          { id: "resumo", icon: "📊", label: "Resumo" },
+          { id: "gastos", icon: Banknote, label: "Gastos" },
+          { id: "cartao", icon: CreditCard, label: "Cartão" },
+          { id: "invest", icon: TrendingUp, label: "Invest" },
+          { id: "entradas", icon: Wallet, label: "Entradas" },
+          { id: "contas", icon: Receipt, label: "Contas" },
+          { id: "metas", icon: Target, label: "Metas" },
+          { id: "resumo", icon: BarChart3, label: "Resumo" },
         ].map((a) => (
           <button
             key={a.id}
@@ -1091,7 +1115,7 @@ export default function SmartPocket({ user }) {
               transition: "all 0.2s",
             }}
           >
-            <span style={{ fontSize: 15 }}>{a.icon}</span>
+            <a.icon size={17} strokeWidth={2} />
             {a.label}
           </button>
         ))}
@@ -1268,9 +1292,16 @@ export default function SmartPocket({ user }) {
                   )}
                   {g.data && (
                     <div
-                      style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 11,
+                        color: "#64748b",
+                        marginTop: 2,
+                      }}
                     >
-                      📅{" "}
+                      <Calendar size={11} />
                       {new Date(g.data + "T00:00:00").toLocaleDateString(
                         "pt-BR",
                       )}
@@ -1364,9 +1395,13 @@ export default function SmartPocket({ user }) {
                         fontSize: 13,
                         fontWeight: 700,
                         color: "#f8fafc",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                       }}
                     >
-                      💳 {cta.nome}
+                      <CreditCard size={14} color="#f97316" />
+                      {cta.nome}
                     </div>
                     <button
                       onClick={() => removerCartaoConta(cta.id)}
@@ -1641,8 +1676,17 @@ export default function SmartPocket({ user }) {
                   >
                     {c.item}
                   </div>
-                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                    💳{" "}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: 11,
+                      color: "#64748b",
+                      marginTop: 2,
+                    }}
+                  >
+                    <CreditCard size={11} />
                     {cartoes.find((cta) => cta.id === c.cartao_id)?.nome ||
                       "Sem cartão"}{" "}
                     · {c.categoria || "Outros"}
@@ -1809,9 +1853,17 @@ export default function SmartPocket({ user }) {
                 }}
               >
                 <div
-                  style={{ fontSize: 14, fontWeight: 600, color: "#f8fafc" }}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#f8fafc",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
                 >
-                  📈 {i.tipo}
+                  <TrendingUp size={15} color="#f59e0b" />
+                  {i.tipo}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
@@ -1923,9 +1975,17 @@ export default function SmartPocket({ user }) {
                 }}
               >
                 <div
-                  style={{ fontSize: 14, fontWeight: 600, color: "#f8fafc" }}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#f8fafc",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
                 >
-                  💰 {e.nome}
+                  <Wallet size={15} color="#10b981" />
+                  {e.nome}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
@@ -2263,9 +2323,13 @@ export default function SmartPocket({ user }) {
                         fontSize: 14,
                         fontWeight: 700,
                         color: "#f8fafc",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                       }}
                     >
-                      🎯 {m.nome}
+                      <Target size={15} color="#10b981" />
+                      {m.nome}
                     </span>
                     <button
                       onClick={() =>
@@ -2547,13 +2611,15 @@ export default function SmartPocket({ user }) {
 
           {[
             {
-              label: "💰 Total de Entradas",
+              icon: Wallet,
+              label: "Total de Entradas",
               val: totalEntradas,
               color: "#10b981",
               items: entradas.map((e) => ({ nome: e.nome, val: e.valor })),
             },
             {
-              label: "💸 Total de Gastos",
+              icon: Banknote,
+              label: "Total de Gastos",
               val: totalGastos,
               color: "#ef4444",
               items: gastos.map((g) => ({
@@ -2563,13 +2629,15 @@ export default function SmartPocket({ user }) {
               })),
             },
             {
-              label: "💳 Cartão (não contabilizado)",
+              icon: CreditCard,
+              label: "Cartão (não contabilizado)",
               val: totalCartao,
               color: "#64748b",
               items: cartao.map((c) => ({ nome: c.item, val: c.valor })),
             },
             {
-              label: "📈 Total Investido",
+              icon: TrendingUp,
+              label: "Total Investido",
               val: totalInvest,
               color: "#f59e0b",
               items: investimentos.map((i) => ({ nome: i.tipo, val: i.valor })),
@@ -2592,8 +2660,16 @@ export default function SmartPocket({ user }) {
                 }}
               >
                 <span
-                  style={{ fontSize: 13, fontWeight: 600, color: "#94a3b8" }}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#94a3b8",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
                 >
+                  <bloco.icon size={14} color={bloco.color} />
                   {bloco.label}
                 </span>
                 <span
@@ -2649,13 +2725,18 @@ export default function SmartPocket({ user }) {
               }}
             >
               {[
-                { id: "gastos", label: "💸 Gastos" },
+                { id: "gastos", icon: Banknote, label: "Gastos" },
                 {
                   id: "cartao",
-                  label: "💳 Lançamentos de cartão (não parcelados)",
+                  icon: CreditCard,
+                  label: "Lançamentos de cartão (não parcelados)",
                 },
-                { id: "investimentos", label: "📈 Investimentos" },
-                { id: "entradas", label: "💰 Entradas" },
+                {
+                  id: "investimentos",
+                  icon: TrendingUp,
+                  label: "Investimentos",
+                },
+                { id: "entradas", icon: Wallet, label: "Entradas" },
               ].map((opt) => (
                 <label
                   key={opt.id}
@@ -2679,6 +2760,7 @@ export default function SmartPocket({ user }) {
                     }
                     style={{ width: 17, height: 17, accentColor: "#6366f1" }}
                   />
+                  <opt.icon size={15} color="#94a3b8" />
                   {opt.label}
                 </label>
               ))}
