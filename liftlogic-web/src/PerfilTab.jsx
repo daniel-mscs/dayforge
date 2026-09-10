@@ -1,6 +1,19 @@
 import React from "react";
 import { toast } from "./lib/toast";
 import NotificacoesTab from "./NotificacoesTab";
+import {
+  User,
+  CircleHelp,
+  Bell,
+  Hand,
+  Mars,
+  Venus,
+  Flame,
+  Scale,
+  TrendingUp,
+  LogOut,
+  Lightbulb,
+} from "lucide-react";
 
 export default function PerfilTab({
   perfil,
@@ -37,7 +50,8 @@ export default function PerfilTab({
           }
           onClick={() => setSubAbaPerfil("perfil")}
         >
-          👤 Perfil
+          <User size={14} style={{ verticalAlign: -2, marginRight: 5 }} />
+          Perfil
         </button>
         <button
           className={
@@ -47,7 +61,8 @@ export default function PerfilTab({
           }
           onClick={() => setSubAbaPerfil("ajuda")}
         >
-          ❓ Ajuda
+          <CircleHelp size={14} style={{ verticalAlign: -2, marginRight: 5 }} />
+          Ajuda
         </button>
         <button
           className={
@@ -57,7 +72,8 @@ export default function PerfilTab({
           }
           onClick={() => setSubAbaPerfil("notificacoes")}
         >
-          🔔 Alertas
+          <Bell size={14} style={{ verticalAlign: -2, marginRight: 5 }} />
+          Alertas
         </button>
       </div>
 
@@ -74,9 +90,13 @@ export default function PerfilTab({
                 marginBottom: 14,
                 fontSize: 13,
                 color: "#818cf8",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
               }}
             >
-              👋 Bem-vindo ao DayForge! Complete seu perfil para começar.
+              <Hand size={14} />
+              Bem-vindo ao DayForge! Complete seu perfil para começar.
             </div>
           )}
           <div
@@ -87,8 +107,17 @@ export default function PerfilTab({
               marginBottom: 16,
             }}
           >
-            <h1 className="title-divisao" style={{ margin: 0 }}>
-              Meu Perfil 👤
+            <h1
+              className="title-divisao"
+              style={{
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <User size={18} />
+              Meu Perfil
             </h1>
             {!perfilEditado && perfilOriginal && (
               <button
@@ -280,7 +309,11 @@ export default function PerfilTab({
                     }
                     onClick={() => setPerfil({ ...perfil, sexo: "M" })}
                   >
-                    ♂ Masculino
+                    <Mars
+                      size={13}
+                      style={{ verticalAlign: -2, marginRight: 4 }}
+                    />
+                    Masculino
                   </button>
                   <button
                     type="button"
@@ -289,7 +322,11 @@ export default function PerfilTab({
                     }
                     onClick={() => setPerfil({ ...perfil, sexo: "F" })}
                   >
-                    ♀ Feminino
+                    <Venus
+                      size={13}
+                      style={{ verticalAlign: -2, marginRight: 4 }}
+                    />
+                    Feminino
                   </button>
                 </div>
                 <div
@@ -314,7 +351,11 @@ export default function PerfilTab({
                       setPerfil({ ...perfil, objetivo: "emagrecer" })
                     }
                   >
-                    🔥 Emagrecer
+                    <Flame
+                      size={13}
+                      style={{ verticalAlign: -2, marginRight: 4 }}
+                    />
+                    Emagrecer
                   </button>
                   <button
                     type="button"
@@ -325,7 +366,11 @@ export default function PerfilTab({
                     }
                     onClick={() => setPerfil({ ...perfil, objetivo: "manter" })}
                   >
-                    ⚖️ Manter
+                    <Scale
+                      size={13}
+                      style={{ verticalAlign: -2, marginRight: 4 }}
+                    />
+                    Manter
                   </button>
                   <button
                     type="button"
@@ -336,7 +381,11 @@ export default function PerfilTab({
                     }
                     onClick={() => setPerfil({ ...perfil, objetivo: "ganhar" })}
                   >
-                    💪 Ganhar
+                    <TrendingUp
+                      size={13}
+                      style={{ verticalAlign: -2, marginRight: 4 }}
+                    />
+                    Ganhar
                   </button>
                 </div>
               </>
@@ -350,15 +399,13 @@ export default function PerfilTab({
                   gap: 12,
                 }}
               >
-                <span>
-                  {perfil.sexo === "M" ? "♂ Masculino" : "♀ Feminino"}
-                </span>
+                <span>{perfil.sexo === "M" ? "Masculino" : "Feminino"}</span>
                 <span>
                   {perfil.objetivo === "emagrecer"
-                    ? "🔥 Emagrecer"
+                    ? "Emagrecer"
                     : perfil.objetivo === "ganhar"
-                      ? "💪 Ganhar massa"
-                      : "⚖️ Manter"}
+                      ? "Ganhar massa"
+                      : "Manter"}
                 </span>
               </div>
             )}
@@ -465,10 +512,15 @@ export default function PerfilTab({
               color: "#ef4444",
               cursor: "pointer",
               fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
             }}
             onClick={logout}
           >
-            🚪 Sair da conta
+            <LogOut size={16} />
+            Sair da conta
           </button>
         </>
       )}
@@ -498,10 +550,16 @@ export default function PerfilTab({
             }
           }}
         >
-          <h1 className="title-divisao">❓ Ajuda & Saúde</h1>
+          <h1
+            className="title-divisao"
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            <CircleHelp size={20} />
+            Ajuda & Saúde
+          </h1>
 
           <div id="ajuda-geral" className="ajuda-group-title">
-            📱 Como usar o app
+            Como usar o app
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">1</div>
@@ -539,7 +597,7 @@ export default function PerfilTab({
               <strong>Mais</strong>
               <p>
                 Acessa Água, Peso, Dieta, Suplementos, Macros, Passos e Stats
-                pelo menu 🗃️.
+                pelo menu "Mais".
               </p>
             </div>
           </div>
@@ -548,17 +606,19 @@ export default function PerfilTab({
             <div className="ajuda-body">
               <strong>Home personalizável</strong>
               <p>
-                Toque em "✏️ Personalizar" na home para reordenar os cards
+                toque em "Personalizar" na home para reordenar os cards
                 arrastando ou ocultar seções que não usa.
               </p>
             </div>
           </div>
           <div className="ajuda-item">
-            <div className="ajuda-num">💡</div>
+            <div className="ajuda-num">
+              <Lightbulb size={13} />
+            </div>
             <div className="ajuda-body">
               <strong>Hábitos personalizados</strong>
               <p>
-                Na aba Hábitos (menu 🗃️) role até o final e toque em "+
+                Na aba Hábitos (menu "Mais") role até o final e toque em "+
                 Adicionar hábito" para criar hábitos com emoji e nome
                 personalizados.
               </p>
@@ -566,7 +626,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-cortisol" className="ajuda-group-title">
-            🧠 Cortisol — o hormônio do estresse
+            Cortisol — o hormônio do estresse
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -591,7 +651,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-sono" className="ajuda-group-title">
-            😴 Sono — por que 7 a 8 horas importam
+            Sono — por que 7 a 8 horas importam
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -617,7 +677,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-musculacao" className="ajuda-group-title">
-            🏋️ Musculação — benefícios além da estética
+            Musculação — benefícios além da estética
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -641,7 +701,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-hidratacao" className="ajuda-group-title">
-            💧 Hidratação
+            Hidratação
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -666,7 +726,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-dieta" className="ajuda-group-title">
-            🥗 Dieta e Macros
+            Dieta e Macros
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -695,7 +755,7 @@ export default function PerfilTab({
             <div className="ajuda-body">
               <strong>Sugestão de dieta automática</strong>
               <p>
-                Na aba Dieta toque em "✨ Sugestão de dieta automática", escolha
+                Na aba Dieta toque em "Sugestão de dieta automática", escolha
                 seu objetivo e renda financeira. O app gera um plano alimentar
                 completo que você pode editar depois.
               </p>
@@ -714,7 +774,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-peso" className="ajuda-group-title">
-            ⚖️ Pesagem diária — como interpretar
+            Pesagem diária — como interpretar
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -748,7 +808,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-medidas" className="ajuda-group-title">
-            📏 Medidas corporais
+            Medidas corporais
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -819,7 +879,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-passos" className="ajuda-group-title">
-            👟 Passos diários
+            Passos diários
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">💡</div>
@@ -854,7 +914,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-cardio" className="ajuda-group-title">
-            🏃 Cardio
+            Cardio
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">1</div>
@@ -862,7 +922,7 @@ export default function PerfilTab({
               <strong>O que é?</strong>
               <p>
                 A aba Cardio registra suas atividades aeróbicas separadas dos
-                treinos de musculação. Acesse pelo menu 🗃️ → Cardio.
+                treinos de musculação. Acesse pelo menu "Mais" → Cardio.
               </p>
             </div>
           </div>
@@ -911,7 +971,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-coach" className="ajuda-group-title">
-            🤖 Coach
+            Coach
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">1</div>
@@ -929,8 +989,8 @@ export default function PerfilTab({
             <div className="ajuda-body">
               <strong>Como usar</strong>
               <p>
-                Acesse pelo menu 🗃️ → Coach. Escolha o período (hoje, semana,
-                mês ou um dia específico) e clique em "Gerar Relatório".
+                Acesse pelo menu "Mais" → Coach. Escolha o período (hoje,
+                semana, mês ou um dia específico) e clique em "Gerar Relatório".
               </p>
             </div>
           </div>
@@ -968,7 +1028,7 @@ export default function PerfilTab({
           </div>
 
           <div id="ajuda-smartpocket" className="ajuda-group-title">
-            💰 SmartPocket
+            Finanças
           </div>
           <div className="ajuda-item">
             <div className="ajuda-num">1</div>
