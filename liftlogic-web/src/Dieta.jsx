@@ -1,39 +1,57 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { agendarNotificacoesDieta } from "./lib/notifications";
+import {
+  Sun,
+  Apple,
+  UtensilsCrossed,
+  Coffee,
+  Moon,
+  Salad,
+  Sparkles,
+  DollarSign,
+  TriangleAlert,
+  PencilLine,
+  Check,
+} from "lucide-react";
 
 const REFEICOES = [
   {
     id: "cafe",
-    label: "☀️ Café da manhã",
+    icon: Sun,
+    label: "Café da manhã",
     horaDe: 5,
     horeAte: 9,
     placeholder: "Ex: 3 ovos mexidos\n1 banana\ncafé preto",
   },
   {
     id: "lanche1",
-    label: "🍎 Lanche da manhã",
+    icon: Apple,
+    label: "Lanche da manhã",
     horaDe: 10,
     horeAte: 11,
     placeholder: "Ex: 50g de aveia\n30g de leite em pó",
   },
   {
     id: "almoco",
-    label: "🍽️ Almoço",
+    icon: UtensilsCrossed,
+    label: "Almoço",
     horaDe: 12,
     horeAte: 13,
     placeholder: "Ex: 120g de arroz\n200g de frango grelhado\nsalada à vontade",
   },
   {
     id: "cafetarde",
-    label: "☕ Café da tarde",
+    icon: Coffee,
+    label: "Café da tarde",
     horaDe: 14,
     horeAte: 17,
     placeholder: "Ex: 1 ovo cozido\ncafé preto",
   },
   {
     id: "janta",
-    label: "🌙 Janta",
+    icon: Moon,
+    label: "Janta",
     horaDe: 18,
     horeAte: 22,
     placeholder: "Ex: 120g de frango desfiado\n120g de arroz\nfeijão",
@@ -206,7 +224,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 20 }}>
-        Carregando seu plano alimentar... 🥗
+        Carregando seu plano alimentar...
       </div>
     );
 
@@ -241,8 +259,21 @@ export default function Dieta({ user, compact = false, onAjuda }) {
             marginBottom: 16,
           }}
         >
-          <h2 className="title-divisao" style={{ margin: 0 }}>
-            🥗 Plano Alimentar
+          <h2
+            className="title-divisao"
+            style={{
+              margin: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Salad
+              size={20}
+              color="#10b981"
+              style={{ filter: "drop-shadow(0 0 6px rgba(16,185,129,0.5))" }}
+            />
+            Plano Alimentar
           </h2>
           <div style={{ position: "relative" }}>
             <button
@@ -343,8 +374,15 @@ export default function Dieta({ user, compact = false, onAjuda }) {
       <button
         className="dieta-btn-sugestao"
         onClick={() => setShowSugestao(!showSugestao)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+        }}
       >
-        ✨ Sugestão de dieta automática
+        <Sparkles size={14} />
+        Sugestão de dieta automática
       </button>
 
       {showSugestao && (
@@ -372,15 +410,24 @@ export default function Dieta({ user, compact = false, onAjuda }) {
             <div className="dieta-sugestao-label">Renda financeira</div>
             <div className="dieta-sugestao-opts">
               {[
-                { id: "baixa", label: "💰 Baixa" },
-                { id: "media", label: "💰💰 Média" },
-                { id: "alta", label: "💰💰💰 Alta" },
+                { id: "baixa", label: "Baixa", n: 1 },
+                { id: "media", label: "Média", n: 2 },
+                { id: "alta", label: "Alta", n: 3 },
               ].map((r) => (
                 <button
                   key={r.id}
                   className={`dieta-sugestao-opt ${renda === r.id ? "active" : ""}`}
                   onClick={() => setRenda(r.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 2,
+                  }}
                 >
+                  {Array.from({ length: r.n }).map((_, i) => (
+                    <DollarSign key={i} size={12} />
+                  ))}
                   {r.label}
                 </button>
               ))}
@@ -403,8 +450,18 @@ export default function Dieta({ user, compact = false, onAjuda }) {
               ~{KCAL_DIETAS[objetivo][renda].toLocaleString("pt-BR")} kcal/dia
             </strong>
           </div>
-          <p style={{ fontSize: 11, color: "#475569", margin: "4px 0" }}>
-            ⚠️ Isso vai substituir seu plano atual. Você pode editar depois.
+          <p
+            style={{
+              fontSize: 11,
+              color: "#475569",
+              margin: "4px 0",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <TriangleAlert size={12} color="#f59e0b" />
+            Isso vai substituir seu plano atual. Você pode editar depois.
           </p>
           <button className="dieta-btn-aplicar" onClick={aplicarDieta}>
             Aplicar dieta
@@ -425,6 +482,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
           <div key={r.id} className={`dieta-card ${isAtual ? "atual" : ""}`}>
             <div className="dieta-card-header">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <r.icon size={15} color="#818cf8" />
                 <div className="dieta-card-label">{r.label}</div>
                 {isAtual && <span className="dieta-card-badge">Agora</span>}
               </div>
@@ -442,9 +500,20 @@ export default function Dieta({ user, compact = false, onAjuda }) {
                     fontSize: 11,
                     padding: "3px 8px",
                     cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
                   }}
                 >
-                  {emEdicao ? "✓ Pronto" : "✏️ Editar"}
+                  {emEdicao ? (
+                    <>
+                      <Check size={12} /> Pronto
+                    </>
+                  ) : (
+                    <>
+                      <PencilLine size={12} /> Editar
+                    </>
+                  )}
                 </button>
               </div>
             </div>

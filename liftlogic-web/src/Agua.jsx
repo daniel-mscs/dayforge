@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import {
+  Droplet,
+  Sofa,
+  Dumbbell,
+  Container,
+  GlassWater,
+  CupSoda,
+} from "lucide-react";
 import { SkeletonAgua } from "./lib/skeleton";
 import {
   BarChart,
@@ -169,8 +177,21 @@ export default function Agua({ user, onAjuda }) {
           marginBottom: 16,
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0 }}>
-          💧 Controle de Água
+        <h2
+          className="title-divisao"
+          style={{
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Droplet
+            size={20}
+            color="#3b82f6"
+            style={{ filter: "drop-shadow(0 0 6px rgba(59,130,246,0.5))" }}
+          />
+          Controle de Água
         </h2>
         <div style={{ position: "relative" }}>
           <button
@@ -318,7 +339,16 @@ export default function Agua({ user, onAjuda }) {
                       setEditandoMetaAgua(false);
                     }}
                   >
-                    <span>🧘 Sedentário</span>
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Sofa size={13} />
+                      Sedentário
+                    </span>
                     <strong>
                       {Math.round(perfil.peso * 35).toLocaleString("pt-BR")} ml
                     </strong>
@@ -331,7 +361,16 @@ export default function Agua({ user, onAjuda }) {
                       setEditandoMetaAgua(false);
                     }}
                   >
-                    <span>🏋️ Ativo</span>
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Dumbbell size={13} />
+                      Ativo
+                    </span>
                     <strong>
                       {Math.round(perfil.peso * 50).toLocaleString("pt-BR")} ml
                     </strong>
@@ -380,16 +419,32 @@ export default function Agua({ user, onAjuda }) {
       <div className="agua-card">
         <div className="agua-card-title">Registrar consumo</div>
         <div className="agua-quick-grid">
-          {[180, 300, 500, 1000].map((ml) => (
-            <button
-              key={ml}
-              className="agua-quick-btn"
-              onClick={() => adicionarAgua(ml)}
-            >
-              {ml >= 1000 ? "🫙" : ml >= 500 ? "🍶" : ml >= 300 ? "🥤" : "🥃"}{" "}
-              {ml}ml
-            </button>
-          ))}
+          {[180, 300, 500, 1000].map((ml) => {
+            const Icon =
+              ml >= 1000
+                ? Container
+                : ml >= 500
+                  ? GlassWater
+                  : ml >= 300
+                    ? CupSoda
+                    : Droplet;
+            return (
+              <button
+                key={ml}
+                className="agua-quick-btn"
+                onClick={() => adicionarAgua(ml)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <Icon size={18} color="#3b82f6" />
+                {ml}ml
+              </button>
+            );
+          })}
         </div>
         <div className="agua-custom-row">
           <input
@@ -414,7 +469,9 @@ export default function Agua({ user, onAjuda }) {
         <div className="agua-card-title">Registros de hoje</div>
         {registros.length === 0 ? (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>💧</div>
+            <div style={{ marginBottom: 8 }}>
+              <Droplet size={36} color="#334155" />
+            </div>
             <div
               style={{
                 fontSize: 14,
