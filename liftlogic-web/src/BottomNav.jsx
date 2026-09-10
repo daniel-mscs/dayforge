@@ -2,7 +2,7 @@ import React from "react";
 import {
   Home as HomeIcon,
   Dumbbell,
-  BarChart3,
+  Target,
   LayoutGrid,
   User,
   LogOut,
@@ -98,8 +98,8 @@ export default function BottomNav({
           className={`bottom-nav-btn ${abaPrincipal === "stats" ? "active" : ""}`}
           onClick={() => navegar("stats")}
         >
-          <BarChart3 size={20} strokeWidth={2} />
-          <span>Stats</span>
+          <Target size={20} strokeWidth={2} />
+          <span>Metas</span>
         </button>
 
         <div className="bottom-nav-more-wrap">
