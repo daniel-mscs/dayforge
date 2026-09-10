@@ -75,7 +75,6 @@ import {
   Flame,
   BarChart3,
   Settings,
-  GripHorizontal,
 } from "lucide-react";
 import {
   extrairTextoPDF,
@@ -99,10 +98,33 @@ function gerarUUID() {
   });
 }
 
+// Ícone customizado de barra (barbell) — o lucide não tem um de verdade,
+// os candidatos (GripHorizontal etc) viravam só uma bolinha sem sentido.
+function IconBarra({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <line x1="7" y1="8" x2="7" y2="16" />
+      <line x1="17" y1="8" x2="17" y2="16" />
+      <line x1="3" y1="9" x2="3" y2="15" />
+      <line x1="21" y1="9" x2="21" y2="15" />
+    </svg>
+  );
+}
+
 // Ícone do tipo de equipamento — halter/barra/máquina.
 function IconEquipamento({ tipo, size = 14 }) {
   if (tipo === "halter") return <Dumbbell size={size} />;
-  if (tipo === "barra") return <GripHorizontal size={size} />;
+  if (tipo === "barra") return <IconBarra size={size} />;
   return <Settings size={size} />;
 }
 
