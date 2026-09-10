@@ -14,12 +14,30 @@ import {
 import { ganharXP } from "./lib/rpg";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
+import { Beef, Wheat, Droplet, Zap } from "lucide-react";
 import { SkeletonMacros } from "./lib/skeleton";
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
   return local.toISOString().split("T")[0];
+}
+
+// Ícone + valor de macro (proteína/carbo/gordura), usado em vários pontos
+// da tela (preview, lista de itens, histórico, resumo do dia).
+function MacroBadge({ tipo, children }) {
+  const CONFIG = {
+    prot: { Icon: Beef, cor: "#ef4444" },
+    carb: { Icon: Wheat, cor: "#f59e0b" },
+    gord: { Icon: Droplet, cor: "#eab308" },
+  };
+  const { Icon, cor } = CONFIG[tipo];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+      <Icon size={12} color={cor} />
+      {children}
+    </span>
+  );
 }
 
 function round1(n) {
@@ -692,15 +710,21 @@ export default function Macros({ user, onAjuda }) {
         </div>
         <div className="macros-grid-mini">
           <div className="macros-mini-item">
-            <span>🥩 Prot</span>
+            <span>
+              <MacroBadge tipo="prot">Prot</MacroBadge>
+            </span>
             <strong>{total.prot}g</strong>
           </div>
           <div className="macros-mini-item">
-            <span>🍞 Carb</span>
+            <span>
+              <MacroBadge tipo="carb">Carb</MacroBadge>
+            </span>
             <strong>{total.carb}g</strong>
           </div>
           <div className="macros-mini-item">
-            <span>🧈 Gord</span>
+            <span>
+              <MacroBadge tipo="gord">Gord</MacroBadge>
+            </span>
             <strong>{total.gord}g</strong>
           </div>
         </div>
@@ -740,19 +764,22 @@ export default function Macros({ user, onAjuda }) {
             </div>
             {[
               {
-                label: "🥩 Proteína",
+                tipo: "prot",
+                label: "Proteína",
                 val: total.prot,
                 meta: metasMacro.prot,
                 cor: "#10b981",
               },
               {
-                label: "🍞 Carboidrato",
+                tipo: "carb",
+                label: "Carboidrato",
                 val: total.carb,
                 meta: metasMacro.carb,
                 cor: "#6366f1",
               },
               {
-                label: "🧈 Gordura",
+                tipo: "gord",
+                label: "Gordura",
                 val: total.gord,
                 meta: metasMacro.gord,
                 cor: "#f59e0b",
@@ -769,7 +796,7 @@ export default function Macros({ user, onAjuda }) {
                     }}
                   >
                     <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                      {m.label}
+                      <MacroBadge tipo={m.tipo}>{m.label}</MacroBadge>
                     </span>
                     <span
                       style={{ fontSize: 12, fontWeight: 700, color: m.cor }}
@@ -1059,9 +1086,19 @@ export default function Macros({ user, onAjuda }) {
           </button>
         </div>
         {preview && (
-          <div className="macros-preview">
-            ⚡ {preview.kcal} kcal &nbsp;|&nbsp; 🥩 {preview.prot}g
-            &nbsp;|&nbsp; 🍞 {preview.carb}g &nbsp;|&nbsp; 🧈 {preview.gord}g
+          <div
+            className="macros-preview"
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: 3 }}
+            >
+              <Zap size={12} color="#f97316" />
+              {preview.kcal} kcal
+            </span>
+            <MacroBadge tipo="prot">{preview.prot}g</MacroBadge>
+            <MacroBadge tipo="carb">{preview.carb}g</MacroBadge>
+            <MacroBadge tipo="gord">{preview.gord}g</MacroBadge>
           </div>
         )}
       </div>
@@ -1290,10 +1327,19 @@ export default function Macros({ user, onAjuda }) {
                       </button>
                     </div>
                     <div className="macros-log-vals">
-                      <span>⚡ {r.kcal}</span>
-                      <span>🥩 {r.prot}g</span>
-                      <span>🍞 {r.carb}g</span>
-                      <span>🧈 {r.gord}g</span>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
+                        <Zap size={11} color="#f97316" />
+                        {r.kcal}
+                      </span>
+                      <MacroBadge tipo="prot">{r.prot}g</MacroBadge>
+                      <MacroBadge tipo="carb">{r.carb}g</MacroBadge>
+                      <MacroBadge tipo="gord">{r.gord}g</MacroBadge>
                     </div>
                   </div>
                 ))}
@@ -1635,17 +1681,26 @@ export default function Macros({ user, onAjuda }) {
                         Total do dia
                       </span>
                       <div style={{ display: "flex", gap: 10, fontSize: 12 }}>
-                        <span style={{ color: "#f59e0b", fontWeight: 700 }}>
-                          ⚡ {totalHist.kcal}
+                        <span
+                          style={{
+                            color: "#f59e0b",
+                            fontWeight: 700,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 3,
+                          }}
+                        >
+                          <Zap size={12} color="#f97316" />
+                          {totalHist.kcal}
                         </span>
                         <span style={{ color: "#10b981" }}>
-                          🥩 {totalHist.prot}g
+                          <MacroBadge tipo="prot">{totalHist.prot}g</MacroBadge>
                         </span>
                         <span style={{ color: "#6366f1" }}>
-                          🍞 {totalHist.carb}g
+                          <MacroBadge tipo="carb">{totalHist.carb}g</MacroBadge>
                         </span>
                         <span style={{ color: "#f97316" }}>
-                          🧈 {totalHist.gord}g
+                          <MacroBadge tipo="gord">{totalHist.gord}g</MacroBadge>
                         </span>
                       </div>
                     </div>
@@ -1670,10 +1725,19 @@ export default function Macros({ user, onAjuda }) {
                               </span>
                             </div>
                             <div className="macros-log-vals">
-                              <span>⚡ {r.kcal}</span>
-                              <span>🥩 {r.prot}g</span>
-                              <span>🍞 {r.carb}g</span>
-                              <span>🧈 {r.gord}g</span>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 3,
+                                }}
+                              >
+                                <Zap size={11} color="#f97316" />
+                                {r.kcal}
+                              </span>
+                              <MacroBadge tipo="prot">{r.prot}g</MacroBadge>
+                              <MacroBadge tipo="carb">{r.carb}g</MacroBadge>
+                              <MacroBadge tipo="gord">{r.gord}g</MacroBadge>
                             </div>
                           </div>
                         ))}
