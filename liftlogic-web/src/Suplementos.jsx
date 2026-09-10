@@ -21,6 +21,7 @@ export default function Suplementos({
   const [carregando, setCarregando] = useState(true);
   const [nomeInput, setNomeInput] = useState("");
   const [doseInput, setDoseInput] = useState("");
+  const [doseUnidade, setDoseUnidade] = useState("g");
   const [estoqueInput, setEstoqueInput] = useState("");
   const [estoqueAlertaInput, setEstoqueAlertaInput] = useState("5");
   const [vitCInput, setVitCInput] = useState("");
@@ -130,18 +131,29 @@ export default function Suplementos({
     }
   };
 
+  const UNIDADES_LABEL = {
+    g: "g",
+    mg: "mg",
+    ml: "ml",
+    capsula: " cápsula(s)",
+    comprimido: " comprimido(s)",
+    ui: " UI",
+    gotas: " gotas",
+  };
+
   const adicionarSupl = async () => {
     if (!nomeInput.trim() || !doseInput.trim()) {
       toast("Preencha nome e dose!", "warning");
       return;
     }
+    const doseFormatada = `${doseInput.trim()}${UNIDADES_LABEL[doseUnidade]}`;
     const { data, error } = await supabase
       .from("suplementos")
       .insert([
         {
           user_id: user.id,
           nome: nomeInput.trim(),
-          dose: doseInput.trim(),
+          dose: doseFormatada,
           ordem: lista.length,
           estoque_atual: estoqueInput ? Number(estoqueInput) : null,
           estoque_alerta: Number(estoqueAlertaInput) || 5,
@@ -162,6 +174,7 @@ export default function Suplementos({
     setLista(novaLista);
     setNomeInput("");
     setDoseInput("");
+    setDoseUnidade("g");
     setEstoqueInput("");
     setEstoqueAlertaInput("5");
     setVitCInput("");
@@ -488,16 +501,32 @@ export default function Suplementos({
                 document.getElementById("dose-input").focus();
             }}
           />
-          <input
-            id="dose-input"
-            type="text"
-            placeholder="Dose (ex: 5g, 1 cápsula)"
-            value={doseInput}
-            onChange={(e) => setDoseInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") adicionarSupl();
-            }}
-          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              id="dose-input"
+              type="number"
+              placeholder="Quantidade (ex: 5)"
+              value={doseInput}
+              onChange={(e) => setDoseInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") adicionarSupl();
+              }}
+              style={{ flex: 1 }}
+            />
+            <select
+              value={doseUnidade}
+              onChange={(e) => setDoseUnidade(e.target.value)}
+              style={{ flex: 1 }}
+            >
+              <option value="g">gramas (g)</option>
+              <option value="mg">miligramas (mg)</option>
+              <option value="ml">mililitros (ml)</option>
+              <option value="capsula">cápsula(s)</option>
+              <option value="comprimido">comprimido(s)</option>
+              <option value="ui">UI</option>
+              <option value="gotas">gotas</option>
+            </select>
+          </div>
           <input
             type="number"
             placeholder="Estoque atual (opcional, ex: 60)"
