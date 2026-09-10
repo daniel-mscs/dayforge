@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
+import {
+  Footprints,
+  Target,
+  Flame,
+  Ruler,
+  Timer,
+  Lightbulb,
+} from "lucide-react";
 import { supabase } from "./lib/supabase";
 import {
   BarChart,
@@ -144,7 +152,7 @@ export default function Passos({ user, onAjuda }) {
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 40 }}>
-        Carregando seus passos... 👟
+        Carregando seus passos...
       </div>
     );
 
@@ -158,8 +166,21 @@ export default function Passos({ user, onAjuda }) {
           marginBottom: 16,
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0 }}>
-          👟 Passos Diários
+        <h2
+          className="title-divisao"
+          style={{
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Footprints
+            size={20}
+            color="#6366f1"
+            style={{ filter: "drop-shadow(0 0 6px rgba(99,102,241,0.5))" }}
+          />
+          Passos Diários
         </h2>
         <div style={{ position: "relative" }}>
           <button
@@ -279,21 +300,21 @@ export default function Passos({ user, onAjuda }) {
         {/* Equivalências */}
         <div className="passos-equiv">
           <div className="passos-equiv-item">
-            <span>📏</span>
+            <Ruler size={18} color="#6366f1" />
             <div>
               <strong>{(passosHoje * 0.0008).toFixed(1)} km</strong>
               <small>distância aprox.</small>
             </div>
           </div>
           <div className="passos-equiv-item">
-            <span>🔥</span>
+            <Flame size={18} color="#f97316" />
             <div>
               <strong>{Math.round(passosHoje * 0.04)} kcal</strong>
               <small>queimadas aprox.</small>
             </div>
           </div>
           <div className="passos-equiv-item">
-            <span>⏱️</span>
+            <Timer size={18} color="#818cf8" />
             <div>
               <strong>{Math.round(passosHoje / 100)} min</strong>
               <small>tempo aprox.</small>
@@ -331,8 +352,18 @@ export default function Passos({ user, onAjuda }) {
             </button>
           ))}
         </div>
-        <p style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
-          💡 A OMS recomenda 10.000 passos por dia para adultos saudáveis.
+        <p
+          style={{
+            fontSize: 12,
+            color: "#64748b",
+            marginTop: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <Lightbulb size={14} color="#f59e0b" />A OMS recomenda 10.000 passos
+          por dia para adultos saudáveis.
         </p>
       </div>
 
@@ -358,9 +389,13 @@ export default function Passos({ user, onAjuda }) {
               fontWeight: 600,
               color: "#f8fafc",
               marginTop: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
-            🎯 {meta.toLocaleString("pt-BR")} passos/dia
+            <Target size={16} color="#10b981" />
+            {meta.toLocaleString("pt-BR")} passos/dia
           </div>
         ) : (
           <div className="passos-input-row" style={{ marginTop: 8 }}>
