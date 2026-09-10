@@ -41,7 +41,7 @@ import {
   Brain,
 } from "lucide-react";
 import {
-  verificarEAgendarLembretePendencias,
+  agendarResumoNoturno,
   agendarNotificacoesRotina,
 } from "./lib/notifications";
 
@@ -442,6 +442,7 @@ export default function Home({
       { data: treinoHoje },
       { data: humorHoje },
       { data: sonoHoje },
+      { data: gastosHojeData },
     ] = await Promise.all([
       supabase.from("perfil").select("*").eq("user_id", user.id).single(),
       supabase
@@ -516,6 +517,13 @@ export default function Home({
         .eq("user_id", user.id)
         .eq("data", hoje)
         .single(),
+      supabase
+        .from("financeiro_gastos")
+        .select("valor")
+        .eq("user_id", user.id)
+        .eq("mes", new Date().getMonth())
+        .eq("ano", new Date().getFullYear())
+        .eq("data", hoje),
     ]);
     if (p) setPerfil(p);
     if (h) setHistorico(h);
@@ -600,10 +608,18 @@ export default function Home({
     if (!sonoHoje) pendencias.push({ id: "sono", label: "Sono" });
     setItensPendentes(pendencias);
 
-    verificarEAgendarLembretePendencias({
-      aguaOk: totalAgua > 0,
-      passosOk: !!passosData?.passos,
+    const gastosHoje = (gastosHojeData || []).reduce(
+      (s, r) => s + Number(r.valor),
+      0,
+    );
+
+    agendarResumoNoturno({
+      treinou: kcalTreino > 0,
+      kcalTreino,
+      aguaMl: totalAgua,
+      aguaMeta: aguaMeta?.meta_ml || 2500,
       sonoOk: !!sonoHoje,
+      gastosHoje,
     });
   }, [user.id]);
 

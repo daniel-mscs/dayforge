@@ -253,13 +253,12 @@ export async function agendarNotificacoesRotina(tarefasPorPeriodo) {
   }
 }
 
-// Lembrete noturno "inteligente" — só dispara se faltar registrar
-// água, passos ou sono naquele dia. Cancela sozinho se tudo já tiver
-// sido preenchido.
+// Resumo noturno — sempre dispara à noite com um recap do dia inteiro
+// (treino, água, sono, gastos), no lugar de vários lembretes separados.
 const ID_NOTIF_PENDENCIAS = 9301;
 
-export async function verificarEAgendarLembretePendencias(
-  { aguaOk, passosOk, sonoOk },
+export async function agendarResumoNoturno(
+  { treinou, kcalTreino, aguaMl, aguaMeta, sonoOk, gastosHoje },
   hora = 21,
   minuto = 0,
 ) {
@@ -269,13 +268,6 @@ export async function verificarEAgendarLembretePendencias(
     notifications: [{ id: ID_NOTIF_PENDENCIAS }],
   });
 
-  const faltando = [];
-  if (!aguaOk) faltando.push("água");
-  if (!passosOk) faltando.push("passos");
-  if (!sonoOk) faltando.push("sono");
-
-  if (faltando.length === 0) return;
-
   const { display } = await LocalNotifications.requestPermissions();
   if (display !== "granted") return;
 
@@ -284,17 +276,23 @@ export async function verificarEAgendarLembretePendencias(
   alvo.setHours(hora, minuto, 0, 0);
   if (alvo <= agora) return; // já passou do horário hoje, não agenda
 
-  const corpo =
-    faltando.length === 1
-      ? `Você ainda não registrou ${faltando[0]} hoje.`
-      : `Você ainda não registrou: ${faltando.join(", ")}.`;
+  const linhas = [
+    treinou
+      ? `🏋️ Treino feito${kcalTreino ? ` (${kcalTreino} kcal)` : ""}`
+      : "🏋️ Sem treino hoje",
+    aguaMeta ? `💧 ${aguaMl}/${aguaMeta}ml` : `💧 ${aguaMl}ml`,
+    sonoOk ? "😴 Sono registrado" : "😴 Sono não registrado",
+    gastosHoje > 0
+      ? `💰 Gastos: R$${gastosHoje.toFixed(2).replace(".", ",")}`
+      : "💰 Sem gastos hoje",
+  ];
 
   await LocalNotifications.schedule({
     notifications: [
       {
         id: ID_NOTIF_PENDENCIAS,
-        title: "📋 Faltou preencher hoje",
-        body: corpo,
+        title: "📋 Resumo do seu dia",
+        body: linhas.join("\n"),
         smallIcon: "ic_notification",
         schedule: { at: alvo, allowWhileIdle: true },
       },
