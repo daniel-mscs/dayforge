@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "./lib/toast";
+import MetasPessoais from "./MetasPessoais";
 import { supabase } from "./lib/supabase";
 import {
   BarChart,
@@ -294,7 +295,7 @@ export default function Stats({ user }) {
   const [rpg, setRpg] = useState(null);
   const [perfil, setPerfil] = useState(null);
   const [compartilhando, setCompartilhando] = useState(false);
-  const [aba, setAba] = useState("semana");
+  const [aba, setAba] = useState("metas");
   const [semanaAnterior, setSemanaAnterior] = useState(null);
 
   const [treinosMes, setTreinosMes] = useState([]);
@@ -831,6 +832,7 @@ export default function Stats({ user }) {
           }}
         >
           {[
+            { id: "metas", label: "Metas" },
             { id: "semana", label: "Semana" },
             { id: "mes", label: "Mês" },
           ].map((a) => (
@@ -859,6 +861,9 @@ export default function Stats({ user }) {
             </button>
           ))}
         </div>
+
+        {/* ══ ABA METAS ══ */}
+        {aba === "metas" && <MetasPessoais user={user} />}
 
         {/* ══ ABA SEMANA ══ */}
         {aba === "semana" && (
