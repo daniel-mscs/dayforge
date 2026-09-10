@@ -1,6 +1,24 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "./lib/toast";
 import MetasPessoais from "./MetasPessoais";
+import {
+  Dumbbell,
+  Droplet,
+  Footprints,
+  Moon,
+  Scale,
+  UtensilsCrossed,
+  Flame,
+  Package,
+  Calendar,
+  Map,
+  Zap,
+  Star,
+  Trophy,
+  Timer,
+  BarChart3,
+  Share2,
+} from "lucide-react";
 import { supabase } from "./lib/supabase";
 import {
   BarChart,
@@ -101,7 +119,7 @@ function RingProgress({ value, max, color, size = 56, stroke = 5 }) {
   );
 }
 
-function MetricRing({ icon, label, value, sub, color, pct }) {
+function MetricRing({ icon: Icon, label, value, sub, color, pct }) {
   return (
     <div
       style={{
@@ -140,7 +158,7 @@ function MetricRing({ icon, label, value, sub, color, pct }) {
             fontSize: 20,
           }}
         >
-          {icon}
+          <Icon size={20} color={color} />
         </div>
       </div>
       <div
@@ -214,7 +232,14 @@ function SectionHeader({ title }) {
   );
 }
 
-function CompareRow({ icon, label, prev, atual, unit, maisMelhor = true }) {
+function CompareRow({
+  icon: Icon,
+  label,
+  prev,
+  atual,
+  unit,
+  maisMelhor = true,
+}) {
   const diff = atual - prev;
   const melhorou = maisMelhor ? diff > 0 : diff < 0;
   const cor =
@@ -230,8 +255,16 @@ function CompareRow({ icon, label, prev, atual, unit, maisMelhor = true }) {
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <span style={{ fontSize: 13, color: "var(--text2)" }}>
-        {icon} {label}
+      <span
+        style={{
+          fontSize: 13,
+          color: "var(--text2)",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <Icon size={14} /> {label}
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontSize: 12, color: "var(--text3)" }}>
@@ -261,7 +294,7 @@ function CompareRow({ icon, label, prev, atual, unit, maisMelhor = true }) {
   );
 }
 
-function InsightRow({ icon, label, value }) {
+function InsightRow({ icon: Icon, label, value }) {
   return (
     <div
       style={{
@@ -272,8 +305,16 @@ function InsightRow({ icon, label, value }) {
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <span style={{ fontSize: 13, color: "var(--text2)" }}>
-        {icon} {label}
+      <span
+        style={{
+          fontSize: 13,
+          color: "var(--text2)",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <Icon size={14} /> {label}
       </span>
       <strong style={{ fontSize: 13, color: "var(--text)", fontWeight: 700 }}>
         {value}
@@ -745,7 +786,7 @@ export default function Stats({ user }) {
           color: "var(--text3)",
         }}
       >
-        <div style={{ fontSize: 32 }}>📊</div>
+        <BarChart3 size={32} color="#334155" />
         <div style={{ fontSize: 13 }}>Carregando seus stats...</div>
       </div>
     );
@@ -889,13 +930,13 @@ export default function Stats({ user }) {
                   cor: "#ff8c42",
                 },
                 {
-                  icon: "⭐",
+                  icon: Star,
                   val: (rpg?.xp || 0).toLocaleString("pt-BR"),
                   label: "XP total",
                   cor: "#5b7fff",
                 },
                 {
-                  icon: "🏆",
+                  icon: Trophy,
                   val: `Nv. ${rpg?.nivel || 1}`,
                   label: "nível",
                   cor: "#ffd166",
@@ -939,7 +980,7 @@ export default function Stats({ user }) {
                 }}
               >
                 <MetricRing
-                  icon="🏋️"
+                  icon={Dumbbell}
                   label="Treinos"
                   value={totalTreinos}
                   sub={totalTreinos > 0 ? formatarTempo(tempoTotal) : "nenhum"}
@@ -947,7 +988,7 @@ export default function Stats({ user }) {
                   pct={totalTreinos / 5}
                 />
                 <MetricRing
-                  icon="💧"
+                  icon={Droplet}
                   label="Meta Água"
                   value={`${diasMetaAgua}/7`}
                   sub={`${(aguaMeta / 1000).toFixed(1)}L/dia`}
@@ -955,7 +996,7 @@ export default function Stats({ user }) {
                   pct={diasMetaAgua / 7}
                 />
                 <MetricRing
-                  icon="👟"
+                  icon={Footprints}
                   label="Meta Passos"
                   value={`${diasMetaPassos}/7`}
                   sub={`${(mediaPassos / 1000).toFixed(1)}k/dia`}
@@ -963,7 +1004,7 @@ export default function Stats({ user }) {
                   pct={diasMetaPassos / 7}
                 />
                 <MetricRing
-                  icon="😴"
+                  icon={Moon}
                   label="Sono"
                   value={mediaHorasSono ? `${mediaHorasSono}h` : "—"}
                   sub={mediaHorasSono ? `${diasSono7h}/7 ≥ 7h` : "sem dados"}
@@ -971,7 +1012,7 @@ export default function Stats({ user }) {
                   pct={mediaHorasSono ? parseFloat(mediaHorasSono) / 9 : 0}
                 />
                 <MetricRing
-                  icon="⚖️"
+                  icon={Scale}
                   label="Peso"
                   value={
                     pesoDados.length > 0
@@ -993,7 +1034,7 @@ export default function Stats({ user }) {
                   pct={0.6}
                 />
                 <MetricRing
-                  icon="🍽️"
+                  icon={UtensilsCrossed}
                   label="Kcal"
                   value={mediaKcal > 0 ? `${mediaKcal}` : "—"}
                   sub={mediaProt > 0 ? `${mediaProt}g prot` : "sem dados"}
@@ -1302,7 +1343,7 @@ export default function Stats({ user }) {
                   }}
                 >
                   <CompareRow
-                    icon="🏋️"
+                    icon={Dumbbell}
                     label="Treinos"
                     prev={semanaAnterior.treinos}
                     atual={totalTreinos}
@@ -1310,7 +1351,7 @@ export default function Stats({ user }) {
                     maisMelhor
                   />
                   <CompareRow
-                    icon="💧"
+                    icon={Droplet}
                     label="Meta Água"
                     prev={semanaAnterior.diasAgua}
                     atual={diasMetaAgua}
@@ -1318,7 +1359,7 @@ export default function Stats({ user }) {
                     maisMelhor
                   />
                   <CompareRow
-                    icon="👟"
+                    icon={Footprints}
                     label="Meta Passos"
                     prev={semanaAnterior.diasPassos}
                     atual={diasMetaPassos}
@@ -1326,7 +1367,7 @@ export default function Stats({ user }) {
                     maisMelhor
                   />
                   <CompareRow
-                    icon="😴"
+                    icon={Moon}
                     label="Sono médio"
                     prev={parseFloat(semanaAnterior.horasSono || 0)}
                     atual={parseFloat(mediaHorasSono || 0)}
@@ -1355,42 +1396,42 @@ export default function Stats({ user }) {
                 >
                   {mediaDuracaoTreino && (
                     <InsightRow
-                      icon="⏱️"
+                      icon={Timer}
                       label="Duração média por treino"
                       value={`${mediaDuracaoTreino} min`}
                     />
                   )}
                   {volumeTotal > 0 && (
                     <InsightRow
-                      icon="📦"
+                      icon={Package}
                       label="Volume total levantado"
                       value={`${volumeTotal.toLocaleString("pt-BR")} kg`}
                     />
                   )}
                   {diaMaisTreino && (
                     <InsightRow
-                      icon="📅"
+                      icon={Calendar}
                       label="Dia que mais treinou"
                       value={diasSemana[diaMaisTreino[0]]}
                     />
                   )}
                   {totalPassosSemana > 0 && (
                     <InsightRow
-                      icon="🗺️"
+                      icon={Map}
                       label="Total de passos na semana"
                       value={totalPassosSemana.toLocaleString("pt-BR")}
                     />
                   )}
                   {mediaProt > 0 && (
                     <InsightRow
-                      icon="💪"
+                      icon={Zap}
                       label="Proteína média diária"
                       value={`${mediaProt}g`}
                     />
                   )}
                   {kcalTreinoSemana > 0 && (
                     <InsightRow
-                      icon="🔥"
+                      icon={Flame}
                       label="Kcal queimadas no treino"
                       value={`${kcalTreinoSemana}`}
                     />
@@ -1467,13 +1508,13 @@ export default function Stats({ user }) {
                 >
                   {[
                     {
-                      icon: "🏋️",
+                      icon: Dumbbell,
                       label: "Treinos",
                       val: totalTreinos,
                       sub: totalTreinos > 0 ? formatarTempo(tempoTotal) : "—",
                     },
                     {
-                      icon: "⚖️",
+                      icon: Scale,
                       label: "Peso",
                       val:
                         pesoDados.length > 0
@@ -1485,13 +1526,13 @@ export default function Stats({ user }) {
                           : "—",
                     },
                     {
-                      icon: "💧",
+                      icon: Droplet,
                       label: "Água",
                       val: `${diasMetaAgua}/7`,
                       sub: "dias meta",
                     },
                     {
-                      icon: "👟",
+                      icon: Footprints,
                       label: "Passos",
                       val:
                         mediaPassos > 0
@@ -1500,13 +1541,13 @@ export default function Stats({ user }) {
                       sub: "média/dia",
                     },
                     {
-                      icon: "😴",
+                      icon: Moon,
                       label: "Sono",
                       val: mediaHorasSono ? `${mediaHorasSono}h` : "—",
                       sub: `${diasSono7h}/7 ≥7h`,
                     },
                     {
-                      icon: "🔥",
+                      icon: Flame,
                       label: "Streak",
                       val: `${rpg?.streak || 0}d`,
                       sub: "consecutivos",
@@ -1614,9 +1655,19 @@ export default function Stats({ user }) {
                   cursor: "pointer",
                   boxShadow: "0 4px 20px rgba(91,127,255,0.35)",
                   opacity: compartilhando ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                 }}
               >
-                {compartilhando ? "Gerando..." : "📤 Compartilhar Semana"}
+                {compartilhando ? (
+                  "Gerando..."
+                ) : (
+                  <>
+                    <Share2 size={16} /> Compartilhar Semana
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1654,7 +1705,7 @@ export default function Stats({ user }) {
                   padding: 40,
                 }}
               >
-                Carregando... 📊
+                Carregando...
               </div>
             ) : (
               <>
@@ -1669,7 +1720,7 @@ export default function Stats({ user }) {
                     }}
                   >
                     <MetricRing
-                      icon="🏋️"
+                      icon={Dumbbell}
                       label="Treinos"
                       value={totalTreinosMes}
                       sub={
@@ -1681,7 +1732,7 @@ export default function Stats({ user }) {
                       pct={totalTreinosMes / 20}
                     />
                     <MetricRing
-                      icon="💧"
+                      icon={Droplet}
                       label="Meta Água"
                       value={`${diasMetaAguaMes}/${diasNoMes}`}
                       sub="dias atingidos"
@@ -1689,7 +1740,7 @@ export default function Stats({ user }) {
                       pct={diasMetaAguaMes / diasNoMes}
                     />
                     <MetricRing
-                      icon="👟"
+                      icon={Footprints}
                       label="Meta Passos"
                       value={`${diasMetaPassosMes}/${diasNoMes}`}
                       sub="dias atingidos"
@@ -1697,7 +1748,7 @@ export default function Stats({ user }) {
                       pct={diasMetaPassosMes / diasNoMes}
                     />
                     <MetricRing
-                      icon="😴"
+                      icon={Moon}
                       label="Sono"
                       value={mediaHorasSonoMes ? `${mediaHorasSonoMes}h` : "—"}
                       sub={
@@ -1713,7 +1764,7 @@ export default function Stats({ user }) {
                       }
                     />
                     <MetricRing
-                      icon="⚖️"
+                      icon={Scale}
                       label="Peso"
                       value={
                         variacaoPesoMes !== null
@@ -1735,7 +1786,7 @@ export default function Stats({ user }) {
                       pct={0.6}
                     />
                     <MetricRing
-                      icon="🔥"
+                      icon={Flame}
                       label="Kcal"
                       value={
                         kcalTotalMes > 0
@@ -1833,7 +1884,7 @@ export default function Stats({ user }) {
                     >
                       {totalTreinosMes > 0 && (
                         <InsightRow
-                          icon="⏱️"
+                          icon={Timer}
                           label="Duração média por treino"
                           value={`${Math.round(tempoTotalMes / totalTreinosMes / 60)} min`}
                         />
@@ -1843,14 +1894,14 @@ export default function Stats({ user }) {
                         0,
                       ) > 0 && (
                         <InsightRow
-                          icon="📦"
+                          icon={Package}
                           label="Volume total levantado"
                           value={`${treinosMes.reduce((s, t) => s + (t.volume_total || 0), 0).toLocaleString("pt-BR")} kg`}
                         />
                       )}
                       {passosMes.length > 0 && (
                         <InsightRow
-                          icon="🗺️"
+                          icon={Map}
                           label="Km percorridos (passos)"
                           value={`~${Math.round(passosMes.reduce((s, r) => s + r.passos, 0) * 0.0008)} km`}
                         />
@@ -1864,7 +1915,7 @@ export default function Stats({ user }) {
                       )}
                       {kcalTotalMes > 0 && (
                         <InsightRow
-                          icon="🔥"
+                          icon={Flame}
                           label="Kcal queimadas (treino)"
                           value={kcalTotalMes.toLocaleString("pt-BR")}
                         />
