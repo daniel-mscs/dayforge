@@ -1,5 +1,16 @@
 import React, { useState } from "react";
 import { supabase } from "./lib/supabase";
+import {
+  Calendar,
+  CalendarDays,
+  CalendarRange,
+  Bot,
+  Sparkles,
+  Brain,
+  Check,
+  ClipboardList,
+  Copy,
+} from "lucide-react";
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset();
@@ -17,15 +28,15 @@ function calcularHoras(dormiu, acordou) {
 }
 
 const PERIODOS = [
-  { id: "hoje", label: "Hoje", icon: "📅" },
-  { id: "semana", label: "Esta semana", icon: "📆" },
-  { id: "mes", label: "Este mês", icon: "🗓️" },
+  { id: "hoje", label: "Hoje", icon: Calendar },
+  { id: "semana", label: "Esta semana", icon: CalendarDays },
+  { id: "mes", label: "Este mês", icon: CalendarRange },
 ];
 
 const IAS = [
-  { label: "ChatGPT", url: "https://chat.openai.com", icon: "🤖" },
-  { label: "Gemini", url: "https://gemini.google.com", icon: "✨" },
-  { label: "Claude", url: "https://claude.ai", icon: "🧠" },
+  { label: "ChatGPT", url: "https://chat.openai.com", icon: Bot },
+  { label: "Gemini", url: "https://gemini.google.com", icon: Sparkles },
+  { label: "Claude", url: "https://claude.ai", icon: Brain },
 ];
 
 export default function Coach({ user }) {
@@ -382,7 +393,9 @@ Seja direto, use os números reais, evite respostas genéricas.`;
     >
       {/* Header */}
       <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
-        <div style={{ fontSize: 52, marginBottom: 8 }}>🤖</div>
+        <div style={{ marginBottom: 8 }}>
+          <Bot size={52} color="#334155" />
+        </div>
         <h2 className="title-divisao" style={{ margin: 0 }}>
           DayForge Coach
         </h2>
@@ -477,7 +490,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
                   gap: 4,
                 }}
               >
-                <span style={{ fontSize: 16 }}>{p.icon}</span>
+                <p.icon size={16} />
                 <span
                   style={{
                     fontSize: 11,
@@ -499,9 +512,13 @@ Seja direto, use os números reais, evite respostas genéricas.`;
               color: "#64748b",
               fontWeight: 700,
               marginBottom: 8,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
             }}
           >
-            📅 OU ESCOLHA UM DIA ESPECÍFICO
+            <Calendar size={12} />
+            OU ESCOLHA UM DIA ESPECÍFICO
           </div>
           <input
             type="date"
@@ -549,7 +566,13 @@ Seja direto, use os números reais, evite respostas genéricas.`;
           gap: 10,
         }}
       >
-        {gerando ? "⏳ Coletando seus dados..." : "📋 Gerar Relatório"}
+        {gerando ? (
+          "Coletando seus dados..."
+        ) : (
+          <>
+            <ClipboardList size={16} /> Gerar Relatório
+          </>
+        )}
       </button>
 
       {/* Prompt gerado */}
@@ -588,8 +611,18 @@ Seja direto, use os números reais, evite respostas genéricas.`;
             }}
           >
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#f8fafc" }}>
-                ✅ Relatório gerado!
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#f8fafc",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Check size={14} color="#10b981" />
+                Relatório gerado!
               </div>
               <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>
                 Copie e cole em qualquer IA
@@ -607,9 +640,20 @@ Seja direto, use os números reais, evite respostas genéricas.`;
                 padding: "8px 16px",
                 cursor: "pointer",
                 transition: "background 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
               }}
             >
-              {copiado ? "✓ Copiado!" : "📋 Copiar"}
+              {copiado ? (
+                <>
+                  <Check size={13} /> Copiado!
+                </>
+              ) : (
+                <>
+                  <Copy size={13} /> Copiar
+                </>
+              )}
             </button>
           </div>
 
@@ -670,7 +714,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
                   textDecoration: "none",
                 }}
               >
-                <span style={{ fontSize: 20 }}>{ia.icon}</span>
+                <ia.icon size={20} />
                 <span
                   style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600 }}
                 >

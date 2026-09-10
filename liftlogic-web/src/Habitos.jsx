@@ -3,14 +3,33 @@ import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { supabase } from "./lib/supabase";
 import { ganharXP } from "./lib/rpg";
+import {
+  Dumbbell,
+  BookOpen,
+  Moon,
+  Droplet,
+  Salad,
+  Target,
+  Flame,
+} from "lucide-react";
+
+// Alguns hábitos são fixos do app (ícone de verdade); hábitos
+// personalizados continuam com emoji escolhido pelo usuário.
+function IconHabito({ icon, size = 16 }) {
+  if (typeof icon === "function") {
+    const Icon = icon;
+    return <Icon size={size} />;
+  }
+  return <span style={{ fontSize: size }}>{icon}</span>;
+}
 
 const HABITOS_FIXOS = [
-  { id: "treino", label: "Treino", icon: "🏋️" },
-  { id: "estudo", label: "Estudo", icon: "📚" },
-  { id: "sono", label: "Sono ok", icon: "😴" },
-  { id: "hidratacao", label: "Hidratação", icon: "💧" },
-  { id: "alimentacao", label: "Alimentação", icon: "🥗" },
-  { id: "produtividade", label: "Produtividade", icon: "🎯" },
+  { id: "treino", label: "Treino", icon: Dumbbell },
+  { id: "estudo", label: "Estudo", icon: BookOpen },
+  { id: "sono", label: "Sono ok", icon: Moon },
+  { id: "hidratacao", label: "Hidratação", icon: Droplet },
+  { id: "alimentacao", label: "Alimentação", icon: Salad },
+  { id: "produtividade", label: "Produtividade", icon: Target },
 ];
 
 const EMOJIS = [
@@ -218,7 +237,9 @@ export default function Habitos({ user, compact = false, onAjuda }) {
                 className={`habito-item ${done ? "done" : ""}`}
                 onClick={() => toggleHabito(h.id)}
               >
-                <span className="habito-icon">{h.icon}</span>
+                <span className="habito-icon">
+                  <IconHabito icon={h.icon} />
+                </span>
                 <span className="habito-label">{h.label}</span>
                 <span className="habito-check">{done ? "✓" : "○"}</span>
               </div>
@@ -246,8 +267,19 @@ export default function Habitos({ user, compact = false, onAjuda }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {streak > 0 && (
-            <div className="habitos-streak">
-              🔥 {streak} dia{streak > 1 ? "s" : ""}
+            <div
+              className="habitos-streak"
+              style={{ display: "flex", alignItems: "center", gap: 5 }}
+            >
+              <Flame
+                size={13}
+                color="#f97316"
+                fill="#f97316"
+                style={{
+                  filter: "drop-shadow(0 0 4px rgba(249,115,22,0.6))",
+                }}
+              />
+              {streak} dia{streak > 1 ? "s" : ""}
             </div>
           )}
           <div style={{ position: "relative" }}>
@@ -369,7 +401,9 @@ export default function Habitos({ user, compact = false, onAjuda }) {
               className={`habito-item ${done ? "done" : ""}`}
               onClick={() => toggleHabito(h.id)}
             >
-              <span className="habito-icon">{h.icon}</span>
+              <span className="habito-icon">
+                <IconHabito icon={h.icon} />
+              </span>
               <span className="habito-label">{h.label}</span>
               {h.customId ? (
                 <button

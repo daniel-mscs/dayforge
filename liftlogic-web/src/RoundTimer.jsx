@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useRoundTimer } from "./lib/useRoundTimer";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { Settings, Swords, Trophy, Check, Zap } from "lucide-react";
 import "./RoundTimer.css";
 
 const CONFIG_STORAGE_KEY = "df_roundtimer_config";
@@ -55,7 +56,12 @@ function ConfigModal({ config, mode, onSave, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="ct-modal-header">
-          <span className="ct-modal-title">⚙ CONFIGURAÇÕES</span>
+          <span
+            className="ct-modal-title"
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            <Settings size={16} /> CONFIGURAÇÕES
+          </span>
           <button className="ct-modal-close" onClick={onClose}>
             ✕
           </button>
@@ -267,14 +273,26 @@ export default function RoundTimer({ user }) {
         <button
           className={`ct-mode-btn ${mode === "training" ? "ct-active" : ""}`}
           onClick={() => handleModeChange("training")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
         >
-          🥊 TREINO
+          <Zap size={14} /> TREINO
         </button>
         <button
           className={`ct-mode-btn ${mode === "sparring" ? "ct-active ct-sparring" : ""}`}
           onClick={() => handleModeChange("sparring")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
         >
-          ⚔️ SPARRING
+          <Swords size={14} /> SPARRING
         </button>
       </div>
 
@@ -291,12 +309,21 @@ export default function RoundTimer({ user }) {
         <div className="ct-phase-badge-wrap">
           <span
             className={`ct-phase-badge ${phase === "rest" ? "ct-rest" : ""} ${isFinished ? "ct-finished" : ""} ${mode === "sparring" && phase === "round" ? "ct-sparring" : ""}`}
+            style={
+              isFinished
+                ? { display: "flex", alignItems: "center", gap: 6 }
+                : undefined
+            }
           >
-            {isFinished
-              ? "🏆 TREINO CONCLUÍDO"
-              : phase === "round"
-                ? `ROUND ${currentRound} / ${config.rounds}`
-                : "DESCANSO"}
+            {isFinished ? (
+              <>
+                <Trophy size={14} /> TREINO CONCLUÍDO
+              </>
+            ) : phase === "round" ? (
+              `ROUND ${currentRound} / ${config.rounds}`
+            ) : (
+              "DESCANSO"
+            )}
           </span>
         </div>
 
@@ -326,7 +353,7 @@ export default function RoundTimer({ user }) {
             className="ct-config-inline-btn"
             onClick={() => setShowConfig(true)}
           >
-            ⚙
+            <Settings size={16} />
           </button>
         </div>
 
@@ -338,11 +365,25 @@ export default function RoundTimer({ user }) {
         {isFinished && user && (
           <button
             className="ct-btn-save"
-            style={{ maxWidth: 400, width: "100%", marginTop: 16 }}
+            style={{
+              maxWidth: 400,
+              width: "100%",
+              marginTop: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
             onClick={registrarNoCardio}
             disabled={salvandoCardio}
           >
-            {salvandoCardio ? "Salvando..." : "✅ Registrar no Cardio"}
+            {salvandoCardio ? (
+              "Salvando..."
+            ) : (
+              <>
+                <Check size={14} /> Registrar no Cardio
+              </>
+            )}
           </button>
         )}
       </main>

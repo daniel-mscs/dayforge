@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { SkeletonCard, SkeletonStyle } from "./lib/skeleton";
+import {
+  Moon,
+  Dumbbell,
+  Droplet,
+  Flame,
+  Sparkles,
+  BarChart3,
+} from "lucide-react";
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset();
@@ -161,7 +169,7 @@ export default function Insights({ user }) {
   const insights = [
     {
       id: "sono-humor",
-      icon: "😴",
+      icon: Moon,
       titulo: "Sono e humor",
       valido:
         gruposSonoHumor.bom.length >= MIN_AMOSTRAS &&
@@ -174,7 +182,7 @@ export default function Insights({ user }) {
     },
     {
       id: "sono-treino",
-      icon: "🏋️",
+      icon: Dumbbell,
       titulo: "Sono e treino",
       valido:
         gruposSonoTreino.bom.length >= MIN_AMOSTRAS &&
@@ -187,7 +195,7 @@ export default function Insights({ user }) {
     },
     {
       id: "agua-humor",
-      icon: "💧",
+      icon: Droplet,
       titulo: "Água e humor",
       valido:
         gruposAguaHumor.alta.length >= MIN_AMOSTRAS &&
@@ -200,7 +208,7 @@ export default function Insights({ user }) {
     },
     {
       id: "treino-humor",
-      icon: "💪",
+      icon: Flame,
       titulo: "Treino e humor",
       valido:
         gruposTreinoHumor.treinou.length >= MIN_AMOSTRAS &&
@@ -218,8 +226,21 @@ export default function Insights({ user }) {
 
   return (
     <div className="insights-section" style={{ paddingBottom: 24 }}>
-      <h2 className="title-divisao" style={{ margin: "0 0 4px" }}>
-        🔍 Insights
+      <h2
+        className="title-divisao"
+        style={{
+          margin: "0 0 4px",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <Sparkles
+          size={20}
+          color="#818cf8"
+          style={{ filter: "drop-shadow(0 0 6px rgba(129,140,248,0.5))" }}
+        />
+        Insights
       </h2>
       <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
         Cruzando os últimos 60 dias de sono, humor, água e treino.
@@ -235,7 +256,9 @@ export default function Insights({ user }) {
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
+          <div style={{ marginBottom: 8 }}>
+            <BarChart3 size={32} color="#334155" />
+          </div>
           <div style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.6 }}>
             Ainda não tenho dados suficientes pra cruzar. Continue registrando
             sono, humor, água e treino por mais alguns dias.
@@ -262,7 +285,7 @@ export default function Insights({ user }) {
                   marginBottom: 8,
                 }}
               >
-                <span style={{ fontSize: 20 }}>{i.icon}</span>
+                <i.icon size={20} color="#818cf8" />
                 <span
                   style={{ fontSize: 13, fontWeight: 800, color: "#f8fafc" }}
                 >
@@ -308,7 +331,7 @@ export default function Insights({ user }) {
                   opacity: 0.6,
                 }}
               >
-                <span style={{ fontSize: 16 }}>{i.icon}</span>
+                <i.icon size={16} color="#64748b" />
                 <span style={{ fontSize: 12, color: "#64748b" }}>
                   {i.titulo} — {i.amostras}
                 </span>
