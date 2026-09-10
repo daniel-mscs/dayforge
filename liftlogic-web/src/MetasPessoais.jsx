@@ -126,7 +126,9 @@ export default function MetasPessoais({ user }) {
       .eq("id", meta.id);
     if (error) return toast(error.message, "error");
     setMetas((prev) =>
-      prev.map((m) => (m.id === meta.id ? { ...m, valor_atual: novoValor } : m)),
+      prev.map((m) =>
+        m.id === meta.id ? { ...m, valor_atual: novoValor } : m,
+      ),
     );
     setContribuicaoInput((prev) => ({ ...prev, [meta.id]: "" }));
   };
@@ -162,10 +164,7 @@ export default function MetasPessoais({ user }) {
         const hoje = new Date();
         const inicio = new Date(m.data_inicio + "T00:00:00");
         const prazo = new Date(m.data_prazo + "T00:00:00");
-        const diasTotais = Math.max(
-          1,
-          Math.round((prazo - inicio) / 86400000),
-        );
+        const diasTotais = Math.max(1, Math.round((prazo - inicio) / 86400000));
         const diasPassados = Math.max(
           0,
           Math.round((hoje - inicio) / 86400000),
@@ -215,9 +214,7 @@ export default function MetasPessoais({ user }) {
                 marginBottom: 10,
               }}
             >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <Icon size={16} color="#818cf8" />
                 <span
                   style={{
@@ -290,7 +287,9 @@ export default function MetasPessoais({ user }) {
                 : prazoVencido
                   ? "⚠️ Prazo vencido"
                   : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restante${diasRestantes !== 1 ? "s" : ""} · ${
-                      noRitmo ? "no ritmo certo 👍" : "atrasado em relação ao prazo"
+                      noRitmo
+                        ? "no ritmo certo 👍"
+                        : "atrasado em relação ao prazo"
                     }`}
             </div>
 
@@ -307,9 +306,7 @@ export default function MetasPessoais({ user }) {
                     }))
                   }
                   style={{ flex: 1, marginTop: 0 }}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && contribuirMeta(m)
-                  }
+                  onKeyDown={(e) => e.key === "Enter" && contribuirMeta(m)}
                 />
                 <button
                   onClick={() => contribuirMeta(m)}

@@ -75,6 +75,7 @@ import {
   Flame,
   BarChart3,
   Settings,
+  GripHorizontal,
 } from "lucide-react";
 import {
   extrairTextoPDF,
@@ -96,6 +97,13 @@ function gerarUUID() {
     const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+// Ícone do tipo de equipamento — halter/barra/máquina.
+function IconEquipamento({ tipo, size = 14 }) {
+  if (tipo === "halter") return <Dumbbell size={size} />;
+  if (tipo === "barra") return <GripHorizontal size={size} />;
+  return <Settings size={size} />;
 }
 
 function ExercicioCard({
@@ -325,12 +333,14 @@ function ExercicioCard({
       </div>
       <div className="info">
         <div className="carga-edit">
-          <span>
-            {ex.equipamento === "halter"
-              ? "🏋️"
-              : ex.equipamento === "barra"
-                ? "🔩"
-                : "⚙️"}{" "}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <IconEquipamento tipo={ex.equipamento} size={13} />
             Carga:
           </span>
           {ex.carga_por_serie && ex.carga_por_serie.length > 0 ? (
@@ -1991,9 +2001,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               </div>
               <div className="sexo-selector">
                 {[
-                  { val: "halter", label: "🏋️ Halter" },
-                  { val: "barra", label: "🔩 Barra" },
-                  { val: "maquina", label: "⚙️ Máquina" },
+                  { val: "halter", label: "Halter" },
+                  { val: "barra", label: "Barra" },
+                  { val: "maquina", label: "Máquina" },
                 ].map((eq) => (
                   <button
                     key={eq.val}
@@ -2007,7 +2017,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       setModalEditEx({ ...modalEditEx, equipamento: eq.val })
                     }
                   >
-                    {eq.label}
+                    <IconEquipamento tipo={eq.val} size={13} /> {eq.label}
                   </button>
                 ))}
               </div>
@@ -3887,9 +3897,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       />
                       <div className="sexo-selector">
                         {[
-                          { val: "halter", label: "🏋️ Halter" },
-                          { val: "barra", label: "🔩 Barra" },
-                          { val: "maquina", label: "⚙️ Máquina" },
+                          { val: "halter", label: "Halter" },
+                          { val: "barra", label: "Barra" },
+                          { val: "maquina", label: "Máquina" },
                         ].map((eq) => (
                           <button
                             key={eq.val}
@@ -3906,6 +3916,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               })
                             }
                           >
+                            <IconEquipamento tipo={eq.val} size={13} />{" "}
                             {eq.label}
                           </button>
                         ))}
