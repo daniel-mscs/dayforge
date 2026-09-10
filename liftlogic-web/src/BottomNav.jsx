@@ -81,6 +81,14 @@ export default function BottomNav({
         <button
           className={`bottom-nav-btn ${abaPrincipal === "home" ? "active" : ""}`}
           onClick={() => navegar("home")}
+          style={
+            abaPrincipal === "home"
+              ? {
+                  color: "#3b82f6",
+                  filter: "drop-shadow(0 0 6px rgba(59,130,246,0.5))",
+                }
+              : undefined
+          }
         >
           <HomeIcon size={20} strokeWidth={2} />
           <span>Home</span>
@@ -89,6 +97,14 @@ export default function BottomNav({
         <button
           className={`bottom-nav-btn ${abaPrincipal === "treino" ? "active" : ""}`}
           onClick={() => navegar("treino")}
+          style={
+            abaPrincipal === "treino"
+              ? {
+                  color: "#6366f1",
+                  filter: "drop-shadow(0 0 6px rgba(99,102,241,0.5))",
+                }
+              : undefined
+          }
         >
           <Dumbbell size={20} strokeWidth={2} />
           <span>Treino</span>
@@ -97,8 +113,18 @@ export default function BottomNav({
         <button
           className={`bottom-nav-btn ${abaPrincipal === "stats" ? "active" : ""}`}
           onClick={() => navegar("stats")}
+          style={
+            abaPrincipal === "stats"
+              ? {
+                  color: "#10b981",
+                  filter: "drop-shadow(0 0 6px rgba(16,185,129,0.5))",
+                }
+              : undefined
+          }
         >
           <Target size={20} strokeWidth={2} />
+          <span>Metas</span>
+        </button> strokeWidth={2} />
           <span>Metas</span>
         </button>
 
@@ -106,6 +132,14 @@ export default function BottomNav({
           <button
             className={`bottom-nav-btn ${MAIS_IDS.includes(abaPrincipal) ? "active" : ""}`}
             onClick={() => setShowMore((p) => !p)}
+            style={
+              MAIS_IDS.includes(abaPrincipal)
+                ? {
+                    color: "#f59e0b",
+                    filter: "drop-shadow(0 0 6px rgba(245,158,11,0.5))",
+                  }
+                : undefined
+            }
           >
             <LayoutGrid size={20} strokeWidth={2} />
             <span>Mais</span>
@@ -163,6 +197,14 @@ export default function BottomNav({
         <button
           className={`bottom-nav-btn ${abaPrincipal === "perfil" ? "active" : ""}`}
           onClick={() => navegar("perfil")}
+          style={
+            abaPrincipal === "perfil"
+              ? {
+                  color: "#ec4899",
+                  filter: "drop-shadow(0 0 6px rgba(236,72,153,0.5))",
+                }
+              : undefined
+          }
         >
           <User size={20} strokeWidth={2} />
           <span>Perfil</span>
