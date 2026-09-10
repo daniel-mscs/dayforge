@@ -122,6 +122,7 @@ export default function SmartPocket({ user }) {
     cartao: true,
     investimentos: true,
     entradas: true,
+    contas: true,
   });
   const [clonandoMes, setClonandoMes] = useState(false);
 
@@ -142,6 +143,11 @@ export default function SmartPocket({ user }) {
   const [novoRecorrenteCategoria, setNovoRecorrenteCategoria] = useState(
     CATEGORIAS[0],
   );
+  const [novoRecorrenteTipo, setNovoRecorrenteTipo] = useState("gasto");
+  const [novoRecorrenteCartaoId, setNovoRecorrenteCartaoId] = useState("");
+  const [novoRecorrenteInvestTipo, setNovoRecorrenteInvestTipo] = useState(
+    INVEST_TIPOS[0],
+  );
 
   const [investTipo, setInvestTipo] = useState(INVEST_TIPOS[0]);
   const [investValor, setInvestValor] = useState("");
@@ -156,6 +162,8 @@ export default function SmartPocket({ user }) {
   const [metas, setMetas] = useState([]);
   const [metaNome, setMetaNome] = useState("");
   const [metaValorAlvo, setMetaValorAlvo] = useState("");
+  const [metaPessoa, setMetaPessoa] = useState("eu");
+  const [filtroPessoaMetas, setFiltroPessoaMetas] = useState("todos");
   const [contribuicaoInput, setContribuicaoInput] = useState({});
 
   const buscarTudo = useCallback(async () => {
@@ -257,14 +265,22 @@ export default function SmartPocket({ user }) {
         .order("created_at", { ascending: true }),
     ]);
 
-    // Aplica os gastos recorrentes que ainda não foram lançados nesse mês
-    const nomesJaLancados = new Set((g || []).map((x) => x.nome));
-    const faltando = (rec || []).filter((r) => !nomesJaLancados.has(r.nome));
-    if (faltando.length > 0) {
+    // Aplica os recorrentes que ainda não foram lançados nesse mês —
+    // cada tipo (gasto/cartão/investimento) na tabela certa.
+    const recGastos = (rec || []).filter((r) => !r.tipo || r.tipo === "gasto");
+    const recCartao = (rec || []).filter((r) => r.tipo === "cartao");
+    const recInvest = (rec || []).filter((r) => r.tipo === "investimento");
+
+    const nomesGastosJaLancados = new Set((g || []).map((x) => x.nome));
+    const faltandoGastos = recGastos.filter(
+      (r) => !nomesGastosJaLancados.has(r.nome),
+    );
+    let gastosFinal = g || [];
+    if (faltandoGastos.length > 0) {
       const { data: inseridos } = await supabase
         .from("financeiro_gastos")
         .insert(
-          faltando.map((r) => ({
+          faltandoGastos.map((r) => ({
             user_id: user.id,
             mes,
             ano,
@@ -274,13 +290,56 @@ export default function SmartPocket({ user }) {
           })),
         )
         .select();
-      setGastos([...(inseridos || []), ...(g || [])]);
-    } else {
-      setGastos(g || []);
+      gastosFinal = [...(inseridos || []), ...(g || [])];
     }
+    setGastos(gastosFinal);
 
-    setCartao(c || []);
-    setInvestimentos(i || []);
+    const nomesCartaoJaLancados = new Set((c || []).map((x) => x.item));
+    const faltandoCartao = recCartao.filter(
+      (r) => !nomesCartaoJaLancados.has(r.nome),
+    );
+    let cartaoFinal = c || [];
+    if (faltandoCartao.length > 0) {
+      const { data: inseridos } = await supabase
+        .from("financeiro_cartao")
+        .insert(
+          faltandoCartao.map((r) => ({
+            user_id: user.id,
+            mes,
+            ano,
+            item: r.nome,
+            valor: r.valor,
+            categoria: r.categoria,
+            cartao_id: r.cartao_id,
+          })),
+        )
+        .select();
+      cartaoFinal = [...(inseridos || []), ...(c || [])];
+    }
+    setCartao(cartaoFinal);
+
+    const tiposInvestJaLancados = new Set((i || []).map((x) => x.tipo));
+    const faltandoInvest = recInvest.filter(
+      (r) => !tiposInvestJaLancados.has(r.invest_tipo || r.nome),
+    );
+    let investFinal = i || [];
+    if (faltandoInvest.length > 0) {
+      const { data: inseridos } = await supabase
+        .from("financeiro_investimentos")
+        .insert(
+          faltandoInvest.map((r) => ({
+            user_id: user.id,
+            mes,
+            ano,
+            tipo: r.invest_tipo || r.nome,
+            valor: r.valor,
+          })),
+        )
+        .select();
+      investFinal = [...(inseridos || []), ...(i || [])];
+    }
+    setInvestimentos(investFinal);
+
     setEntradas(e || []);
     setLimites(lim || []);
     setRecorrentes(rec || []);
@@ -446,6 +505,8 @@ export default function SmartPocket({ user }) {
   const adicionarRecorrente = async () => {
     if (!novoRecorrenteNome || !novoRecorrenteValor)
       return toast("Preencha os campos!", "error");
+    if (novoRecorrenteTipo === "cartao" && !novoRecorrenteCartaoId)
+      return toast("Escolha o cartão!", "error");
     const { data, error } = await supabase
       .from("financeiro_recorrentes")
       .insert([
@@ -453,7 +514,17 @@ export default function SmartPocket({ user }) {
           user_id: user.id,
           nome: novoRecorrenteNome,
           valor: parseFloat(novoRecorrenteValor),
-          categoria: novoRecorrenteCategoria,
+          tipo: novoRecorrenteTipo,
+          categoria:
+            novoRecorrenteTipo !== "investimento"
+              ? novoRecorrenteCategoria
+              : null,
+          cartao_id:
+            novoRecorrenteTipo === "cartao" ? novoRecorrenteCartaoId : null,
+          invest_tipo:
+            novoRecorrenteTipo === "investimento"
+              ? novoRecorrenteInvestTipo
+              : null,
         },
       ])
       .select();
@@ -545,6 +616,7 @@ export default function SmartPocket({ user }) {
           user_id: user.id,
           nome: metaNome,
           valor_meta: parseFloat(metaValorAlvo),
+          pessoa: metaPessoa,
         },
       ])
       .select();
@@ -653,6 +725,24 @@ export default function SmartPocket({ user }) {
             })),
           );
       }
+      if (clonarSelecao.contas) {
+        const { data: ant } = await supabase
+          .from("financeiro_contas")
+          .select("nome, planejado")
+          .eq("user_id", user.id)
+          .eq("mes", mp.mes)
+          .eq("ano", mp.ano);
+        if (ant?.length)
+          await supabase.from("financeiro_contas").insert(
+            ant.map((c) => ({
+              user_id: user.id,
+              mes,
+              ano,
+              nome: c.nome,
+              planejado: c.planejado,
+            })),
+          );
+      }
       setModalClonarMes(false);
       await buscarTudo();
     } catch (err) {
@@ -710,7 +800,10 @@ export default function SmartPocket({ user }) {
   const totalCartao = cartao.reduce((s, r) => s + Number(r.valor), 0);
   const totalInvest = investimentos.reduce((s, r) => s + Number(r.valor), 0);
   const totalEntradas = entradas.reduce((s, r) => s + Number(r.valor), 0);
-  const saldo = totalEntradas - (totalGastos + totalInvest);
+  const totalContasPagas = contas
+    .filter((c) => c.valor_pago !== null && c.valor_pago !== undefined)
+    .reduce((s, c) => s + Number(c.valor_pago), 0);
+  const saldo = totalEntradas - (totalGastos + totalInvest + totalContasPagas);
 
   // Comparação com o mês passado
   const totalGastosMesPassado = gastosMesPassado.reduce(
@@ -2312,6 +2405,14 @@ export default function SmartPocket({ user }) {
               style={{ marginTop: 8 }}
               onKeyDown={(e) => e.key === "Enter" && adicionarMeta()}
             />
+            <select
+              value={metaPessoa}
+              onChange={(e) => setMetaPessoa(e.target.value)}
+              style={{ marginTop: 8 }}
+            >
+              <option value="eu">Meta minha</option>
+              <option value="jose">Meta do José</option>
+            </select>
             <button
               onClick={adicionarMeta}
               style={{
@@ -2330,132 +2431,185 @@ export default function SmartPocket({ user }) {
               + Criar Meta
             </button>
           </div>
-          {metas.length === 0 ? (
+
+          <div style={{ display: "flex", gap: 6 }}>
+            {[
+              { id: "todos", label: "Todas" },
+              { id: "eu", label: "Minhas" },
+              { id: "jose", label: "Do José" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFiltroPessoaMetas(f.id)}
+                style={{
+                  flex: 1,
+                  background:
+                    filtroPessoaMetas === f.id ? "#6366f1" : "#1c2026",
+                  border: "1px solid #ffffff0d",
+                  borderRadius: 8,
+                  color: filtroPessoaMetas === f.id ? "#fff" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: "8px 0",
+                  cursor: "pointer",
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {metas.filter(
+            (m) =>
+              filtroPessoaMetas === "todos" || m.pessoa === filtroPessoaMetas,
+          ).length === 0 ? (
             <p style={{ textAlign: "center", color: "#475569", fontSize: 13 }}>
               Nenhuma meta criada ainda.
             </p>
           ) : (
-            metas.map((m) => {
-              const pct = Math.min(
-                100,
-                Math.round(
-                  (Number(m.valor_atual) / Number(m.valor_meta)) * 100,
-                ),
-              );
-              return (
-                <div
-                  key={m.id}
-                  style={{
-                    background: "linear-gradient(155deg, #1c2026, #17191d)",
-                    border: "1px solid #ffffff10",
-                    borderRadius: 16,
-                    padding: 16,
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-                  }}
-                >
+            metas
+              .filter(
+                (m) =>
+                  filtroPessoaMetas === "todos" ||
+                  m.pessoa === filtroPessoaMetas,
+              )
+              .map((m) => {
+                const pct = Math.min(
+                  100,
+                  Math.round(
+                    (Number(m.valor_atual) / Number(m.valor_meta)) * 100,
+                  ),
+                );
+                return (
                   <div
+                    key={m.id}
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "#f8fafc",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Target size={15} color="#10b981" />
-                      {m.nome}
-                    </span>
-                    <button
-                      onClick={() =>
-                        deletar("financeiro_metas", m.id, setMetas)
-                      }
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#ef4444",
-                        cursor: "pointer",
-                        opacity: 0.4,
-                        fontSize: 16,
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: 13,
-                      marginBottom: 6,
-                    }}
-                  >
-                    <span style={{ color: "#10b981", fontWeight: 700 }}>
-                      {fmtBRL(m.valor_atual)}
-                    </span>
-                    <span style={{ color: "#64748b" }}>
-                      de {fmtBRL(m.valor_meta)} · {pct}%
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      height: 8,
-                      borderRadius: 99,
-                      background: "#ffffff0d",
-                      overflow: "hidden",
-                      marginBottom: 12,
+                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      border: "1px solid #ffffff10",
+                      borderRadius: 16,
+                      padding: 16,
+                      boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
                     }}
                   >
                     <div
                       style={{
-                        height: "100%",
-                        width: `${pct}%`,
-                        background: "#10b981",
-                        borderRadius: 99,
-                      }}
-                    />
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      type="number"
-                      placeholder="Contribuir R$"
-                      value={contribuicaoInput[m.id] || ""}
-                      onChange={(e) =>
-                        setContribuicaoInput((prev) => ({
-                          ...prev,
-                          [m.id]: e.target.value,
-                        }))
-                      }
-                      style={{ flex: 1, marginTop: 0 }}
-                      onKeyDown={(e) => e.key === "Enter" && contribuirMeta(m)}
-                    />
-                    <button
-                      onClick={() => contribuirMeta(m)}
-                      style={{
-                        background: "#10b981",
-                        border: "none",
-                        borderRadius: 8,
-                        color: "#fff",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        padding: "0 14px",
-                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 8,
                       }}
                     >
-                      + Add
-                    </button>
+                      <span
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "#f8fafc",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Target size={15} color="#10b981" />
+                        {m.nome}
+                        {m.pessoa === "jose" && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 800,
+                              color: "#818cf8",
+                              background: "rgba(99,102,241,0.15)",
+                              padding: "2px 6px",
+                              borderRadius: 99,
+                            }}
+                          >
+                            JOSÉ
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        onClick={() =>
+                          deletar("financeiro_metas", m.id, setMetas)
+                        }
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                          opacity: 0.4,
+                          fontSize: 16,
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 13,
+                        marginBottom: 6,
+                      }}
+                    >
+                      <span style={{ color: "#10b981", fontWeight: 700 }}>
+                        {fmtBRL(m.valor_atual)}
+                      </span>
+                      <span style={{ color: "#64748b" }}>
+                        de {fmtBRL(m.valor_meta)} · {pct}%
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: 8,
+                        borderRadius: 99,
+                        background: "#ffffff0d",
+                        overflow: "hidden",
+                        marginBottom: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${pct}%`,
+                          background: "#10b981",
+                          borderRadius: 99,
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <input
+                        type="number"
+                        placeholder="Contribuir R$"
+                        value={contribuicaoInput[m.id] || ""}
+                        onChange={(e) =>
+                          setContribuicaoInput((prev) => ({
+                            ...prev,
+                            [m.id]: e.target.value,
+                          }))
+                        }
+                        style={{ flex: 1, marginTop: 0 }}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && contribuirMeta(m)
+                        }
+                      />
+                      <button
+                        onClick={() => contribuirMeta(m)}
+                        style={{
+                          background: "#10b981",
+                          border: "none",
+                          borderRadius: 8,
+                          color: "#fff",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: "0 14px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        + Add
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
           )}
         </div>
       )}
@@ -2652,6 +2806,182 @@ export default function SmartPocket({ user }) {
             </div>
           </div>
 
+          {/* Gastos/Cartão/Investimentos recorrentes */}
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 4,
+              }}
+            >
+              RECORRENTES
+            </div>
+            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>
+              Lançados automaticamente todo mês — em Gastos, Cartão ou
+              Investimentos.
+            </div>
+            {recorrentes.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  marginBottom: 14,
+                }}
+              >
+                {recorrentes.map((r) => {
+                  const tipoLabel =
+                    r.tipo === "cartao"
+                      ? "Cartão"
+                      : r.tipo === "investimento"
+                        ? "Investimento"
+                        : "Gasto";
+                  const detalhe =
+                    r.tipo === "cartao"
+                      ? cartoes.find((c) => c.id === r.cartao_id)?.nome ||
+                        "cartão"
+                      : r.tipo === "investimento"
+                        ? r.invest_tipo
+                        : r.categoria;
+                  return (
+                    <div
+                      key={r.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        background: "#24282d",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#f8fafc",
+                          }}
+                        >
+                          {r.nome}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#64748b" }}>
+                          {tipoLabel} · {detalhe} · {fmtBRL(r.valor)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removerRecorrente(r.id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ef4444",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <select
+              value={novoRecorrenteTipo}
+              onChange={(e) => setNovoRecorrenteTipo(e.target.value)}
+            >
+              <option value="gasto">💸 Gasto fixo</option>
+              <option value="cartao">💳 Lançamento de cartão</option>
+              <option value="investimento">📈 Investimento</option>
+            </select>
+            <input
+              placeholder={
+                novoRecorrenteTipo === "gasto"
+                  ? "Nome (ex: Aluguel)"
+                  : novoRecorrenteTipo === "cartao"
+                    ? "Nome (ex: Netflix)"
+                    : "Nome (ex: Aporte mensal)"
+              }
+              value={novoRecorrenteNome}
+              onChange={(e) => setNovoRecorrenteNome(e.target.value)}
+              style={{ marginTop: 8 }}
+            />
+            <input
+              type="number"
+              placeholder="Valor R$"
+              value={novoRecorrenteValor}
+              onChange={(e) => setNovoRecorrenteValor(e.target.value)}
+              style={{ marginTop: 8 }}
+            />
+            {novoRecorrenteTipo !== "investimento" && (
+              <select
+                value={novoRecorrenteCategoria}
+                onChange={(e) => setNovoRecorrenteCategoria(e.target.value)}
+                style={{ marginTop: 8 }}
+              >
+                {CATEGORIAS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
+            {novoRecorrenteTipo === "cartao" && (
+              <select
+                value={novoRecorrenteCartaoId}
+                onChange={(e) => setNovoRecorrenteCartaoId(e.target.value)}
+                style={{ marginTop: 8 }}
+              >
+                <option value="">Selecione o cartão</option>
+                {cartoes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            )}
+            {novoRecorrenteTipo === "investimento" && (
+              <select
+                value={novoRecorrenteInvestTipo}
+                onChange={(e) => setNovoRecorrenteInvestTipo(e.target.value)}
+                style={{ marginTop: 8 }}
+              >
+                {INVEST_TIPOS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button
+              onClick={adicionarRecorrente}
+              style={{
+                marginTop: 10,
+                width: "100%",
+                background: "#6366f1",
+                border: "none",
+                borderRadius: 10,
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 700,
+                padding: 10,
+                cursor: "pointer",
+              }}
+            >
+              + Adicionar Recorrente
+            </button>
+          </div>
+
           {[
             {
               icon: Wallet,
@@ -2684,6 +3014,17 @@ export default function SmartPocket({ user }) {
               val: totalInvest,
               color: "#f59e0b",
               items: investimentos.map((i) => ({ nome: i.tipo, val: i.valor })),
+            },
+            {
+              icon: Receipt,
+              label: "Contas Pagas",
+              val: totalContasPagas,
+              color: "#06b6d4",
+              items: contas
+                .filter(
+                  (c) => c.valor_pago !== null && c.valor_pago !== undefined,
+                )
+                .map((c) => ({ nome: c.nome, val: c.valor_pago })),
             },
           ].map((bloco, idx) => (
             <div
@@ -2780,6 +3121,11 @@ export default function SmartPocket({ user }) {
                   label: "Investimentos",
                 },
                 { id: "entradas", icon: Wallet, label: "Entradas" },
+                {
+                  id: "contas",
+                  icon: Receipt,
+                  label: "Contas (só o planejado)",
+                },
               ].map((opt) => (
                 <label
                   key={opt.id}
