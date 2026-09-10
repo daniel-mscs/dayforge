@@ -63,6 +63,20 @@ import {
 } from "./lib/notifications";
 import { askPrompt } from "./lib/confirm";
 import {
+  Dumbbell,
+  ScrollText,
+  ClipboardList,
+  FileText,
+  Trash2,
+  CalendarClock,
+  Trophy,
+  Link2,
+  Pencil,
+  Flame,
+  BarChart3,
+  Settings,
+} from "lucide-react";
+import {
   extrairTextoPDF,
   extrairTextoImagem,
   parsearTreinoTexto,
@@ -136,7 +150,7 @@ function ExercicioCard({
                 onClick={() => onEditar(ex)}
                 style={{ color: "#818cf8", marginRight: 2 }}
               >
-                ✏️
+                <Pencil size={14} />
               </button>
               <button
                 className="btn-delete-mini"
@@ -147,7 +161,7 @@ function ExercicioCard({
                 }}
                 title="Superset"
               >
-                🔗
+                <Link2 size={14} />
               </button>
               <button
                 className="btn-delete-mini"
@@ -155,7 +169,7 @@ function ExercicioCard({
                 style={{ color: "#64748b", marginRight: 2 }}
                 title="Duplicar pra outro treino"
               >
-                📋
+                <ClipboardList size={14} />
               </button>
             </>
           )}
@@ -1703,7 +1717,13 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       fontWeight: 700,
                     }}
                   >
-                    <span style={{ fontSize: 16 }}>🏆</span>
+                    <Trophy
+                      size={16}
+                      color="#fbbf24"
+                      style={{
+                        filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6))",
+                      }}
+                    />
                     <span>
                       Recorde em {r.nome}: {r.cargaNova}kg (antes{" "}
                       {r.cargaAntiga}
@@ -2356,7 +2376,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 marginBottom: 4,
               }}
             >
-              📄 Importar treino em PDF
+              <FileText
+                size={15}
+                style={{ verticalAlign: -2, marginRight: 6 }}
+              />
+              Importar treino (PDF/Foto)
             </div>
 
             {!treinoImportado && (
@@ -2783,7 +2807,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 marginBottom: 6,
               }}
             >
-              📋 Duplicar "{modalDuplicar.nome}"
+              <ClipboardList
+                size={15}
+                style={{ verticalAlign: -2, marginRight: 6 }}
+              />
+              Duplicar "{modalDuplicar.nome}"
             </div>
             <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
               Pra qual treino você quer copiar?
@@ -2870,7 +2898,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 marginBottom: 6,
               }}
             >
-              🗑️ Apagar Treino {treinoAtivo}?
+              <Trash2 size={14} style={{ verticalAlign: -2, marginRight: 5 }} />
+              Apagar Treino {treinoAtivo}?
             </div>
             <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20 }}>
               Isso apaga todos os {exerciciosFiltrados.length} exercícios
@@ -2919,7 +2948,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   cursor: "pointer",
                 }}
               >
-                🗑️ Apagar
+                <Trash2 size={14} />
+                Apagar
               </button>
             </div>
           </div>
@@ -2959,7 +2989,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 marginBottom: 6,
               }}
             >
-              🗓️ Troca de treino
+              <CalendarClock
+                size={15}
+                style={{ verticalAlign: -2, marginRight: 6 }}
+              />
+              Troca de treino
             </div>
             <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>
               De quanto em quanto tempo você quer ser lembrado de trocar de
@@ -3072,7 +3106,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 marginBottom: 4,
               }}
             >
-              📋 Treinos prontos
+              <ClipboardList
+                size={15}
+                style={{ verticalAlign: -2, marginRight: 6 }}
+              />
+              Treinos prontos
             </div>
             <div style={{ fontSize: 12, color: "#64748b", marginBottom: 18 }}>
               Escolha um treino pronto pra aplicar. Você vê tudo antes de
@@ -3390,7 +3428,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               }
               onClick={() => setSubAbaTreino("exercicios")}
             >
-              🏋️ Exercícios
+              <Dumbbell
+                size={14}
+                style={{ verticalAlign: -2, marginRight: 5 }}
+              />
+              Exercícios
             </button>
             <button
               className={
@@ -3403,7 +3445,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 buscarDashboard();
               }}
             >
-              📊 Stats
+              <BarChart3
+                size={14}
+                style={{ verticalAlign: -2, marginRight: 5 }}
+              />
+              Stats
             </button>
             <button
               className={
@@ -3413,7 +3459,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               }
               onClick={() => setSubAbaTreino("historico")}
             >
-              📜 Histórico
+              <ScrollText
+                size={14}
+                style={{ verticalAlign: -2, marginRight: 5 }}
+              />
+              Histórico
             </button>
           </div>
 
@@ -3454,7 +3504,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       cursor: "pointer",
                     }}
                   >
-                    📋 Ver treinos prontos
+                    <ClipboardList
+                      size={15}
+                      style={{ verticalAlign: -2, marginRight: 6 }}
+                    />
+                    Ver treinos prontos
                   </button>
                   <button
                     onClick={() => setModalImportarPDF(true)}
@@ -3471,7 +3525,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       cursor: "pointer",
                     }}
                   >
-                    📄 Importar treino (PDF/Foto)
+                    <FileText
+                      size={15}
+                      style={{ verticalAlign: -2, marginRight: 6 }}
+                    />
+                    Importar treino (PDF/Foto)
                   </button>
                 </div>
               ) : (
@@ -3508,7 +3566,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         cursor: "pointer",
                       }}
                     >
-                      📄 Importar
+                      <FileText
+                        size={13}
+                        style={{ verticalAlign: -2, marginRight: 4 }}
+                      />
+                      Importar
                     </button>
                     <button
                       onClick={() => {
@@ -3526,7 +3588,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         cursor: "pointer",
                       }}
                     >
-                      📋 Treinos prontos
+                      <ClipboardList
+                        size={13}
+                        style={{ verticalAlign: -2, marginRight: 4 }}
+                      />
+                      Treinos prontos
                     </button>
                   </div>
                 </header>
@@ -3556,6 +3622,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 >
                   <span
                     style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                       fontSize: 12,
                       fontWeight: 700,
                       color:
@@ -3564,13 +3633,18 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           : "#94a3b8",
                     }}
                   >
+                    {cicloDias !== null && diasRestantesCiclo <= 0 ? (
+                      <Flame size={13} />
+                    ) : (
+                      <CalendarClock size={13} />
+                    )}
                     {cicloDias === null
-                      ? "🗓️ Configurar troca de treino"
+                      ? "Configurar troca de treino"
                       : diasRestantesCiclo <= 0
-                        ? "🔥 Hora de trocar de treino!"
-                        : `🗓️ Troca de treino em ${diasRestantesCiclo} dia${diasRestantesCiclo !== 1 ? "s" : ""}`}
+                        ? "Hora de trocar de treino!"
+                        : `Troca de treino em ${diasRestantesCiclo} dia${diasRestantesCiclo !== 1 ? "s" : ""}`}
                   </span>
-                  <span style={{ fontSize: 11, color: "#475569" }}>⚙️</span>
+                  <Settings size={13} color="#475569" />
                 </div>
               )}
 
@@ -3722,7 +3796,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           cursor: "pointer",
                         }}
                       >
-                        🗑️ Apagar Treino {treinoAtivo}
+                        <Trash2
+                          size={12}
+                          style={{ verticalAlign: -2, marginRight: 4 }}
+                        />
+                        Apagar Treino {treinoAtivo}
                       </button>
                     </div>
                   )}
@@ -4208,10 +4286,18 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
 
           {subAbaTreino === "historico" && (
             <div className="historico-section">
-              <h1 className="title-divisao">Histórico 📜</h1>
+              <h1
+                className="title-divisao"
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
+              >
+                Histórico
+                <ScrollText size={18} />
+              </h1>
               {historico.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>📜</div>
+                  <div style={{ marginBottom: 10 }}>
+                    <ScrollText size={40} color="#334155" />
+                  </div>
                   <div
                     style={{
                       fontSize: 15,
