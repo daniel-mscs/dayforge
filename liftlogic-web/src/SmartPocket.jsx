@@ -1080,13 +1080,55 @@ export default function SmartPocket({ user }) {
         }}
       >
         {[
-          { id: "gastos", icon: Banknote, label: "Gastos" },
-          { id: "cartao", icon: CreditCard, label: "Cartão" },
-          { id: "invest", icon: TrendingUp, label: "Invest" },
-          { id: "entradas", icon: Wallet, label: "Entradas" },
-          { id: "contas", icon: Receipt, label: "Contas" },
-          { id: "metas", icon: Target, label: "Metas" },
-          { id: "resumo", icon: BarChart3, label: "Resumo" },
+          {
+            id: "gastos",
+            icon: Banknote,
+            label: "Gastos",
+            cor: "#ef4444",
+            corEscura: "#dc2626",
+          },
+          {
+            id: "cartao",
+            icon: CreditCard,
+            label: "Cartão",
+            cor: "#f97316",
+            corEscura: "#ea580c",
+          },
+          {
+            id: "invest",
+            icon: TrendingUp,
+            label: "Invest",
+            cor: "#f59e0b",
+            corEscura: "#d97706",
+          },
+          {
+            id: "entradas",
+            icon: Wallet,
+            label: "Entradas",
+            cor: "#10b981",
+            corEscura: "#059669",
+          },
+          {
+            id: "contas",
+            icon: Receipt,
+            label: "Contas",
+            cor: "#06b6d4",
+            corEscura: "#0891b2",
+          },
+          {
+            id: "metas",
+            icon: Target,
+            label: "Metas",
+            cor: "#14b8a6",
+            corEscura: "#0d9488",
+          },
+          {
+            id: "resumo",
+            icon: BarChart3,
+            label: "Resumo",
+            cor: "#6366f1",
+            corEscura: "#4f46e5",
+          },
         ].map((a) => (
           <button
             key={a.id}
@@ -1102,21 +1144,22 @@ export default function SmartPocket({ user }) {
               gap: 3,
               background:
                 aba === a.id
-                  ? "linear-gradient(135deg, #6366f1, #4f46e5)"
+                  ? `linear-gradient(135deg, ${a.cor}, ${a.corEscura})`
                   : "#1c2026",
               border: "1px solid #ffffff0d",
               borderRadius: 10,
-              color: aba === a.id ? "#fff" : "#94a3b8",
+              color: aba === a.id ? "#fff" : a.cor,
               fontSize: 9,
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow:
-                aba === a.id ? "0 3px 12px rgba(99,102,241,0.4)" : "none",
+              boxShadow: aba === a.id ? `0 3px 12px ${a.cor}66` : "none",
               transition: "all 0.2s",
             }}
           >
             <a.icon size={17} strokeWidth={2} />
-            {a.label}
+            <span style={{ color: aba === a.id ? "#fff" : "#94a3b8" }}>
+              {a.label}
+            </span>
           </button>
         ))}
       </div>
