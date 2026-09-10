@@ -3,6 +3,7 @@ import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { agendarNotificacoesRotina } from "./lib/notifications";
+import { ClipboardList } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -594,8 +595,18 @@ export default function Rotina({ user }) {
         }}
       >
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>
-            📋 Resumo da semana na Home
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#f8fafc",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <ClipboardList size={14} color="#6366f1" />
+            Resumo da semana na Home
           </div>
           <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
             Mostra o card com a rotina da semana na tela inicial

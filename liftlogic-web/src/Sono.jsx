@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { Moon, Sun, Save, Lightbulb } from "lucide-react";
 import { SkeletonSono } from "./lib/skeleton";
 import {
   BarChart,
@@ -226,8 +227,21 @@ export default function Sono({ user, onAjuda }) {
           alignItems: "center",
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0 }}>
-          😴 Registro de Sono
+        <h2
+          className="title-divisao"
+          style={{
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Moon
+            size={20}
+            color="#818cf8"
+            style={{ filter: "drop-shadow(0 0 6px rgba(129,140,248,0.5))" }}
+          />
+          Registro de Sono
         </h2>
         <div style={{ position: "relative" }}>
           <button
@@ -559,9 +573,17 @@ export default function Sono({ user, onAjuda }) {
             >
               <div>
                 <div
-                  style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}
+                  style={{
+                    fontSize: 11,
+                    color: "#64748b",
+                    marginBottom: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
                 >
-                  🌙 Dormiu às
+                  <Moon size={11} />
+                  Dormiu às
                 </div>
                 <input
                   type="time"
@@ -572,9 +594,17 @@ export default function Sono({ user, onAjuda }) {
               </div>
               <div>
                 <div
-                  style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}
+                  style={{
+                    fontSize: 11,
+                    color: "#64748b",
+                    marginBottom: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
                 >
-                  ☀️ Acordou às
+                  <Sun size={11} />
+                  Acordou às
                 </div>
                 <input
                   type="time"
@@ -659,9 +689,19 @@ export default function Sono({ user, onAjuda }) {
                   fontWeight: 700,
                   padding: 12,
                   cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                 }}
               >
-                {salvando ? "Salvando..." : "💾 Salvar"}
+                {salvando ? (
+                  "Salvando..."
+                ) : (
+                  <>
+                    <Save size={14} /> Salvar
+                  </>
+                )}
               </button>
               {editando && (
                 <button
@@ -794,9 +834,13 @@ export default function Sono({ user, onAjuda }) {
             fontWeight: 700,
             color: "#6366f1",
             marginBottom: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          💡 Por que 7-8h importam
+          <Lightbulb size={13} />
+          Por que 7-8h importam
         </div>
         <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.7 }}>
           O GH (hormônio do crescimento) é liberado durante o sono — essencial
