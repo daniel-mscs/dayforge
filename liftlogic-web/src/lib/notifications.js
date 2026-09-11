@@ -262,42 +262,46 @@ export async function agendarResumoNoturno(
   hora = 21,
   minuto = 0,
 ) {
-  if (!Capacitor.isNativePlatform()) return;
+  try {
+    if (!Capacitor.isNativePlatform()) return;
 
-  await LocalNotifications.cancel({
-    notifications: [{ id: ID_NOTIF_PENDENCIAS }],
-  });
+    await LocalNotifications.cancel({
+      notifications: [{ id: ID_NOTIF_PENDENCIAS }],
+    });
 
-  const { display } = await LocalNotifications.requestPermissions();
-  if (display !== "granted") return;
+    const { display } = await LocalNotifications.requestPermissions();
+    if (display !== "granted") return;
 
-  const agora = new Date();
-  const alvo = new Date();
-  alvo.setHours(hora, minuto, 0, 0);
-  if (alvo <= agora) return; // já passou do horário hoje, não agenda
+    const agora = new Date();
+    const alvo = new Date();
+    alvo.setHours(hora, minuto, 0, 0);
+    if (alvo <= agora) return; // já passou do horário hoje, não agenda
 
-  const linhas = [
-    treinou
-      ? `🏋️ Treino feito${kcalTreino ? ` (${kcalTreino} kcal)` : ""}`
-      : "🏋️ Sem treino hoje",
-    aguaMeta ? `💧 ${aguaMl}/${aguaMeta}ml` : `💧 ${aguaMl}ml`,
-    sonoOk ? "😴 Sono registrado" : "😴 Sono não registrado",
-    gastosHoje > 0
-      ? `💰 Gastos: R$${gastosHoje.toFixed(2).replace(".", ",")}`
-      : "💰 Sem gastos hoje",
-  ];
+    const linhas = [
+      treinou
+        ? `🏋️ Treino feito${kcalTreino ? ` (${kcalTreino} kcal)` : ""}`
+        : "🏋️ Sem treino hoje",
+      aguaMeta ? `💧 ${aguaMl}/${aguaMeta}ml` : `💧 ${aguaMl}ml`,
+      sonoOk ? "😴 Sono registrado" : "😴 Sono não registrado",
+      gastosHoje > 0
+        ? `💰 Gastos: R$${gastosHoje.toFixed(2).replace(".", ",")}`
+        : "💰 Sem gastos hoje",
+    ];
 
-  await LocalNotifications.schedule({
-    notifications: [
-      {
-        id: ID_NOTIF_PENDENCIAS,
-        title: "📋 Resumo do seu dia",
-        body: linhas.join("\n"),
-        smallIcon: "ic_notification",
-        schedule: { at: alvo, allowWhileIdle: true },
-      },
-    ],
-  });
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: ID_NOTIF_PENDENCIAS,
+          title: "📋 Resumo do seu dia",
+          body: linhas.join("\n"),
+          smallIcon: "ic_notification",
+          schedule: { at: alvo, allowWhileIdle: true },
+        },
+      ],
+    });
+  } catch (err) {
+    console.error("Falha ao agendar resumo noturno:", err);
+  }
 }
 
 // Notificação por refeição da Dieta — dispara no início da janela de
