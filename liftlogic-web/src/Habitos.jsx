@@ -15,12 +15,15 @@ import {
 
 // Alguns hábitos são fixos do app (ícone de verdade); hábitos
 // personalizados continuam com emoji escolhido pelo usuário.
+// Nota: ícones do lucide-react são objetos (forwardRef), não
+// "function" — por isso o teste certo é por string (emoji), e
+// tudo que não for string é tratado como componente de ícone.
 function IconHabito({ icon, size = 16 }) {
-  if (typeof icon === "function") {
-    const Icon = icon;
-    return <Icon size={size} />;
+  if (typeof icon === "string") {
+    return <span style={{ fontSize: size }}>{icon}</span>;
   }
-  return <span style={{ fontSize: size }}>{icon}</span>;
+  const Icon = icon;
+  return <Icon size={size} />;
 }
 
 const HABITOS_FIXOS = [
