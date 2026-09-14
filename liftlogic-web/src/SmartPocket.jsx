@@ -424,7 +424,7 @@ export default function SmartPocket({ user }) {
       );
     const cartaoObj = cartoes.find((c) => c.id === cartaoSelecionado);
     const diaVencimento = cartaoObj?.dia_vencimento || 10;
-    const diaFechamento = diaVencimento - 7;
+    const diaFechamento = cartaoObj?.dia_fechamento || diaVencimento - 7;
     const { mes: mesFaturaInicial, ano: anoFaturaInicial } = calcularMesFatura(
       cartaoData,
       diaFechamento,
@@ -480,13 +480,17 @@ export default function SmartPocket({ user }) {
 
   const adicionarCartaoConta = async () => {
     if (!novoCartaoNome) return toast("Dá um nome pro cartão!", "error");
+    const diaVenc = parseInt(novoCartaoVencimento, 10) || 10;
+    let diaFech = diaVenc - 7;
+    if (diaFech <= 0) diaFech += 30;
     const { data, error } = await supabase
       .from("financeiro_cartoes")
       .insert([
         {
           user_id: user.id,
           nome: novoCartaoNome,
-          dia_vencimento: parseInt(novoCartaoVencimento, 10) || 10,
+          dia_vencimento: diaVenc,
+          dia_fechamento: diaFech,
         },
       ])
       .select();
@@ -514,6 +518,16 @@ export default function SmartPocket({ user }) {
     await supabase
       .from("financeiro_cartoes")
       .update({ dia_vencimento: dia })
+      .eq("id", id);
+  };
+
+  const salvarFechamentoCartao = async (id, dia) => {
+    setCartoes((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, dia_fechamento: dia } : c)),
+    );
+    await supabase
+      .from("financeiro_cartoes")
+      .update({ dia_fechamento: dia })
       .eq("id", id);
   };
 
@@ -902,7 +916,7 @@ export default function SmartPocket({ user }) {
   // Fatura fechando — um cálculo por cartão
   const cartoesComResumo = cartoes.map((cta) => {
     const diaVencimento = cta.dia_vencimento || 10;
-    let diaFechamento = diaVencimento - 7;
+    let diaFechamento = cta.dia_fechamento || diaVencimento - 7;
     if (diaFechamento <= 0) diaFechamento += diasNoMes;
     const diasParaFechar =
       diaFechamento >= diaAtual
@@ -1682,12 +1696,43 @@ export default function SmartPocket({ user }) {
                       />
                       <span
                         style={{
+                          fontSize: 10,
+                          color: "#64748b",
+                          marginLeft: 6,
+                        }}
+                      >
+                        Fecha dia
+                      </span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        defaultValue={cta.diaFechamento}
+                        onBlur={(e) =>
+                          salvarFechamentoCartao(
+                            cta.id,
+                            parseInt(e.target.value, 10) || cta.diaFechamento,
+                          )
+                        }
+                        style={{
+                          width: 36,
+                          background: "#1a1d21",
+                          border: "1px solid #ffffff10",
+                          borderRadius: 6,
+                          color: "#f8fafc",
+                          fontSize: 11,
+                          padding: "2px 4px",
+                          textAlign: "center",
+                        }}
+                      />
+                      <span
+                        style={{
                           fontSize: 11,
                           color: "#f97316",
                           fontWeight: 700,
                         }}
                       >
-                        · fecha em {cta.diasParaFechar} dia
+                        · em {cta.diasParaFechar} dia
                         {cta.diasParaFechar !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -1783,8 +1828,10 @@ export default function SmartPocket({ user }) {
                 lineHeight: 1.5,
               }}
             >
-              💡 A compra entra automaticamente na fatura certa, com base na
-              data e no fechamento do cartão escolhido.
+              💡 A compra é lançada automaticamente na fatura correta. Verifique
+              se o campo "Fecha dia" do cartão (lista abaixo) corresponde à data
+              real informada pelo seu banco — o padrão inicial é vencimento
+              menos 7 dias.
             </div>
             <input
               placeholder="O que comprou?"
