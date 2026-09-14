@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { Plus, X, Droplet, Scale, Banknote } from "lucide-react";
@@ -81,7 +82,7 @@ export default function RegistroRapido({ user, onRegistrado }) {
     fechar();
   };
 
-  return (
+  return createPortal(
     <>
       <button
         onClick={() => setAberto(true)}
@@ -100,7 +101,7 @@ export default function RegistroRapido({ user, onRegistrado }) {
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          zIndex: 50,
+          zIndex: 150,
         }}
       >
         <Plus size={26} />
@@ -113,7 +114,7 @@ export default function RegistroRapido({ user, onRegistrado }) {
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.6)",
-            zIndex: 100,
+            zIndex: 200,
             display: "flex",
             alignItems: "flex-end",
           }}
@@ -315,6 +316,7 @@ export default function RegistroRapido({ user, onRegistrado }) {
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body,
   );
 }
