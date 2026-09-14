@@ -88,6 +88,30 @@ function gerarUUID() {
   });
 }
 
+function formatarDataHoje() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().split("T")[0];
+}
+
+// Uma compra feita DEPOIS do dia de fechamento do cartão cai
+// automaticamente na fatura do mês seguinte — igual acontece de
+// verdade no extrato do banco.
+function calcularMesFatura(dataCompraStr, diaFechamento) {
+  const d = new Date(dataCompraStr + "T00:00:00");
+  let mesFatura = d.getMonth();
+  let anoFatura = d.getFullYear();
+  if (d.getDate() > diaFechamento) {
+    mesFatura += 1;
+    if (mesFatura > 11) {
+      mesFatura = 0;
+      anoFatura += 1;
+    }
+  }
+  return { mes: mesFatura, ano: anoFatura };
+}
+
 export default function SmartPocket({ user }) {
   const hoje = new Date();
   const [mes, setMes] = useState(hoje.getMonth());
@@ -107,6 +131,7 @@ export default function SmartPocket({ user }) {
 
   const [cartaoItem, setCartaoItem] = useState("");
   const [cartaoValor, setCartaoValor] = useState("");
+  const [cartaoData, setCartaoData] = useState(() => formatarDataHoje());
   const [cartaoCategoria, setCartaoCategoria] = useState(CATEGORIAS[0]);
   const [cartaoParcelado, setCartaoParcelado] = useState(false);
   const [cartaoParcelas, setCartaoParcelas] = useState("2");
@@ -396,6 +421,14 @@ export default function SmartPocket({ user }) {
         "Cadastre um cartão antes de lançar (abaixo do formulário).",
         "error",
       );
+    const cartaoObj = cartoes.find((c) => c.id === cartaoSelecionado);
+    const diaVencimento = cartaoObj?.dia_vencimento || 10;
+    const diaFechamento = diaVencimento - 7;
+    const { mes: mesFaturaInicial, ano: anoFaturaInicial } = calcularMesFatura(
+      cartaoData,
+      diaFechamento,
+    );
+
     const valorTotal = parseFloat(cartaoValor);
     const numParcelas = cartaoParcelado
       ? Math.max(2, parseInt(cartaoParcelas, 10) || 2)
@@ -404,8 +437,8 @@ export default function SmartPocket({ user }) {
     const grupoId = cartaoParcelado ? gerarUUID() : null;
 
     const linhas = Array.from({ length: numParcelas }, (_, idx) => {
-      let m = mes + idx;
-      let a = ano;
+      let m = mesFaturaInicial + idx;
+      let a = anoFaturaInicial;
       while (m > 11) {
         m -= 12;
         a += 1;
@@ -431,8 +464,15 @@ export default function SmartPocket({ user }) {
     if (error) return toast(error.message, "error");
     const desseMes = (data || []).filter((d) => d.mes === mes && d.ano === ano);
     setCartao((prev) => [...desseMes, ...prev]);
+    if (mesFaturaInicial !== mes || anoFaturaInicial !== ano) {
+      toast(
+        `Lançado na fatura de ${MESES[mesFaturaInicial]} (fecha depois do dia ${diaFechamento}).`,
+        "success",
+      );
+    }
     setCartaoItem("");
     setCartaoValor("");
+    setCartaoData(formatarDataHoje());
     setCartaoParcelado(false);
     setCartaoParcelas("2");
   };
@@ -1017,22 +1057,19 @@ export default function SmartPocket({ user }) {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <div
-          style={{
-            alignSelf: "flex-start",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            background:
-              saldoAcumulado >= 0
-                ? "rgba(16,185,129,0.1)"
-                : "rgba(239,68,68,0.1)",
-            border: `1px solid ${saldoAcumulado >= 0 ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
-            borderRadius: 99,
-            padding: "6px 10px",
-          }}
-        >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          background: "linear-gradient(155deg, #1c2026, #17191d)",
+          border: "1px solid #ffffff10",
+          borderRadius: 14,
+          padding: "10px 14px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 11, color: "#94a3b8" }}>
             Trazido do mês passado: R$
           </span>
@@ -1056,62 +1093,71 @@ export default function SmartPocket({ user }) {
         <button
           onClick={() => setModalClonarMes(true)}
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
             background: "rgba(99,102,241,0.1)",
             border: "1px solid rgba(99,102,241,0.3)",
-            borderRadius: 10,
+            borderRadius: 8,
             color: "#a5b4fc",
             fontSize: 11,
             fontWeight: 700,
-            padding: "6px 12px",
+            padding: "6px 10px",
             cursor: "pointer",
+            whiteSpace: "nowrap",
           }}
         >
-          📋 Clonar do mês passado
+          <ClipboardList size={12} />
+          Clonar mês
         </button>
       </div>
 
-      {/* Cards resumo */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {[
-          { label: "ENTRADAS", val: totalEntradas, color: "#10b981" },
-          { label: "GASTOS", val: totalGastos, color: "#ef4444" },
-          { label: "INVESTIDO", val: totalInvest, color: "#f59e0b" },
-          {
-            label: "SALDO",
-            val: saldo,
-            color: saldo >= 0 ? "#10b981" : "#ef4444",
-          },
-        ].map((c, i) => (
-          <div
-            key={i}
-            style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
-              border: "1px solid #ffffff10",
-              borderRadius: 14,
-              padding: 14,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-            }}
-          >
+      {/* Cards resumo — só na aba Resumo, pra não poluir as outras */}
+      {aba === "resumo" && (
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+        >
+          {[
+            { label: "ENTRADAS", val: totalEntradas, color: "#10b981" },
+            { label: "GASTOS", val: totalGastos, color: "#ef4444" },
+            { label: "INVESTIDO", val: totalInvest, color: "#f59e0b" },
+            {
+              label: "SALDO",
+              val: saldo,
+              color: saldo >= 0 ? "#10b981" : "#ef4444",
+            },
+          ].map((c, i) => (
             <div
+              key={i}
               style={{
-                fontSize: 9,
-                color: "#64748b",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                marginBottom: 4,
+                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                border: "1px solid #ffffff10",
+                borderRadius: 14,
+                padding: 14,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
               }}
             >
-              {c.label}
+              <div
+                style={{
+                  fontSize: 9,
+                  color: "#64748b",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  marginBottom: 4,
+                }}
+              >
+                {c.label}
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: c.color }}>
+                {fmtBRL(c.val)}
+              </div>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: c.color }}>
-              {fmtBRL(c.val)}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Gráfico */}
-      {(totalEntradas > 0 || totalGastos > 0) && (
+      {/* Gráfico — idem, só no Resumo */}
+      {aba === "resumo" && (totalEntradas > 0 || totalGastos > 0) && (
         <div
           style={{
             background: "linear-gradient(155deg, #1c2026, #17191d)",
@@ -1475,6 +1521,47 @@ export default function SmartPocket({ user }) {
       {/* ABA CARTÃO */}
       {aba === "cartao" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {(() => {
+            const hoje = new Date();
+            const avisos = cartoes
+              .map((c) => {
+                const dv = c.dia_vencimento || 10;
+                let venc = new Date(hoje.getFullYear(), hoje.getMonth(), dv);
+                if (venc < hoje) {
+                  venc = new Date(hoje.getFullYear(), hoje.getMonth() + 1, dv);
+                }
+                const diasRestantes = Math.ceil((venc - hoje) / 86400000);
+                return { ...c, diasRestantes };
+              })
+              .filter((c) => c.diasRestantes <= 7);
+            if (avisos.length === 0) return null;
+            return (
+              <div
+                style={{
+                  background: "rgba(245,158,11,0.08)",
+                  border: "1px solid rgba(245,158,11,0.25)",
+                  borderRadius: 14,
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}
+              >
+                {avisos.map((c) => (
+                  <div
+                    key={c.id}
+                    style={{ fontSize: 12, color: "#fbbf24", fontWeight: 600 }}
+                  >
+                    ⚠️ Fatura do <strong>{c.nome}</strong> vence{" "}
+                    {c.diasRestantes === 0
+                      ? "hoje"
+                      : `em ${c.diasRestantes} dia${c.diasRestantes > 1 ? "s" : ""}`}{" "}
+                    (dia {c.dia_vencimento})
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           {/* Meus cartões */}
           <div
             style={{
@@ -1695,8 +1782,8 @@ export default function SmartPocket({ user }) {
                 lineHeight: 1.5,
               }}
             >
-              ⚠️ O cartão não é contabilizado no saldo. Quando chegar a fatura,
-              registre o total na aba <strong>Gastos</strong>.
+              💡 A compra entra automaticamente na fatura certa, com base na
+              data e no fechamento do cartão escolhido.
             </div>
             <input
               placeholder="O que comprou?"
@@ -1716,6 +1803,24 @@ export default function SmartPocket({ user }) {
               style={{ marginTop: 8 }}
               onKeyDown={(e) => e.key === "Enter" && adicionarCartao()}
             />
+            <div style={{ marginTop: 8 }}>
+              <label
+                style={{
+                  fontSize: 10,
+                  color: "#64748b",
+                  fontWeight: 700,
+                  display: "block",
+                  marginBottom: 4,
+                }}
+              >
+                DATA DA COMPRA
+              </label>
+              <input
+                type="date"
+                value={cartaoData}
+                onChange={(e) => setCartaoData(e.target.value)}
+              />
+            </div>
             {cartoes.length > 0 && (
               <select
                 value={cartaoSelecionado}
