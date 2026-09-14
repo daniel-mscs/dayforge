@@ -277,15 +277,15 @@ export async function agendarResumoNoturno(
     alvo.setHours(hora, minuto, 0, 0);
     if (alvo <= agora) return; // já passou do horário hoje, não agenda
 
-    const linhas = [
+    const partes = [
       treinou
-        ? `🏋️ Treino feito${kcalTreino ? ` (${kcalTreino} kcal)` : ""}`
-        : "🏋️ Sem treino hoje",
+        ? `🏋️ ${kcalTreino || "Treino"}${kcalTreino ? "kcal" : ""}`
+        : "🏋️ Sem treino",
       aguaMeta ? `💧 ${aguaMl}/${aguaMeta}ml` : `💧 ${aguaMl}ml`,
-      sonoOk ? "😴 Sono registrado" : "😴 Sono não registrado",
+      sonoOk ? "😴 Sono ok" : "😴 Sem sono",
       gastosHoje > 0
-        ? `💰 Gastos: R$${gastosHoje.toFixed(2).replace(".", ",")}`
-        : "💰 Sem gastos hoje",
+        ? `💰 R$${gastosHoje.toFixed(2).replace(".", ",")}`
+        : "💰 Sem gastos",
     ];
 
     await LocalNotifications.schedule({
@@ -293,7 +293,7 @@ export async function agendarResumoNoturno(
         {
           id: ID_NOTIF_PENDENCIAS,
           title: "📋 Resumo do seu dia",
-          body: linhas.join("\n"),
+          body: partes.join("  ·  "),
           smallIcon: "ic_notification",
           schedule: { at: alvo, allowWhileIdle: true },
         },
