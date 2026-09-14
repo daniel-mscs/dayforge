@@ -44,6 +44,7 @@ import {
   agendarResumoNoturno,
   agendarNotificacoesRotina,
 } from "./lib/notifications";
+import RegistroRapido from "./RegistroRapido";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -2155,6 +2156,8 @@ export default function Home({
           ))}
         </SortableContext>
       </DndContext>
+
+      <RegistroRapido user={user} onRegistrado={carregar} />
     </div>
   );
 }
