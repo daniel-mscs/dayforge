@@ -11,6 +11,7 @@ import {
   Target,
   BarChart3,
   Calendar,
+  ClipboardList,
 } from "lucide-react";
 import {
   BarChart,
