@@ -421,6 +421,7 @@ export default function SmartPocket({ user }) {
     setGastoNome("");
     setGastoValor("");
     setGastoData("");
+    document.getElementById("gasto-nome")?.focus();
   };
 
   const adicionarCartao = async () => {
@@ -485,6 +486,7 @@ export default function SmartPocket({ user }) {
     setCartaoData(formatarDataHoje());
     setCartaoParcelado(false);
     setCartaoParcelas("2");
+    document.getElementById("cartao-item")?.focus();
   };
 
   const adicionarCartaoConta = async () => {
@@ -596,6 +598,7 @@ export default function SmartPocket({ user }) {
     setRecorrentes((prev) => [...prev, data[0]]);
     setNovoRecorrenteNome("");
     setNovoRecorrenteValor("");
+    document.getElementById("recorrente-nome")?.focus();
   };
 
   const removerRecorrente = async (id) => {
@@ -640,6 +643,7 @@ export default function SmartPocket({ user }) {
     setContas((prev) => [...prev, data[0]]);
     setContaNome("");
     setContaPlanejado("");
+    document.getElementById("conta-nome")?.focus();
   };
 
   const marcarContaPaga = async (conta, valorPago) => {
@@ -688,6 +692,7 @@ export default function SmartPocket({ user }) {
     setMetas((prev) => [...prev, data[0]]);
     setMetaNome("");
     setMetaValorAlvo("");
+    document.getElementById("meta-nome")?.focus();
   };
 
   const contribuirMeta = async (meta) => {
@@ -706,6 +711,18 @@ export default function SmartPocket({ user }) {
     );
     setContribuicaoInput((prev) => ({ ...prev, [meta.id]: "" }));
     toast("Contribuição registrada! 🎯", "success");
+  };
+
+  const trocarPessoaMeta = async (meta) => {
+    const novaPessoa = meta.pessoa === "jose" ? "eu" : "jose";
+    const { error } = await supabase
+      .from("financeiro_metas")
+      .update({ pessoa: novaPessoa })
+      .eq("id", meta.id);
+    if (error) return toast(error.message, "error");
+    setMetas((prev) =>
+      prev.map((m) => (m.id === meta.id ? { ...m, pessoa: novaPessoa } : m)),
+    );
   };
 
   const clonarMesPassado = async () => {
@@ -853,6 +870,7 @@ export default function SmartPocket({ user }) {
     setEntradas((prev) => [data[0], ...prev]);
     setEntradaNome("");
     setEntradaValor("");
+    document.getElementById("entrada-nome")?.focus();
   };
 
   const deletar = async (tabela, id, setter) => {
@@ -1381,6 +1399,7 @@ export default function SmartPocket({ user }) {
               ADICIONAR GASTO
             </div>
             <input
+              id="gasto-nome"
               placeholder="Descrição (ex: Aluguel)"
               value={gastoNome}
               onChange={(e) => setGastoNome(e.target.value)}
@@ -1874,6 +1893,7 @@ export default function SmartPocket({ user }) {
               menos 7 dias.
             </div>
             <input
+              id="cartao-item"
               placeholder="O que comprou?"
               value={cartaoItem}
               onChange={(e) => setCartaoItem(e.target.value)}
@@ -2249,6 +2269,7 @@ export default function SmartPocket({ user }) {
               REGISTRAR ENTRADA
             </div>
             <input
+              id="entrada-nome"
               placeholder="Origem (ex: Salário)"
               value={entradaNome}
               onChange={(e) => setEntradaNome(e.target.value)}
@@ -2379,6 +2400,7 @@ export default function SmartPocket({ user }) {
               conta de luz ≈ R$150) e depois confirma quanto pagou de verdade.
             </div>
             <input
+              id="conta-nome"
               placeholder="Nome (ex: Conta de luz)"
               value={contaNome}
               onChange={(e) => setContaNome(e.target.value)}
@@ -2581,6 +2603,7 @@ export default function SmartPocket({ user }) {
               meses, não zeram.
             </div>
             <input
+              id="meta-nome"
               placeholder="Nome (ex: Reserva de emergência)"
               value={metaNome}
               onChange={(e) => setMetaNome(e.target.value)}
@@ -2704,20 +2727,25 @@ export default function SmartPocket({ user }) {
                       >
                         <Target size={15} color="#10b981" />
                         {m.nome}
-                        {m.pessoa === "jose" && (
-                          <span
-                            style={{
-                              fontSize: 9,
-                              fontWeight: 800,
-                              color: "#818cf8",
-                              background: "rgba(99,102,241,0.15)",
-                              padding: "2px 6px",
-                              borderRadius: 99,
-                            }}
-                          >
-                            JOSÉ
-                          </span>
-                        )}
+                        <button
+                          onClick={() => trocarPessoaMeta(m)}
+                          title="Toque para trocar de quem é essa meta"
+                          style={{
+                            fontSize: 9,
+                            fontWeight: 800,
+                            color: m.pessoa === "jose" ? "#818cf8" : "#64748b",
+                            background:
+                              m.pessoa === "jose"
+                                ? "rgba(99,102,241,0.15)"
+                                : "rgba(255,255,255,0.06)",
+                            border: "none",
+                            padding: "2px 8px",
+                            borderRadius: 99,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {m.pessoa === "jose" ? "JOSÉ" : "EU"}
+                        </button>
                       </span>
                       <button
                         onClick={() =>
@@ -3098,6 +3126,7 @@ export default function SmartPocket({ user }) {
               <option value="investimento">📈 Investimento</option>
             </select>
             <input
+              id="recorrente-nome"
               placeholder={
                 novoRecorrenteTipo === "gasto"
                   ? "Nome (ex: Aluguel)"
