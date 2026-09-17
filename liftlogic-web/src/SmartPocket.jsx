@@ -12,6 +12,8 @@ import {
   BarChart3,
   Calendar,
   ClipboardList,
+  ChevronUp,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   BarChart,
@@ -118,6 +120,7 @@ export default function SmartPocket({ user }) {
   const [mes, setMes] = useState(hoje.getMonth());
   const [ano, setAno] = useState(hoje.getFullYear());
   const [aba, setAba] = useState("gastos");
+  const [mostrarMaisAbas, setMostrarMaisAbas] = useState(false);
   const [carregando, setCarregando] = useState(true);
 
   const [gastos, setGastos] = useState([]);
@@ -191,6 +194,12 @@ export default function SmartPocket({ user }) {
   const [metaPessoa, setMetaPessoa] = useState("eu");
   const [filtroPessoaMetas, setFiltroPessoaMetas] = useState("todos");
   const [contribuicaoInput, setContribuicaoInput] = useState({});
+
+  useEffect(() => {
+    if (["cartao", "invest", "contas", "metas"].includes(aba)) {
+      setMostrarMaisAbas(true);
+    }
+  }, [aba]);
 
   const buscarTudo = useCallback(async () => {
     setCarregando(true);
@@ -1242,39 +1251,11 @@ export default function SmartPocket({ user }) {
             corEscura: "#dc2626",
           },
           {
-            id: "cartao",
-            icon: CreditCard,
-            label: "Cartão",
-            cor: "#f97316",
-            corEscura: "#ea580c",
-          },
-          {
-            id: "invest",
-            icon: TrendingUp,
-            label: "Invest",
-            cor: "#f59e0b",
-            corEscura: "#d97706",
-          },
-          {
             id: "entradas",
             icon: Wallet,
             label: "Entradas",
             cor: "#10b981",
             corEscura: "#059669",
-          },
-          {
-            id: "contas",
-            icon: Receipt,
-            label: "Contas",
-            cor: "#06b6d4",
-            corEscura: "#0891b2",
-          },
-          {
-            id: "metas",
-            icon: Target,
-            label: "Metas",
-            cor: "#14b8a6",
-            corEscura: "#0d9488",
           },
           {
             id: "resumo",
@@ -1283,6 +1264,38 @@ export default function SmartPocket({ user }) {
             cor: "#6366f1",
             corEscura: "#4f46e5",
           },
+          ...(mostrarMaisAbas
+            ? [
+                {
+                  id: "cartao",
+                  icon: CreditCard,
+                  label: "Cartão",
+                  cor: "#f97316",
+                  corEscura: "#ea580c",
+                },
+                {
+                  id: "invest",
+                  icon: TrendingUp,
+                  label: "Invest",
+                  cor: "#f59e0b",
+                  corEscura: "#d97706",
+                },
+                {
+                  id: "contas",
+                  icon: Receipt,
+                  label: "Contas",
+                  cor: "#06b6d4",
+                  corEscura: "#0891b2",
+                },
+                {
+                  id: "metas",
+                  icon: Target,
+                  label: "Metas",
+                  cor: "#14b8a6",
+                  corEscura: "#0d9488",
+                },
+              ]
+            : []),
         ].map((a) => (
           <button
             key={a.id}
@@ -1316,6 +1329,33 @@ export default function SmartPocket({ user }) {
             </span>
           </button>
         ))}
+        <button
+          onClick={() => setMostrarMaisAbas((p) => !p)}
+          style={{
+            flex: "0 0 auto",
+            width: "22%",
+            aspectRatio: "1.3",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 3,
+            background: "#1c2026",
+            border: "1px dashed #ffffff1a",
+            borderRadius: 10,
+            color: "#64748b",
+            fontSize: 9,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          {mostrarMaisAbas ? (
+            <ChevronUp size={17} strokeWidth={2} />
+          ) : (
+            <MoreHorizontal size={17} strokeWidth={2} />
+          )}
+          <span>{mostrarMaisAbas ? "Menos" : "Mais"}</span>
+        </button>
       </div>
 
       {/* ABA GASTOS */}
