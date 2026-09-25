@@ -233,6 +233,10 @@ export default function SmartPocket({ user }) {
       { data: contasData },
       { data: metasData },
       { data: dividasData },
+      { data: entradasPassadoData },
+      { data: investPassadoData },
+      { data: contasPassadoData },
+      { data: saldoAnteriorData },
     ] = await Promise.all([
       supabase
         .from("financeiro_gastos")
@@ -318,6 +322,31 @@ export default function SmartPocket({ user }) {
         .eq("user_id", user.id)
         .order("recebido", { ascending: true })
         .order("created_at", { ascending: false }),
+      supabase
+        .from("financeiro_entradas")
+        .select("valor")
+        .eq("user_id", user.id)
+        .eq("mes", mesPassadoData.mes)
+        .eq("ano", mesPassadoData.ano),
+      supabase
+        .from("financeiro_investimentos")
+        .select("valor")
+        .eq("user_id", user.id)
+        .eq("mes", mesPassadoData.mes)
+        .eq("ano", mesPassadoData.ano),
+      supabase
+        .from("financeiro_contas")
+        .select("valor_pago")
+        .eq("user_id", user.id)
+        .eq("mes", mesPassadoData.mes)
+        .eq("ano", mesPassadoData.ano),
+      supabase
+        .from("financeiro_saldo_inicial")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("mes", mesPassadoData.mes)
+        .eq("ano", mesPassadoData.ano)
+        .maybeSingle(),
     ]);
 
     // Aplica os recorrentes que ainda não foram lançados nesse mês —
@@ -406,7 +435,41 @@ export default function SmartPocket({ user }) {
       setCartaoSelecionado(cts[0].id);
     }
 
-    setSaldoAcumulado(saldoIniData?.valor ?? 0);
+    // Se esse mês ainda não tem saldo trazido salvo, calcula sozinho:
+    // saldo acumulado do mês anterior + o que sobrou nele
+    // (entradas - gastos - investimentos - contas pagas).
+    if (saldoIniData) {
+      setSaldoAcumulado(saldoIniData.valor);
+    } else {
+      const totalEntradasPassado = (entradasPassadoData || []).reduce(
+        (s, r) => s + Number(r.valor),
+        0,
+      );
+      const totalInvestPassado = (investPassadoData || []).reduce(
+        (s, r) => s + Number(r.valor),
+        0,
+      );
+      const totalContasPassado = (contasPassadoData || [])
+        .filter((c) => c.valor_pago !== null && c.valor_pago !== undefined)
+        .reduce((s, c) => s + Number(c.valor_pago), 0);
+      const totalGastosPassadoCalc = (gPassado || []).reduce(
+        (s, r) => s + Number(r.valor),
+        0,
+      );
+      const saldoDoMesPassado =
+        totalEntradasPassado -
+        (totalGastosPassadoCalc + totalInvestPassado + totalContasPassado);
+      const novoSaldoAcumulado =
+        (saldoAnteriorData?.valor ?? 0) + saldoDoMesPassado;
+      setSaldoAcumulado(novoSaldoAcumulado);
+      // já salva calculado, pra não recalcular toda hora e virar histórico fixo
+      supabase
+        .from("financeiro_saldo_inicial")
+        .upsert(
+          { user_id: user.id, mes, ano, valor: novoSaldoAcumulado },
+          { onConflict: "user_id,mes,ano" },
+        );
+    }
     setContas(contasData || []);
     setMetas(metasData || []);
     setDividas(dividasData || []);
@@ -1230,10 +1293,14 @@ export default function SmartPocket({ user }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>
+          <span
+            style={{ fontSize: 11, color: "#94a3b8" }}
+            title="Calculado automaticamente a partir do saldo do mês anterior — edite se quiser ajustar"
+          >
             Trazido do mês passado: R$
           </span>
           <input
+            key={`${mes}-${ano}`}
             type="number"
             defaultValue={saldoAcumulado}
             onBlur={(e) => salvarSaldoInicial(parseFloat(e.target.value) || 0)}
