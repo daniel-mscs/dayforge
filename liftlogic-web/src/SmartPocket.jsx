@@ -233,10 +233,11 @@ export default function SmartPocket({ user }) {
       { data: contasData },
       { data: metasData },
       { data: dividasData },
-      { data: entradasPassadoData },
-      { data: investPassadoData },
-      { data: contasPassadoData },
-      { data: saldoAnteriorData },
+      { data: gastosHistData },
+      { data: investHistData },
+      { data: entradasHistData },
+      { data: contasHistData },
+      { data: ancoraData },
     ] = await Promise.all([
       supabase
         .from("financeiro_gastos")
@@ -323,29 +324,30 @@ export default function SmartPocket({ user }) {
         .order("recebido", { ascending: true })
         .order("created_at", { ascending: false }),
       supabase
-        .from("financeiro_entradas")
-        .select("valor")
-        .eq("user_id", user.id)
-        .eq("mes", mesPassadoData.mes)
-        .eq("ano", mesPassadoData.ano),
+        .from("financeiro_gastos")
+        .select("mes, ano, valor")
+        .eq("user_id", user.id),
       supabase
         .from("financeiro_investimentos")
-        .select("valor")
-        .eq("user_id", user.id)
-        .eq("mes", mesPassadoData.mes)
-        .eq("ano", mesPassadoData.ano),
+        .select("mes, ano, valor")
+        .eq("user_id", user.id),
+      supabase
+        .from("financeiro_entradas")
+        .select("mes, ano, valor")
+        .eq("user_id", user.id),
       supabase
         .from("financeiro_contas")
-        .select("valor_pago")
-        .eq("user_id", user.id)
-        .eq("mes", mesPassadoData.mes)
-        .eq("ano", mesPassadoData.ano),
+        .select("mes, ano, planejado, valor_pago")
+        .eq("user_id", user.id),
       supabase
         .from("financeiro_saldo_inicial")
         .select("*")
         .eq("user_id", user.id)
-        .eq("mes", mesPassadoData.mes)
-        .eq("ano", mesPassadoData.ano)
+        .eq("manual", true)
+        .or(`ano.lt.${ano},and(ano.eq.${ano},mes.lt.${mes})`)
+        .order("ano", { ascending: false })
+        .order("mes", { ascending: false })
+        .limit(1)
         .maybeSingle(),
     ]);
 
@@ -435,40 +437,60 @@ export default function SmartPocket({ user }) {
       setCartaoSelecionado(cts[0].id);
     }
 
-    // Se esse mês ainda não tem saldo trazido salvo, calcula sozinho:
-    // saldo acumulado do mês anterior + o que sobrou nele
-    // (entradas - gastos - investimentos - contas pagas).
-    if (saldoIniData) {
+    // Recalcula sempre a partir do histórico completo — nunca usa um valor
+    // "engessado" de uma visita antiga, então editar um mês passado depois
+    // de já ter visitado meses futuros não deixa nada desatualizado.
+    // Só para de recalcular se você mesmo travou um valor manual (onBlur).
+    if (saldoIniData?.manual) {
       setSaldoAcumulado(saldoIniData.valor);
     } else {
-      const totalEntradasPassado = (entradasPassadoData || []).reduce(
-        (s, r) => s + Number(r.valor),
-        0,
-      );
-      const totalInvestPassado = (investPassadoData || []).reduce(
-        (s, r) => s + Number(r.valor),
-        0,
-      );
-      const totalContasPassado = (contasPassadoData || [])
-        .filter((c) => c.valor_pago !== null && c.valor_pago !== undefined)
-        .reduce((s, c) => s + Number(c.valor_pago), 0);
-      const totalGastosPassadoCalc = (gPassado || []).reduce(
-        (s, r) => s + Number(r.valor),
-        0,
-      );
-      const saldoDoMesPassado =
-        totalEntradasPassado -
-        (totalGastosPassadoCalc + totalInvestPassado + totalContasPassado);
+      const toIdx = (a, m) => a * 12 + m;
+      const idxAtual = toIdx(ano, mes);
+      const idxAncora = ancoraData
+        ? toIdx(ancoraData.ano, ancoraData.mes)
+        : -Infinity;
+
+      const somaNoIntervalo = (linhas, campo) =>
+        (linhas || [])
+          .filter((l) => {
+            const idx = toIdx(l.ano, l.mes);
+            return idx >= idxAncora && idx < idxAtual;
+          })
+          .reduce((s, l) => s + Number(l[campo] ?? 0), 0);
+
+      const totalEntradasAntes = somaNoIntervalo(entradasHistData, "valor");
+      const totalGastosAntes = somaNoIntervalo(gastosHistData, "valor");
+      const totalInvestAntes = somaNoIntervalo(investHistData, "valor");
+      const totalContasAntes = (contasHistData || [])
+        .filter((c) => {
+          const idx = toIdx(c.ano, c.mes);
+          return idx >= idxAncora && idx < idxAtual;
+        })
+        .reduce((s, c) => {
+          const efetivo =
+            c.valor_pago !== null && c.valor_pago !== undefined
+              ? c.valor_pago
+              : c.planejado;
+          return s + Number(efetivo || 0);
+        }, 0);
+
       const novoSaldoAcumulado =
-        (saldoAnteriorData?.valor ?? 0) + saldoDoMesPassado;
+        (ancoraData ? Number(ancoraData.valor) : 0) +
+        totalEntradasAntes -
+        (totalGastosAntes + totalInvestAntes + totalContasAntes);
+
       setSaldoAcumulado(novoSaldoAcumulado);
-      // já salva calculado, pra não recalcular toda hora e virar histórico fixo
-      supabase
-        .from("financeiro_saldo_inicial")
-        .upsert(
-          { user_id: user.id, mes, ano, valor: novoSaldoAcumulado },
-          { onConflict: "user_id,mes,ano" },
-        );
+      // guarda só como registro/histórico — não é mais usado como cache
+      supabase.from("financeiro_saldo_inicial").upsert(
+        {
+          user_id: user.id,
+          mes,
+          ano,
+          valor: novoSaldoAcumulado,
+          manual: false,
+        },
+        { onConflict: "user_id,mes,ano" },
+      );
     }
     setContas(contasData || []);
     setMetas(metasData || []);
@@ -703,7 +725,7 @@ export default function SmartPocket({ user }) {
     await supabase
       .from("financeiro_saldo_inicial")
       .upsert(
-        { user_id: user.id, mes, ano, valor },
+        { user_id: user.id, mes, ano, valor, manual: true },
         { onConflict: "user_id,mes,ano" },
       );
   };
