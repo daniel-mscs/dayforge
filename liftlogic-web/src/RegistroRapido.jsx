@@ -32,10 +32,12 @@ export default function RegistroRapido({ user, onRegistrado }) {
 
   const registrarAgua = async (ml) => {
     setSalvando(true);
-    const hoje = formatarData(new Date());
+    const agora = new Date();
+    const hoje = formatarData(agora);
+    const hora = agora.toTimeString().slice(0, 5);
     const { error } = await supabase
       .from("agua_registro")
-      .insert([{ user_id: user.id, data: hoje, ml }]);
+      .insert([{ user_id: user.id, data: hoje, ml, hora }]);
     setSalvando(false);
     if (error) return toast(error.message, "error");
     toast(`+${ml}ml registrado!`, "success");

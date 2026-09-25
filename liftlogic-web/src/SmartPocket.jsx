@@ -14,6 +14,8 @@ import {
   ClipboardList,
   ChevronUp,
   MoreHorizontal,
+  Pencil,
+  HandCoins,
 } from "lucide-react";
 import {
   BarChart,
@@ -195,6 +197,17 @@ export default function SmartPocket({ user }) {
   const [filtroPessoaMetas, setFiltroPessoaMetas] = useState("todos");
   const [contribuicaoInput, setContribuicaoInput] = useState({});
 
+  const [dividas, setDividas] = useState([]);
+  const [dividaPessoa, setDividaPessoa] = useState("");
+  const [dividaDescricao, setDividaDescricao] = useState("");
+  const [dividaValor, setDividaValor] = useState("");
+
+  const [editandoGasto, setEditandoGasto] = useState(null);
+  const [editNome, setEditNome] = useState("");
+  const [editValor, setEditValor] = useState("");
+  const [editCategoria, setEditCategoria] = useState(CATEGORIAS[0]);
+  const [editData, setEditData] = useState("");
+
   useEffect(() => {
     if (["cartao", "invest", "contas", "metas"].includes(aba)) {
       setMostrarMaisAbas(true);
@@ -219,6 +232,7 @@ export default function SmartPocket({ user }) {
       { data: saldoIniData },
       { data: contasData },
       { data: metasData },
+      { data: dividasData },
     ] = await Promise.all([
       supabase
         .from("financeiro_gastos")
@@ -298,6 +312,12 @@ export default function SmartPocket({ user }) {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true }),
+      supabase
+        .from("financeiro_dividas")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("recebido", { ascending: true })
+        .order("created_at", { ascending: false }),
     ]);
 
     // Aplica os recorrentes que ainda não foram lançados nesse mês —
@@ -389,6 +409,7 @@ export default function SmartPocket({ user }) {
     setSaldoAcumulado(saldoIniData?.valor ?? 0);
     setContas(contasData || []);
     setMetas(metasData || []);
+    setDividas(dividasData || []);
 
     setCarregando(false);
   }, [user.id, mes, ano]);
@@ -725,6 +746,93 @@ export default function SmartPocket({ user }) {
     );
   };
 
+  const adicionarDivida = async () => {
+    if (!dividaPessoa || !dividaValor)
+      return toast("Preencha quem deve e o valor!", "error");
+    const { data, error } = await supabase
+      .from("financeiro_dividas")
+      .insert([
+        {
+          user_id: user.id,
+          pessoa: dividaPessoa,
+          descricao: dividaDescricao || null,
+          valor: parseFloat(dividaValor),
+          data: formatarDataHoje(),
+        },
+      ])
+      .select();
+    if (error) return toast(error.message, "error");
+    setDividas((prev) => [data[0], ...prev]);
+    setDividaPessoa("");
+    setDividaDescricao("");
+    setDividaValor("");
+    document.getElementById("divida-pessoa")?.focus();
+  };
+
+  const marcarDividaRecebida = async (id) => {
+    const hojeStr = formatarDataHoje();
+    const { error } = await supabase
+      .from("financeiro_dividas")
+      .update({ recebido: true, data_recebido: hojeStr })
+      .eq("id", id);
+    if (error) return toast(error.message, "error");
+    setDividas((prev) =>
+      prev.map((d) =>
+        d.id === id ? { ...d, recebido: true, data_recebido: hojeStr } : d,
+      ),
+    );
+  };
+
+  const desmarcarDividaRecebida = async (id) => {
+    await supabase
+      .from("financeiro_dividas")
+      .update({ recebido: false, data_recebido: null })
+      .eq("id", id);
+    setDividas((prev) =>
+      prev.map((d) =>
+        d.id === id ? { ...d, recebido: false, data_recebido: null } : d,
+      ),
+    );
+  };
+
+  const abrirEdicaoGasto = (g) => {
+    setEditandoGasto(g);
+    setEditNome(g.nome);
+    setEditValor(String(g.valor));
+    setEditCategoria(g.categoria || CATEGORIAS[0]);
+    setEditData(g.data || "");
+  };
+
+  const salvarEdicaoGasto = async () => {
+    if (!editNome || !editValor)
+      return toast("Preencha nome e valor!", "error");
+    const { error } = await supabase
+      .from("financeiro_gastos")
+      .update({
+        nome: editNome,
+        valor: parseFloat(editValor),
+        categoria: editCategoria,
+        data: editData || null,
+      })
+      .eq("id", editandoGasto.id);
+    if (error) return toast(error.message, "error");
+    setGastos((prev) =>
+      prev.map((g) =>
+        g.id === editandoGasto.id
+          ? {
+              ...g,
+              nome: editNome,
+              valor: parseFloat(editValor),
+              categoria: editCategoria,
+              data: editData || null,
+            }
+          : g,
+      ),
+    );
+    setEditandoGasto(null);
+    toast("Gasto atualizado!", "success");
+  };
+
   const clonarMesPassado = async () => {
     if (clonandoMes) return;
     setClonandoMes(true);
@@ -885,6 +993,16 @@ export default function SmartPocket({ user }) {
   const totalContasPagas = contas
     .filter((c) => c.valor_pago !== null && c.valor_pago !== undefined)
     .reduce((s, c) => s + Number(c.valor_pago), 0);
+  const totalContasPrevisto = contas.reduce(
+    (s, c) => s + Number(c.planejado),
+    0,
+  );
+  const contasPendentes = contas.filter(
+    (c) => c.valor_pago === null || c.valor_pago === undefined,
+  );
+  const totalDividasReceber = dividas
+    .filter((d) => !d.recebido)
+    .reduce((s, d) => s + Number(d.valor), 0);
   const saldo = totalEntradas - (totalGastos + totalInvest + totalContasPagas);
 
   // Comparação com o mês passado
@@ -1312,6 +1430,13 @@ export default function SmartPocket({ user }) {
                   cor: "#14b8a6",
                   corEscura: "#0d9488",
                 },
+                {
+                  id: "dividas",
+                  icon: HandCoins,
+                  label: "A Receber",
+                  cor: "#a3e635",
+                  corEscura: "#84cc16",
+                },
               ]
             : []),
         ].map((a) => (
@@ -1570,6 +1695,20 @@ export default function SmartPocket({ user }) {
                   >
                     {fmtBRL(g.valor)}
                   </span>
+                  <button
+                    onClick={() => abrirEdicaoGasto(g)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#818cf8",
+                      cursor: "pointer",
+                      opacity: 0.6,
+                      fontSize: 14,
+                      display: "flex",
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     onClick={() =>
                       deletar("financeiro_gastos", g.id, setGastos)
@@ -2835,6 +2974,207 @@ export default function SmartPocket({ user }) {
         </div>
       )}
 
+      {/* ABA DÍVIDAS (A Receber) */}
+      {aba === "dividas" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: 18,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: "#64748b",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                marginBottom: 12,
+              }}
+            >
+              REGISTRAR DÍVIDA
+            </div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>
+              Dinheiro que alguém te deve — não entra no saldo do mês, é só
+              controle à parte.
+            </div>
+            <input
+              id="divida-pessoa"
+              placeholder="Quem deve? (ex: Meu pai)"
+              value={dividaPessoa}
+              onChange={(e) => setDividaPessoa(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" &&
+                document.getElementById("divida-valor")?.focus()
+              }
+            />
+            <input
+              id="divida-valor"
+              type="number"
+              placeholder="Valor R$"
+              value={dividaValor}
+              onChange={(e) => setDividaValor(e.target.value)}
+              style={{ marginTop: 8 }}
+              onKeyDown={(e) =>
+                e.key === "Enter" &&
+                document.getElementById("divida-descricao")?.focus()
+              }
+            />
+            <input
+              id="divida-descricao"
+              placeholder="Motivo (opcional)"
+              value={dividaDescricao}
+              onChange={(e) => setDividaDescricao(e.target.value)}
+              style={{ marginTop: 8 }}
+              onKeyDown={(e) => e.key === "Enter" && adicionarDivida()}
+            />
+            <button
+              onClick={adicionarDivida}
+              style={{
+                marginTop: 10,
+                width: "100%",
+                background: "#a3e635",
+                border: "none",
+                borderRadius: 10,
+                color: "#1a1d21",
+                fontSize: 14,
+                fontWeight: 700,
+                padding: 12,
+                cursor: "pointer",
+              }}
+            >
+              + Registrar Dívida
+            </button>
+          </div>
+
+          {totalDividasReceber > 0 && (
+            <div
+              style={{
+                background: "rgba(163,230,53,0.08)",
+                border: "1px solid rgba(163,230,53,0.25)",
+                borderRadius: 14,
+                padding: "12px 14px",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 10, color: "#a3e635", fontWeight: 800 }}>
+                TOTAL A RECEBER
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#a3e635" }}>
+                {fmtBRL(totalDividasReceber)}
+              </div>
+            </div>
+          )}
+
+          {dividas.length === 0 ? (
+            <p style={{ textAlign: "center", color: "#475569", fontSize: 13 }}>
+              Ninguém te deve nada no momento. 🎉
+            </p>
+          ) : (
+            dividas.map((d) => (
+              <div
+                key={d.id}
+                style={{
+                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  border: "1px solid #ffffff10",
+                  borderLeft: `3px solid ${d.recebido ? "#10b981" : "#a3e635"}`,
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#f8fafc",
+                      }}
+                    >
+                      {d.pessoa}
+                    </div>
+                    {d.descricao && (
+                      <div
+                        style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
+                      >
+                        {d.descricao}
+                      </div>
+                    )}
+                    {d.recebido && d.data_recebido && (
+                      <div
+                        style={{ fontSize: 11, color: "#10b981", marginTop: 2 }}
+                      >
+                        Recebido em{" "}
+                        {new Date(
+                          d.data_recebido + "T00:00:00",
+                        ).toLocaleDateString("pt-BR")}
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: d.recebido ? "#10b981" : "#a3e635",
+                      }}
+                    >
+                      {fmtBRL(d.valor)}
+                    </span>
+                    <button
+                      onClick={() =>
+                        deletar("financeiro_dividas", d.id, setDividas)
+                      }
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        opacity: 0.4,
+                        fontSize: 16,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() =>
+                    d.recebido
+                      ? desmarcarDividaRecebida(d.id)
+                      : marcarDividaRecebida(d.id)
+                  }
+                  style={{
+                    marginTop: 8,
+                    background: d.recebido ? "none" : "#10b981",
+                    border: d.recebido ? "1px solid #ffffff10" : "none",
+                    borderRadius: 8,
+                    color: d.recebido ? "#64748b" : "#fff",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "6px 12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {d.recebido ? "Desmarcar" : "✓ Recebi"}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {/* ABA RESUMO */}
       {aba === "resumo" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2871,6 +3211,89 @@ export default function SmartPocket({ user }) {
                 : "⚠️ Você está no negativo!"}
             </div>
           </div>
+
+          {/* Contas previstas do mês */}
+          {contas.length > 0 && (
+            <div
+              style={{
+                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                border: "1px solid #ffffff10",
+                borderRadius: 16,
+                padding: 16,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#64748b",
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  CONTAS DO MÊS
+                </div>
+                <span style={{ fontSize: 11, color: "#64748b" }}>
+                  {fmtBRL(totalContasPagas)} / {fmtBRL(totalContasPrevisto)}{" "}
+                  previsto
+                </span>
+              </div>
+              <div
+                style={{
+                  height: 8,
+                  borderRadius: 99,
+                  background: "#ffffff0d",
+                  overflow: "hidden",
+                  marginBottom: 12,
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${totalContasPrevisto > 0 ? Math.min(100, (totalContasPagas / totalContasPrevisto) * 100) : 0}%`,
+                    background: "#06b6d4",
+                    borderRadius: 99,
+                  }}
+                />
+              </div>
+              {contasPendentes.length === 0 ? (
+                <div style={{ fontSize: 12, color: "#10b981" }}>
+                  ✅ Todas as contas do mês estão pagas.
+                </div>
+              ) : (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  {contasPendentes.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => setAba("contas")}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 12,
+                        color: "#cbd5e1",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span>{c.nome}</span>
+                      <span style={{ color: "#f59e0b", fontWeight: 700 }}>
+                        {fmtBRL(c.planejado)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Limites por categoria */}
           <div
@@ -3549,6 +3972,106 @@ export default function SmartPocket({ user }) {
                 </>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {editandoGasto && (
+        <div className="modal-overlay" onClick={() => setEditandoGasto(null)}>
+          <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: "1rem", marginBottom: 12 }}>Editar Gasto</h2>
+            <input
+              placeholder="Descrição"
+              value={editNome}
+              onChange={(e) => setEditNome(e.target.value)}
+            />
+            <input
+              type="number"
+              placeholder="Valor R$"
+              value={editValor}
+              onChange={(e) => setEditValor(e.target.value)}
+              style={{ marginTop: 8 }}
+            />
+            <select
+              value={editCategoria}
+              onChange={(e) => setEditCategoria(e.target.value)}
+              style={{ marginTop: 8 }}
+            >
+              {CATEGORIAS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <div
+              style={{
+                marginTop: 8,
+                background: "#24282d",
+                border: "1px solid #ffffff10",
+                borderRadius: 8,
+                padding: "10px 12px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#64748b",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  marginBottom: 4,
+                }}
+              >
+                DATA DO PAGAMENTO (opcional)
+              </div>
+              <input
+                type="date"
+                value={editData}
+                onChange={(e) => setEditData(e.target.value)}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  border: "none",
+                  color: "#f8fafc",
+                  fontSize: 14,
+                  padding: 0,
+                  boxSizing: "border-box",
+                  outline: "none",
+                }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                onClick={salvarEdicaoGasto}
+                style={{
+                  flex: 1,
+                  background: "#6366f1",
+                  border: "none",
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "11px 0",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Salvar
+              </button>
+              <button
+                onClick={() => setEditandoGasto(null)}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "1px solid #ffffff0d",
+                  color: "#64748b",
+                  borderRadius: 8,
+                  padding: "11px 0",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
