@@ -1,13 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
-import { Plus, X, Droplet, Scale, Banknote } from "lucide-react";
+import { Plus, X, Droplet, Scale, Banknote, CreditCard } from "lucide-react";
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
   return local.toISOString().split("T")[0];
+}
+
+// Mesma regra da aba Cartão: compra depois do fechamento cai na fatura
+// do mês seguinte.
+function calcularMesFatura(dataCompraStr, diaFechamento) {
+  const d = new Date(dataCompraStr + "T00:00:00");
+  let mesFatura = d.getMonth();
+  let anoFatura = d.getFullYear();
+  if (d.getDate() > diaFechamento) {
+    mesFatura += 1;
+    if (mesFatura > 11) {
+      mesFatura = 0;
+      anoFatura += 1;
+    }
+  }
+  return { mes: mesFatura, ano: anoFatura };
 }
 
 const OPCOES = [
@@ -16,18 +32,61 @@ const OPCOES = [
   { id: "gasto", icon: Banknote, label: "Gasto", cor: "#ef4444" },
 ];
 
+const CATEGORIAS_GASTO = [
+  "Alimentação",
+  "Transporte",
+  "Moradia",
+  "Lazer",
+  "Saúde",
+  "Educação",
+  "Compras",
+  "Assinaturas",
+  "Outros",
+];
+const CORES_CATEGORIA_GASTO = {
+  Alimentação: "#f59e0b",
+  Transporte: "#06b6d4",
+  Moradia: "#a855f7",
+  Lazer: "#ec4899",
+  Saúde: "#10b981",
+  Educação: "#3b82f6",
+  Compras: "#f97316",
+  Assinaturas: "#818cf8",
+  Outros: "#64748b",
+};
+
 export default function RegistroRapido({ user, onRegistrado }) {
   const [aberto, setAberto] = useState(false);
   const [tipo, setTipo] = useState(null);
   const [valor, setValor] = useState("");
   const [nome, setNome] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [categoriaGasto, setCategoriaGasto] = useState("Outros");
+  const [ehCartao, setEhCartao] = useState(false);
+  const [cartoes, setCartoes] = useState([]);
+  const [cartaoSelecionado, setCartaoSelecionado] = useState("");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("financeiro_cartoes")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("ativo", true)
+      .order("nome", { ascending: true })
+      .then(({ data }) => {
+        setCartoes(data || []);
+        if (data && data.length > 0) setCartaoSelecionado(data[0].id);
+      });
+  }, [user?.id]);
 
   const fechar = () => {
     setAberto(false);
     setTipo(null);
     setValor("");
     setNome("");
+    setCategoriaGasto("Outros");
+    setEhCartao(false);
   };
 
   const registrarAgua = async (ml) => {
@@ -66,6 +125,32 @@ export default function RegistroRapido({ user, onRegistrado }) {
     if (!nome || !valor) return toast("Preencha nome e valor!", "error");
     setSalvando(true);
     const agora = new Date();
+    const hoje = formatarData(agora);
+
+    if (ehCartao && cartaoSelecionado) {
+      const cartaoObj = cartoes.find((c) => c.id === cartaoSelecionado);
+      const diaVencimento = cartaoObj?.dia_vencimento || 10;
+      const diaFechamento = cartaoObj?.dia_fechamento || diaVencimento - 7;
+      const { mes, ano } = calcularMesFatura(hoje, diaFechamento);
+      const { error } = await supabase.from("financeiro_cartao").insert([
+        {
+          user_id: user.id,
+          mes,
+          ano,
+          item: nome,
+          valor: parseFloat(valor),
+          categoria: categoriaGasto,
+          cartao_id: cartaoSelecionado,
+        },
+      ]);
+      setSalvando(false);
+      if (error) return toast(error.message, "error");
+      toast("Lançado no cartão!", "success");
+      onRegistrado?.();
+      fechar();
+      return;
+    }
+
     const { error } = await supabase.from("financeiro_gastos").insert([
       {
         user_id: user.id,
@@ -73,8 +158,8 @@ export default function RegistroRapido({ user, onRegistrado }) {
         ano: agora.getFullYear(),
         nome,
         valor: parseFloat(valor),
-        categoria: "Outros",
-        data: formatarData(agora),
+        categoria: categoriaGasto,
+        data: hoje,
       },
     ]);
     setSalvando(false);
@@ -273,16 +358,96 @@ export default function RegistroRapido({ user, onRegistrado }) {
                   style={{ marginTop: 8 }}
                   onKeyDown={(e) => e.key === "Enter" && registrarGasto()}
                 />
-                <div style={{ fontSize: 11, color: "#475569", marginTop: 6 }}>
-                  Categoria "Outros" — edite depois em Finanças se quiser mudar.
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    marginTop: 10,
+                  }}
+                >
+                  {CATEGORIAS_GASTO.map((cat) => {
+                    const ativa = categoriaGasto === cat;
+                    const cor = CORES_CATEGORIA_GASTO[cat];
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setCategoriaGasto(cat)}
+                        style={{
+                          background: ativa ? cor : "#24282d",
+                          border: `1px solid ${ativa ? cor : "#ffffff10"}`,
+                          borderRadius: 99,
+                          color: ativa ? "#0a0a0a" : "#94a3b8",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "5px 10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {cartoes.length > 0 && (
+                  <>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginTop: 12,
+                        fontSize: 12,
+                        color: "#cbd5e1",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={ehCartao}
+                        onChange={(e) => setEhCartao(e.target.checked)}
+                        style={{ width: 16, height: 16 }}
+                      />
+                      <CreditCard size={14} color="#f97316" />
+                      Foi no cartão de crédito
+                    </label>
+                    {ehCartao && cartoes.length > 1 && (
+                      <select
+                        value={cartaoSelecionado}
+                        onChange={(e) => setCartaoSelecionado(e.target.value)}
+                        style={{ marginTop: 8 }}
+                      >
+                        {cartoes.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nome}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {ehCartao && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#f97316",
+                          marginTop: 6,
+                        }}
+                      >
+                        Vai cair na fatura certa automaticamente, igual lançando
+                        pela aba Cartão.
+                      </div>
+                    )}
+                  </>
+                )}
+
                 <button
                   onClick={registrarGasto}
                   disabled={salvando}
                   style={{
                     marginTop: 10,
                     width: "100%",
-                    background: "#ef4444",
+                    background: ehCartao ? "#f97316" : "#ef4444",
                     border: "none",
                     borderRadius: 10,
                     color: "#fff",
