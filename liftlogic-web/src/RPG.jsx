@@ -153,8 +153,7 @@ export default function RPG({ user, xpExterno }) {
     const { data: rankData } = await supabase
       .from("rpg_perfil")
       .select("user_id, xp, nivel, avatar_cor")
-      .order("xp", { ascending: false })
-      .limit(10);
+      .order("xp", { ascending: false });
 
     const rankComPerfil = await Promise.all(
       (rankData || []).map(async (r) => {
