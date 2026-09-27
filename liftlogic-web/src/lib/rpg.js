@@ -97,15 +97,17 @@ export async function ganharXP(userId, motivo) {
   }
 
   const nivel =
-    novoXP >= 2000
-      ? 5
-      : novoXP >= 1000
-        ? 4
-        : novoXP >= 500
-          ? 3
-          : novoXP >= 200
-            ? 2
-            : 1;
+    novoXP >= 5000
+      ? 6
+      : novoXP >= 2000
+        ? 5
+        : novoXP >= 1000
+          ? 4
+          : novoXP >= 500
+            ? 3
+            : novoXP >= 200
+              ? 2
+              : 1;
 
   await supabase.from("rpg_perfil").upsert(
     {

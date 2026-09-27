@@ -1,68 +1,90 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "./lib/toast";
 import { supabase } from "./lib/supabase";
+import {
+  Swords,
+  ListChecks,
+  Trophy,
+  ScrollText,
+  Flame,
+  Zap,
+  Crown,
+  Lock,
+  Check,
+  Shield,
+  Sparkles,
+} from "lucide-react";
 
+// Rank ao estilo "sistema" — E é o começo, S é o topo.
 const NIVEIS = [
   {
     nivel: 1,
-    nome: "Iniciante",
+    letra: "E",
+    nome: "Despertar",
     xpMin: 0,
     xpMax: 199,
-    cor: "#94a3b8",
-    emoji: "🥉",
+    cor: "#64748b",
   },
   {
     nivel: 2,
-    nome: "Aprendiz",
+    letra: "D",
+    nome: "Iniciado",
     xpMin: 200,
     xpMax: 499,
-    cor: "#10b981",
-    emoji: "🥈",
+    cor: "#38bdf8",
   },
   {
     nivel: 3,
-    nome: "Guerreiro",
+    letra: "C",
+    nome: "Combatente",
     xpMin: 500,
     xpMax: 999,
-    cor: "#6366f1",
-    emoji: "⚔️",
+    cor: "#22d3ee",
   },
   {
     nivel: 4,
-    nome: "Campeão",
+    letra: "B",
+    nome: "Veterano",
     xpMin: 1000,
     xpMax: 1999,
-    cor: "#f59e0b",
-    emoji: "🏆",
+    cor: "#818cf8",
   },
   {
     nivel: 5,
-    nome: "Lenda",
+    letra: "A",
+    nome: "Elite",
     xpMin: 2000,
-    xpMax: 9999,
-    cor: "#ef4444",
-    emoji: "👑",
+    xpMax: 4999,
+    cor: "#a78bfa",
+  },
+  {
+    nivel: 6,
+    letra: "S",
+    nome: "Monarca",
+    xpMin: 5000,
+    xpMax: 999999,
+    cor: "#fbbf24",
   },
 ];
 
 const ITENS = [
-  { id: "espada", nome: "Espada", emoji: "⚔️", nivel: 1 },
-  { id: "escudo", nome: "Escudo", emoji: "🛡️", nivel: 2 },
-  { id: "capacete", nome: "Capacete", emoji: "⛑️", nivel: 3 },
-  { id: "capa", nome: "Capa", emoji: "🧣", nivel: 3 },
-  { id: "coroa", nome: "Coroa", emoji: "👑", nivel: 4 },
-  { id: "asas", nome: "Asas", emoji: "🪽", nivel: 5 },
+  { id: "espada", nome: "Lâmina do Caçador", icon: Swords, nivel: 1 },
+  { id: "escudo", nome: "Escudo Espectral", icon: Shield, nivel: 2 },
+  { id: "capacete", nome: "Elmo de Ferro", icon: Lock, nivel: 3 },
+  { id: "capa", nome: "Manto das Sombras", icon: Sparkles, nivel: 3 },
+  { id: "coroa", nome: "Coroa do Monarca", icon: Crown, nivel: 4 },
+  { id: "asas", nome: "Asas Etéreas", icon: Sparkles, nivel: 5 },
 ];
 
-const CORES = [
-  "#6366f1",
-  "#10b981",
-  "#ef4444",
-  "#f59e0b",
-  "#3b82f6",
-  "#a855f7",
-  "#ec4899",
-  "#f97316",
+const CORES_SISTEMA = [
+  "#818cf8",
+  "#38bdf8",
+  "#a78bfa",
+  "#22d3ee",
+  "#f472b6",
+  "#fbbf24",
+  "#34d399",
+  "#f87171",
 ];
 
 function getNivel(xp) {
@@ -73,350 +95,13 @@ function getNivel(xp) {
   );
 }
 
-const CORES_PELE = [
-  "#FFDBB4",
-  "#F5CBA7",
-  "#E8A87C",
-  "#C68642",
-  "#8D5524",
-  "#4A2912",
-  "#FFE0BD",
-  "#D4A574",
-];
-
-function Personagem2D({ cor, pele, itens }) {
-  const temEspada = itens.includes("espada");
-  const temEscudo = itens.includes("escudo");
-  const temCapacete = itens.includes("capacete");
-  const temCapa = itens.includes("capa");
-  const temCoroa = itens.includes("coroa");
-  const temAsas = itens.includes("asas");
-  const corRoupa = cor;
-  const corRoupaDark = cor + "bb";
-  const corPele = pele || "#FFDBB4";
-  const corPeleDark = pele ? pele + "cc" : "#E8A87C";
-
-  return (
-    <svg viewBox="0 0 300 360" width="100%" style={{ maxHeight: 360 }}>
-      <ellipse cx="150" cy="350" rx="65" ry="9" fill="#00000033" />
-
-      {/* ASAS de anjo — abertas com penas caindo */}
-      {temAsas && (
-        <>
-          {/* Asa esquerda — corpo principal */}
-          <path
-            d="M105 185 Q80 175 40 140 Q20 120 15 160 Q20 195 60 205 Q85 210 105 200Z"
-            fill="#f8fafc"
-            opacity="0.95"
-            stroke="#e2e8f0"
-            strokeWidth="1"
-          />
-          <path
-            d="M105 185 Q75 170 45 120 Q30 100 22 140 Q28 175 65 192 Q88 200 105 195Z"
-            fill="#f1f5f9"
-            opacity="0.8"
-          />
-          <path
-            d="M105 185 Q82 168 58 108 Q46 88 38 128 Q45 162 75 182 Q92 192 105 190Z"
-            fill="#e2e8f0"
-            opacity="0.6"
-          />
-          {/* Penas caindo para baixo esquerda */}
-          <path
-            d="M45 198 Q28 222 22 265 Q38 242 48 210Z"
-            fill="#f8fafc"
-            opacity="0.95"
-          />
-          <path
-            d="M58 205 Q42 232 38 278 Q54 252 62 218Z"
-            fill="#f8fafc"
-            opacity="0.9"
-          />
-          <path
-            d="M70 210 Q56 240 54 285 Q68 258 76 222Z"
-            fill="#f1f5f9"
-            opacity="0.9"
-          />
-          <path
-            d="M82 213 Q70 245 70 290 Q82 262 88 224Z"
-            fill="#f1f5f9"
-            opacity="0.85"
-          />
-          <path
-            d="M94 214 Q84 248 86 292 Q96 265 100 226Z"
-            fill="#e2e8f0"
-            opacity="0.8"
-          />
-          <path
-            d="M63 208 Q48 235 45 275 Q60 252 67 220Z"
-            fill="#ffffff"
-            opacity="0.4"
-          />
-          <path
-            d="M78 212 Q65 240 63 282 Q76 258 82 224Z"
-            fill="#ffffff"
-            opacity="0.4"
-          />
-
-          {/* Asa direita — corpo principal */}
-          <path
-            d="M195 185 Q220 175 260 140 Q280 120 285 160 Q280 195 240 205 Q215 210 195 200Z"
-            fill="#f8fafc"
-            opacity="0.95"
-            stroke="#e2e8f0"
-            strokeWidth="1"
-          />
-          <path
-            d="M195 185 Q225 170 255 120 Q270 100 278 140 Q272 175 235 192 Q212 200 195 195Z"
-            fill="#f1f5f9"
-            opacity="0.8"
-          />
-          <path
-            d="M195 185 Q218 168 242 108 Q254 88 262 128 Q255 162 225 182 Q208 192 195 190Z"
-            fill="#e2e8f0"
-            opacity="0.6"
-          />
-          {/* Penas caindo para baixo direita */}
-          <path
-            d="M255 198 Q272 222 278 265 Q262 242 252 210Z"
-            fill="#f8fafc"
-            opacity="0.95"
-          />
-          <path
-            d="M242 205 Q258 232 262 278 Q246 252 238 218Z"
-            fill="#f8fafc"
-            opacity="0.9"
-          />
-          <path
-            d="M230 210 Q244 240 246 285 Q232 258 224 222Z"
-            fill="#f1f5f9"
-            opacity="0.9"
-          />
-          <path
-            d="M218 213 Q230 245 230 290 Q218 262 212 224Z"
-            fill="#f1f5f9"
-            opacity="0.85"
-          />
-          <path
-            d="M206 214 Q216 248 214 292 Q204 265 200 226Z"
-            fill="#e2e8f0"
-            opacity="0.8"
-          />
-          <path
-            d="M237 208 Q252 235 255 275 Q240 252 233 220Z"
-            fill="#ffffff"
-            opacity="0.4"
-          />
-          <path
-            d="M222 212 Q235 240 237 282 Q224 258 218 224Z"
-            fill="#ffffff"
-            opacity="0.4"
-          />
-        </>
-      )}
-
-      {/* CAPA — atrás, apenas atrás do corpo */}
-      {temCapa && (
-        <path
-          d="M115 168 L90 310 Q150 325 210 310 L185 168 Q150 180 115 168Z"
-          fill={corRoupaDark}
-        />
-      )}
-
-      {/* PERNAS */}
-      <rect x="116" y="255" width="28" height="68" rx="9" fill={corRoupaDark} />
-      <rect x="156" y="255" width="28" height="68" rx="9" fill={corRoupaDark} />
-      <rect x="109" y="314" width="37" height="14" rx="7" fill="#1e293b" />
-      <rect x="153" y="314" width="37" height="14" rx="7" fill="#1e293b" />
-
-      {/* CORPO / ARMADURA */}
-      <rect x="106" y="162" width="88" height="98" rx="16" fill={corRoupa} />
-      {/* Placa da armadura */}
-      <rect
-        x="118"
-        y="168"
-        width="64"
-        height="86"
-        rx="10"
-        fill={corRoupaDark}
-      />
-      {/* Detalhes armadura */}
-      <rect x="126" y="176" width="48" height="6" rx="3" fill={corRoupa} />
-      <rect
-        x="130"
-        y="188"
-        width="40"
-        height="4"
-        rx="2"
-        fill={corRoupa}
-        opacity="0.6"
-      />
-      <rect
-        x="130"
-        y="198"
-        width="40"
-        height="4"
-        rx="2"
-        fill={corRoupa}
-        opacity="0.6"
-      />
-      <rect
-        x="130"
-        y="208"
-        width="40"
-        height="4"
-        rx="2"
-        fill={corRoupa}
-        opacity="0.6"
-      />
-      {/* Divisor central armadura */}
-      <rect
-        x="148"
-        y="176"
-        width="4"
-        height="78"
-        rx="2"
-        fill={corRoupa}
-        opacity="0.4"
-      />
-      {/* Ombros */}
-      <ellipse cx="106" cy="175" rx="16" ry="12" fill={corRoupaDark} />
-      <ellipse cx="194" cy="175" rx="16" ry="12" fill={corRoupaDark} />
-
-      {/* BRAÇO ESQUERDO */}
-      <rect x="72" y="170" width="34" height="72" rx="12" fill={corRoupa} />
-      <rect x="74" y="234" width="30" height="20" rx="10" fill={corPele} />
-
-      {/* ESCUDO — colado na mão esquerda */}
-      {temEscudo && (
-        <g transform="translate(46, 236)">
-          <path
-            d="M18 0 Q2 0 0 15 L0 48 Q0 66 18 75 Q36 66 36 48 L36 15 Q34 0 18 0Z"
-            fill="#1d4ed8"
-            stroke="#3b82f6"
-            strokeWidth="2"
-          />
-          <path
-            d="M18 8 Q8 8 6 20 L6 46 Q6 60 18 68 Q30 60 30 46 L30 20 Q28 8 18 8Z"
-            fill="#2563eb"
-            opacity="0.5"
-          />
-          <path d="M18 18 L22 30 L18 26 L14 30Z" fill="#93c5fd" />
-        </g>
-      )}
-
-      {/* BRAÇO DIREITO */}
-      <rect x="194" y="170" width="34" height="72" rx="12" fill={corRoupa} />
-      <rect x="196" y="234" width="30" height="20" rx="10" fill={corPele} />
-
-      {/* ESPADA — na mão direita */}
-      {temEspada && (
-        <>
-          <rect x="207" y="222" width="10" height="22" rx="4" fill="#92400e" />
-          <rect x="197" y="219" width="30" height="6" rx="3" fill="#fbbf24" />
-          <rect x="209" y="115" width="7" height="107" rx="3" fill="#d1d5db" />
-          <rect x="211" y="118" width="2" height="94" rx="1" fill="#ffffff88" />
-          <polygon points="212.5,109 208,122 217,122" fill="#f1f5f9" />
-        </>
-      )}
-
-      {/* PESCOÇO */}
-      <rect x="133" y="148" width="34" height="20" rx="5" fill={corPele} />
-
-      {/* CABEÇA */}
-      <rect x="108" y="76" width="84" height="76" rx="20" fill={corPele} />
-
-      {/* ORELHAS */}
-      {!temCapacete && (
-        <>
-          <rect x="100" y="104" width="12" height="22" rx="7" fill={corPele} />
-          <rect
-            x="188"
-            y="104"
-            width="12"
-            height="22"
-            rx="7"
-            fill={corPeleDark}
-          />
-        </>
-      )}
-
-      {/* CAPACETE */}
-      {temCapacete && (
-        <>
-          <path
-            d="M108 154 L108 108 Q108 70 150 66 Q192 70 192 108 L192 154 Q175 150 150 150 Q125 150 108 154Z"
-            fill="#475569"
-          />
-          <rect x="108" y="116" width="84" height="12" rx="3" fill="#1e293b" />
-          <rect x="108" y="128" width="32" height="30" rx="6" fill="#475569" />
-          <rect x="160" y="128" width="32" height="30" rx="6" fill="#475569" />
-          <rect x="140" y="128" width="20" height="30" rx="3" fill="#334155" />
-          <rect x="146" y="62" width="8" height="20" rx="3" fill="#94a3b8" />
-          <rect x="127" y="80" width="3" height="26" rx="2" fill="#ffffff22" />
-          <rect x="170" y="80" width="3" height="26" rx="2" fill="#ffffff22" />
-        </>
-      )}
-
-      {/* COROA */}
-      {temCoroa && (
-        <g transform={temCapacete ? "translate(0, 46)" : "translate(0, 0)"}>
-          <rect x="115" y="76" width="70" height="8" rx="3" fill="#f59e0b" />
-          <path
-            d="M115 76 L125 56 L138 72 L150 50 L162 72 L175 56 L185 76Z"
-            fill="#ffd700"
-            stroke="#f59e0b"
-            strokeWidth="1.5"
-          />
-          <circle cx="125" cy="56" r="4" fill="#ef4444" />
-          <circle cx="150" cy="50" r="4" fill="#3b82f6" />
-          <circle cx="175" cy="56" r="4" fill="#10b981" />
-        </g>
-      )}
-
-      {/* OLHOS */}
-      <rect x="122" y="104" width="17" height="13" rx="7" fill="#1e293b" />
-      <rect x="161" y="104" width="17" height="13" rx="7" fill="#1e293b" />
-      <circle cx="129" cy="110" r="4" fill="#fff" />
-      <circle cx="169" cy="110" r="4" fill="#fff" />
-      <circle cx="130" cy="109" r="2" fill="#1e293b" />
-      <circle cx="170" cy="109" r="2" fill="#1e293b" />
-
-      {/* SOBRANCELHAS */}
-      <path
-        d="M119 101 Q130 96 139 101"
-        stroke="#78350f"
-        strokeWidth="2.5"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M161 101 Q170 96 181 101"
-        stroke="#78350f"
-        strokeWidth="2.5"
-        fill="none"
-        strokeLinecap="round"
-      />
-
-      {/* SORRISO */}
-      <path
-        d="M133 130 Q150 142 167 130"
-        stroke="#78350f"
-        strokeWidth="3"
-        fill="none"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 export default function RPG({ user, xpExterno }) {
   const [rpg, setRpg] = useState(null);
+  const [meuNome, setMeuNome] = useState("Caçador");
   const [log, setLog] = useState([]);
   const [ranking, setRanking] = useState([]);
-  const [aba, setAba] = useState("personagem");
-  const [corSel, setCorSel] = useState("#6366f1");
-  const [peleSel, setPeleSel] = useState("#fbbf24");
+  const [aba, setAba] = useState("status");
+  const [corSel, setCorSel] = useState("#818cf8");
   const [itensSel, setItensSel] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [missoesConcluidas, setMissoesConcluidas] = useState([]);
@@ -431,8 +116,7 @@ export default function RPG({ user, xpExterno }) {
 
     if (rpgData) {
       setRpg(rpgData);
-      setCorSel(rpgData.avatar_cor || "#6366f1");
-      setPeleSel(rpgData.avatar_pele || "#fbbf24");
+      setCorSel(rpgData.avatar_cor || "#818cf8");
       setItensSel(rpgData.itens_equipados || []);
     } else {
       const { data: novo } = await supabase
@@ -442,7 +126,7 @@ export default function RPG({ user, xpExterno }) {
             user_id: user.id,
             xp: 0,
             nivel: 1,
-            avatar_cor: "#6366f1",
+            avatar_cor: "#818cf8",
             itens_equipados: [],
           },
         ])
@@ -450,6 +134,13 @@ export default function RPG({ user, xpExterno }) {
         .single();
       setRpg(novo);
     }
+
+    const { data: perfilData } = await supabase
+      .from("perfil")
+      .select("nome")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (perfilData?.nome) setMeuNome(perfilData.nome);
 
     const { data: logData } = await supabase
       .from("rpg_xp_log")
@@ -499,35 +190,29 @@ export default function RPG({ user, xpExterno }) {
       .from("rpg_perfil")
       .update({
         avatar_cor: corSel,
-        avatar_pele: peleSel,
         itens_equipados: itensSel,
       })
       .eq("user_id", user.id);
     setRpg((prev) => ({
       ...prev,
       avatar_cor: corSel,
-      avatar_pele: peleSel,
       itens_equipados: itensSel,
     }));
-    toast("Personagem salvo! ✅", "success");
+    toast("Configuração salva!", "success");
   };
 
   const toggleItem = (itemId) => {
-    setItensSel((prev) => {
-      if (prev.includes(itemId)) return prev.filter((i) => i !== itemId);
-      // coroa e capacete se excluem
-      if (itemId === "coroa")
-        return [...prev.filter((i) => i !== "capacete"), itemId];
-      if (itemId === "capacete")
-        return [...prev.filter((i) => i !== "coroa"), itemId];
-      return [...prev, itemId];
-    });
+    setItensSel((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((i) => i !== itemId)
+        : [...prev, itemId],
+    );
   };
 
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 40 }}>
-        Carregando RPG... ⚔️
+        Sincronizando com o Sistema...
       </div>
     );
 
@@ -541,6 +226,8 @@ export default function RPG({ user, xpExterno }) {
           100,
       )
     : 100;
+
+  const sysVars = { "--sl-glow": corSel };
 
   return (
     <div
@@ -559,85 +246,37 @@ export default function RPG({ user, xpExterno }) {
           alignItems: "center",
         }}
       >
-        <h2 className="title-divisao" style={{ margin: 0 }}>
-          ⚔️ RPG
+        <h2
+          className="title-divisao"
+          style={{
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Swords
+            size={20}
+            color="#818cf8"
+            style={{ filter: "drop-shadow(0 0 6px rgba(129,140,248,0.6))" }}
+          />
+          RPG
         </h2>
         <div
           style={{
-            background: nivelAtual.cor + "22",
-            border: `1px solid ${nivelAtual.cor}44`,
-            borderRadius: 20,
+            background: nivelAtual.cor + "1a",
+            border: `1px solid ${nivelAtual.cor}55`,
+            borderRadius: 8,
             padding: "4px 12px",
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 800,
             color: nivelAtual.cor,
+            textShadow: `0 0 10px ${nivelAtual.cor}`,
+            letterSpacing: "0.05em",
           }}
         >
-          {nivelAtual.emoji} Nível {nivelAtual.nivel} — {nivelAtual.nome}
+          RANK {nivelAtual.letra}
         </div>
-      </div>
-
-      {/* XP Card */}
-      <div
-        style={{
-          background: "#1a1d21",
-          border: "1px solid #ffffff0d",
-          borderRadius: 16,
-          padding: 18,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 8,
-          }}
-        >
-          <span style={{ fontSize: 13, color: "#94a3b8" }}>XP Total</span>
-          <span
-            style={{ fontSize: 13, fontWeight: 700, color: nivelAtual.cor }}
-          >
-            {xp.toLocaleString("pt-BR")} XP
-          </span>
-        </div>
-        <div
-          style={{
-            height: 8,
-            background: "#ffffff0d",
-            borderRadius: 99,
-            overflow: "hidden",
-            marginBottom: 6,
-          }}
-        >
-          <div
-            style={{
-              height: 8,
-              width: `${pctNivel}%`,
-              background: nivelAtual.cor,
-              borderRadius: 99,
-              transition: "width 0.4s",
-            }}
-          />
-        </div>
-        {proximoNivel && (
-          <div style={{ fontSize: 11, color: "#64748b" }}>
-            Faltam {xpParaProximo} XP para {proximoNivel.emoji}{" "}
-            {proximoNivel.nome}
-          </div>
-        )}
-        {(rpg?.streak || 0) > 0 && (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 12,
-              color: "#f97316",
-              fontWeight: 700,
-            }}
-          >
-            🔥 Streak: {rpg.streak} dia{rpg.streak > 1 ? "s" : ""} consecutivo
-            {rpg.streak > 1 ? "s" : ""} · +{Math.min(rpg.streak * 5, 50)} XP/dia
-          </div>
-        )}
       </div>
 
       {/* Abas */}
@@ -645,154 +284,237 @@ export default function RPG({ user, xpExterno }) {
         style={{
           display: "flex",
           gap: 6,
-          background: "#1a1d21",
+          background: "#0b0e1a",
+          border: "1px solid #ffffff0d",
           padding: 5,
           borderRadius: 12,
         }}
       >
         {[
-          { id: "personagem", label: "🧙 Personagem" },
-          { id: "missoes", label: "🎯 Missões" },
-          { id: "ranking", label: "🏆 Ranking" },
-          { id: "log", label: "📜 Histórico XP" },
+          { id: "status", icon: Zap, label: "Status" },
+          { id: "missoes", icon: ListChecks, label: "Quests" },
+          { id: "ranking", icon: Trophy, label: "Ranking" },
+          { id: "log", icon: ScrollText, label: "Log" },
         ].map((a) => (
           <button
             key={a.id}
             onClick={() => setAba(a.id)}
             style={{
               flex: 1,
-              background: aba === a.id ? "#24282d" : "transparent",
-              border: "none",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              background: aba === a.id ? "#151a2c" : "transparent",
+              border:
+                aba === a.id ? "1px solid #818cf844" : "1px solid transparent",
               borderRadius: 8,
-              color: aba === a.id ? "#f8fafc" : "#64748b",
-              fontSize: 11,
-              fontWeight: 600,
+              color: aba === a.id ? "#a5b4fc" : "#64748b",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.04em",
               padding: "8px 2px",
               cursor: "pointer",
             }}
           >
+            <a.icon size={16} strokeWidth={2} />
             {a.label}
           </button>
         ))}
       </div>
 
-      {/* ABA PERSONAGEM */}
-      {aba === "personagem" && (
+      {/* ABA STATUS */}
+      {aba === "status" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div
-            style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
-              borderRadius: 16,
-              overflow: "hidden",
-            }}
-          >
-            <Personagem2D
-              cor={corSel}
-              pele={peleSel}
-              itens={itensSel}
-              nivel={nivelAtual.nivel}
-            />
-          </div>
-
-          <div
-            style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
-              borderRadius: 16,
-              padding: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                color: "#64748b",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                marginBottom: 12,
-              }}
-            >
-              COR DA ROUPA
+          <div className="sl-panel" style={sysVars}>
+            <span className="sl-corner-bl" />
+            <span className="sl-corner-br" />
+            <div className="sl-title sl-pulse" style={{ marginBottom: 16 }}>
+              [ STATUS ]
             </div>
+
             <div
               style={{
                 display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                marginBottom: 16,
+                alignItems: "center",
+                gap: 14,
+                marginBottom: 18,
               }}
             >
-              {CORES.map((c) => (
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 10,
+                  flexShrink: 0,
+                  background: "#05070d",
+                  border: `1px solid ${nivelAtual.cor}`,
+                  boxShadow: `0 0 16px -2px ${nivelAtual.cor}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 26,
+                  fontWeight: 900,
+                  color: nivelAtual.cor,
+                  textShadow: `0 0 12px ${nivelAtual.cor}`,
+                }}
+              >
+                {nivelAtual.letra}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: "#f8fafc",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {meuNome}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: nivelAtual.cor,
+                    fontWeight: 700,
+                    letterSpacing: "0.03em",
+                  }}
+                >
+                  Título: {nivelAtual.nome}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "#64748b",
+                  fontWeight: 700,
+                  letterSpacing: "0.05em",
+                }}
+              >
+                EXP
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: corSel }}>
+                {xp.toLocaleString("pt-BR")}
+              </span>
+            </div>
+            <div
+              style={{
+                height: 8,
+                background: "#05070d",
+                border: "1px solid #ffffff0d",
+                borderRadius: 99,
+                overflow: "hidden",
+                marginBottom: 6,
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${pctNivel}%`,
+                  background: `linear-gradient(90deg, ${corSel}88, ${corSel})`,
+                  boxShadow: `0 0 10px ${corSel}`,
+                  borderRadius: 99,
+                  transition: "width 0.4s",
+                }}
+              />
+            </div>
+            {proximoNivel ? (
+              <div style={{ fontSize: 11, color: "#64748b" }}>
+                Faltam {xpParaProximo.toLocaleString("pt-BR")} EXP para o RANK{" "}
+                {proximoNivel.letra}
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: nivelAtual.cor }}>
+                Rank máximo alcançado.
+              </div>
+            )}
+
+            {(rpg?.streak || 0) > 0 && (
+              <div
+                style={{
+                  marginTop: 14,
+                  paddingTop: 14,
+                  borderTop: "1px solid #ffffff0d",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Flame
+                  size={16}
+                  color="#f97316"
+                  style={{
+                    filter: "drop-shadow(0 0 6px rgba(249,115,22,0.6))",
+                  }}
+                />
+                <span
+                  style={{ fontSize: 12, color: "#f97316", fontWeight: 700 }}
+                >
+                  Sequência de {rpg.streak} dia{rpg.streak > 1 ? "s" : ""} · +
+                  {Math.min(rpg.streak * 5, 50)} EXP/dia
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="sl-panel" style={sysVars}>
+            <span className="sl-corner-bl" />
+            <span className="sl-corner-br" />
+            <div className="sl-title" style={{ marginBottom: 12 }}>
+              [ COR DO SISTEMA ]
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {CORES_SISTEMA.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCorSel(c)}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    background: c,
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: "#05070d",
                     border:
-                      corSel === c ? "3px solid #fff" : "3px solid transparent",
+                      corSel === c ? `2px solid ${c}` : "2px solid #ffffff10",
+                    boxShadow: corSel === c ? `0 0 12px -1px ${c}` : "none",
                     cursor: "pointer",
+                    position: "relative",
                   }}
-                />
-              ))}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: "#64748b",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                marginBottom: 12,
-              }}
-            >
-              COR DE PELE
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {CORES_PELE.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setPeleSel(c)}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    background: c,
-                    border:
-                      peleSel === c
-                        ? "3px solid #fff"
-                        : "3px solid transparent",
-                    cursor: "pointer",
-                  }}
-                />
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      inset: 6,
+                      borderRadius: 4,
+                      background: c,
+                    }}
+                  />
+                </button>
               ))}
             </div>
           </div>
 
-          <div
-            style={{
-              background: "#1a1d21",
-              border: "1px solid #ffffff0d",
-              borderRadius: 16,
-              padding: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                color: "#64748b",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                marginBottom: 12,
-              }}
-            >
-              ITENS DESBLOQUEADOS
+          <div className="sl-panel" style={sysVars}>
+            <span className="sl-corner-bl" />
+            <span className="sl-corner-br" />
+            <div className="sl-title" style={{ marginBottom: 12 }}>
+              [ EQUIPAMENTOS ]
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {ITENS.map((item) => {
                 const desbloqueado = nivelAtual.nivel >= item.nivel;
                 const equipado = itensSel.includes(item.id);
+                const Icon = item.icon;
                 return (
                   <div
                     key={item.id}
@@ -800,7 +522,8 @@ export default function RPG({ user, xpExterno }) {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      background: "#24282d",
+                      background: "#05070d",
+                      border: `1px solid ${equipado ? corSel + "55" : "#ffffff0d"}`,
                       borderRadius: 10,
                       padding: "10px 14px",
                       opacity: desbloqueado ? 1 : 0.4,
@@ -809,7 +532,15 @@ export default function RPG({ user, xpExterno }) {
                     <div
                       style={{ display: "flex", alignItems: "center", gap: 10 }}
                     >
-                      <span style={{ fontSize: 20 }}>{item.emoji}</span>
+                      <Icon
+                        size={18}
+                        color={equipado ? corSel : "#64748b"}
+                        style={
+                          equipado
+                            ? { filter: `drop-shadow(0 0 6px ${corSel})` }
+                            : undefined
+                        }
+                      />
                       <div>
                         <div
                           style={{
@@ -821,7 +552,8 @@ export default function RPG({ user, xpExterno }) {
                           {item.nome}
                         </div>
                         <div style={{ fontSize: 11, color: "#64748b" }}>
-                          Nível {item.nivel} necessário
+                          Requer RANK{" "}
+                          {NIVEIS.find((n) => n.nivel === item.nivel)?.letra}
                         </div>
                       </div>
                     </div>
@@ -829,10 +561,10 @@ export default function RPG({ user, xpExterno }) {
                       <button
                         onClick={() => toggleItem(item.id)}
                         style={{
-                          background: equipado ? "#6366f1" : "#24282d",
-                          border: `1px solid ${equipado ? "#6366f1" : "#ffffff1a"}`,
+                          background: equipado ? corSel : "#151a2c",
+                          border: `1px solid ${equipado ? corSel : "#ffffff1a"}`,
                           borderRadius: 8,
-                          color: equipado ? "#fff" : "#64748b",
+                          color: equipado ? "#05070d" : "#64748b",
                           fontSize: 11,
                           fontWeight: 700,
                           padding: "4px 12px",
@@ -842,8 +574,16 @@ export default function RPG({ user, xpExterno }) {
                         {equipado ? "Equipado" : "Equipar"}
                       </button>
                     ) : (
-                      <span style={{ fontSize: 11, color: "#475569" }}>
-                        🔒 Bloqueado
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "#475569",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <Lock size={11} /> Bloqueado
                       </span>
                     )}
                   </div>
@@ -855,83 +595,70 @@ export default function RPG({ user, xpExterno }) {
           <button
             onClick={salvarPersonagem}
             style={{
-              background: "#6366f1",
+              background: corSel,
               border: "none",
               borderRadius: 12,
-              color: "#fff",
+              color: "#05070d",
               fontSize: 15,
-              fontWeight: 700,
+              fontWeight: 800,
               padding: 14,
               cursor: "pointer",
+              boxShadow: `0 4px 20px -4px ${corSel}`,
             }}
           >
-            💾 Salvar Personagem
+            Salvar
           </button>
         </div>
       )}
 
-      {/* ABA MISSÕES */}
+      {/* ABA MISSÕES / DAILY QUEST */}
       {aba === "missoes" &&
         (() => {
-          const hoje = new Date();
-          const offset = hoje.getTimezoneOffset();
-          const hojeStr = new Date(hoje.getTime() - offset * 60000)
-            .toISOString()
-            .split("T")[0];
-
           const MISSOES = [
             {
               id: "registrar_peso",
-              emoji: "⚖️",
               nome: "Pesar hoje",
               desc: "Registre seu peso do dia",
               xp: 10,
             },
             {
               id: "beber_agua",
-              emoji: "💧",
               nome: "Meta de água",
               desc: "Atinja sua meta de hidratação",
               xp: 15,
             },
             {
               id: "treino_finalizado",
-              emoji: "🏋️",
               nome: "Completar treino",
               desc: "Finalize um treino hoje",
               xp: 30,
             },
             {
               id: "macros_registrado",
-              emoji: "🍽️",
               nome: "Registrar refeição",
               desc: "Adicione ao menos uma refeição",
               xp: 10,
             },
             {
               id: "habito_concluido",
-              emoji: "✅",
               nome: "Completar hábito",
               desc: "Marque ao menos um hábito do dia",
               xp: 10,
             },
             {
               id: "passos_registrado",
-              emoji: "👟",
               nome: "Registrar passos",
               desc: "Registre seus passos do dia",
               xp: 10,
             },
             {
               id: "cardio_registrado",
-              emoji: "🏃",
               nome: "Fazer cardio",
               desc: "Registre uma atividade de cardio",
               xp: 20,
             },
             {
               id: "medidas_registradas",
-              emoji: "📏",
               nome: "Medir corpo",
               desc: "Registre suas medidas corporais",
               xp: 15,
@@ -946,14 +673,17 @@ export default function RPG({ user, xpExterno }) {
 
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div
-                style={{
-                  background: "#1a1d21",
-                  border: "1px solid #ffffff0d",
-                  borderRadius: 14,
-                  padding: 14,
-                }}
-              >
+              <div className="sl-panel" style={sysVars}>
+                <span className="sl-corner-bl" />
+                <span className="sl-corner-br" />
+                <div className="sl-title" style={{ marginBottom: 4 }}>
+                  [ DAILY QUEST ]
+                </div>
+                <div
+                  style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}
+                >
+                  Complete as tarefas abaixo antes da meia-noite.
+                </div>
                 <div
                   style={{
                     display: "flex",
@@ -962,31 +692,28 @@ export default function RPG({ user, xpExterno }) {
                   }}
                 >
                   <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                    XP de missões hoje
+                    Progresso
                   </span>
                   <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: nivelAtual.cor,
-                    }}
+                    style={{ fontSize: 13, fontWeight: 800, color: corSel }}
                   >
-                    {totalXPMissoes} / {totalPossivel} XP
+                    {totalXPMissoes} / {totalPossivel} EXP
                   </span>
                 </div>
                 <div
                   style={{
                     height: 6,
-                    background: "#ffffff0d",
+                    background: "#05070d",
                     borderRadius: 99,
                     overflow: "hidden",
                   }}
                 >
                   <div
                     style={{
-                      height: 6,
+                      height: "100%",
                       width: `${Math.round((totalXPMissoes / totalPossivel) * 100)}%`,
-                      background: nivelAtual.cor,
+                      background: corSel,
+                      boxShadow: `0 0 8px ${corSel}`,
                       borderRadius: 99,
                       transition: "width 0.4s",
                     }}
@@ -1000,24 +727,38 @@ export default function RPG({ user, xpExterno }) {
                   <div
                     key={m.id}
                     style={{
-                      background: concluida ? "#10b98110" : "#1a1d21",
-                      border: `1px solid ${concluida ? "#10b98133" : "#ffffff0d"}`,
-                      borderRadius: 12,
+                      background: concluida ? corSel + "0f" : "#0b0e1a",
+                      border: `1px solid ${concluida ? corSel + "44" : "#ffffff0d"}`,
+                      borderRadius: 10,
                       padding: "12px 14px",
                       display: "flex",
                       alignItems: "center",
                       gap: 12,
                     }}
                   >
-                    <span style={{ fontSize: 24 }}>
-                      {concluida ? "✅" : m.emoji}
-                    </span>
+                    <div
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 6,
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: concluida ? corSel : "#151a2c",
+                        border: `1px solid ${concluida ? corSel : "#ffffff1a"}`,
+                      }}
+                    >
+                      {concluida && (
+                        <Check size={15} color="#05070d" strokeWidth={3} />
+                      )}
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div
                         style={{
                           fontSize: 13,
                           fontWeight: 600,
-                          color: concluida ? "#10b981" : "#f8fafc",
+                          color: concluida ? corSel : "#f8fafc",
                         }}
                       >
                         {m.nome}
@@ -1030,25 +771,14 @@ export default function RPG({ user, xpExterno }) {
                       style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: concluida ? "#10b981" : "#475569",
+                        color: concluida ? corSel : "#475569",
                       }}
                     >
-                      +{m.xp} XP
+                      +{m.xp}
                     </span>
                   </div>
                 );
               })}
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "#475569",
-                  fontSize: 11,
-                  marginTop: 4,
-                }}
-              >
-                As missões são concluídas automaticamente ao realizar as ações
-                no app. Resetam à meia-noite.
-              </p>
             </div>
           );
         })()}
@@ -1056,16 +786,8 @@ export default function RPG({ user, xpExterno }) {
       {/* ABA RANKING */}
       {aba === "ranking" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div
-            style={{
-              fontSize: 10,
-              color: "#64748b",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              marginBottom: 4,
-            }}
-          >
-            TOP 10 — GLOBAL
+          <div className="sl-title" style={{ marginBottom: 4 }}>
+            [ TOP CAÇADORES ]
           </div>
           {ranking.map((r, i) => {
             const n = getNivel(r.xp);
@@ -1074,8 +796,10 @@ export default function RPG({ user, xpExterno }) {
               <div
                 key={r.user_id}
                 style={{
-                  background: isMe ? "#6366f115" : "#1a1d21",
-                  border: `1px solid ${isMe ? "#6366f144" : "#ffffff0d"}`,
+                  background: isMe
+                    ? (r.avatar_cor || "#818cf8") + "12"
+                    : "#0b0e1a",
+                  border: `1px solid ${isMe ? (r.avatar_cor || "#818cf8") + "44" : "#ffffff0d"}`,
                   borderRadius: 12,
                   padding: "12px 14px",
                   display: "flex",
@@ -1085,40 +809,49 @@ export default function RPG({ user, xpExterno }) {
               >
                 <div
                   style={{
-                    fontSize: 18,
-                    fontWeight: 700,
+                    fontSize: 14,
+                    fontWeight: 800,
                     color:
                       i === 0
-                        ? "#ffd700"
+                        ? "#fbbf24"
                         : i === 1
-                          ? "#c0c0c0"
+                          ? "#cbd5e1"
                           : i === 2
-                            ? "#cd7f32"
+                            ? "#d97706"
                             : "#64748b",
-                    minWidth: 28,
+                    minWidth: 24,
+                    textAlign: "center",
                   }}
                 >
-                  {i === 0
-                    ? "🥇"
-                    : i === 1
-                      ? "🥈"
-                      : i === 2
-                        ? "🥉"
-                        : `#${i + 1}`}
+                  {i < 3 ? (
+                    <Crown
+                      size={16}
+                      style={
+                        i === 0
+                          ? { filter: "drop-shadow(0 0 6px #fbbf24)" }
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    `#${i + 1}`
+                  )}
                 </div>
                 <div
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: r.avatar_cor || "#6366f1",
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    background: "#05070d",
+                    border: `1px solid ${n.cor}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 14,
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: n.cor,
                   }}
                 >
-                  {n.emoji}
+                  {n.letra}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div
@@ -1127,7 +860,7 @@ export default function RPG({ user, xpExterno }) {
                     {r.nome} {isMe ? "(você)" : ""}
                   </div>
                   <div style={{ fontSize: 11, color: "#64748b" }}>
-                    {n.nome} • {r.xp.toLocaleString("pt-BR")} XP
+                    {n.nome} · {r.xp.toLocaleString("pt-BR")} EXP
                   </div>
                 </div>
               </div>
@@ -1139,29 +872,22 @@ export default function RPG({ user, xpExterno }) {
       {/* ABA LOG */}
       {aba === "log" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div
-            style={{
-              fontSize: 10,
-              color: "#64748b",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              marginBottom: 4,
-            }}
-          >
-            ÚLTIMAS AÇÕES
+          <div className="sl-title" style={{ marginBottom: 4 }}>
+            [ SYSTEM LOG ]
           </div>
           {log.length === 0 ? (
             <p style={{ textAlign: "center", color: "#475569", fontSize: 13 }}>
-              Nenhum XP ganho ainda. Bora treinar! 💪
+              Nenhum registro do sistema ainda.
             </p>
           ) : (
             log.map((l) => (
               <div
                 key={l.id}
                 style={{
-                  background: "#1a1d21",
+                  background: "#0b0e1a",
                   border: "1px solid #ffffff0d",
-                  borderRadius: 10,
+                  borderLeft: `3px solid ${corSel}`,
+                  borderRadius: 8,
                   padding: "10px 14px",
                   display: "flex",
                   justifyContent: "space-between",
@@ -1169,7 +895,7 @@ export default function RPG({ user, xpExterno }) {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 13, color: "#f8fafc" }}>
+                  <div style={{ fontSize: 13, color: "#e2e8f0" }}>
                     {l.motivo}
                   </div>
                   <div style={{ fontSize: 11, color: "#64748b" }}>
@@ -1181,10 +907,8 @@ export default function RPG({ user, xpExterno }) {
                     })}
                   </div>
                 </div>
-                <span
-                  style={{ fontSize: 14, fontWeight: 700, color: "#10b981" }}
-                >
-                  +{l.xp} XP
+                <span style={{ fontSize: 13, fontWeight: 800, color: corSel }}>
+                  +{l.xp} EXP
                 </span>
               </div>
             ))

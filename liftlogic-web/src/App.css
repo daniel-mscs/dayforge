@@ -4565,6 +4565,79 @@ input::-webkit-inner-spin-button {
 }
 
 /* ══════════════════════════════════════
+   RPG — JANELA DE STATUS (estilo "system window")
+══════════════════════════════════════ */
+.sl-panel {
+  position: relative;
+  background: linear-gradient(165deg, #0b0e1a 0%, #06070d 100%);
+  border: 1px solid var(--sl-glow, #818cf8);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 24px -6px var(--sl-glow, #818cf8),
+    inset 0 0 30px -20px var(--sl-glow, #818cf8);
+  padding: 20px;
+}
+
+.sl-panel::before,
+.sl-panel::after,
+.sl-panel > .sl-corner-br,
+.sl-panel > .sl-corner-bl {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--sl-glow, #818cf8);
+  opacity: 0.9;
+}
+.sl-panel::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+.sl-panel::after {
+  top: -1px;
+  right: -1px;
+  border-top: 2px solid;
+  border-right: 2px solid;
+}
+.sl-panel > .sl-corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+}
+.sl-panel > .sl-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+.sl-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--sl-glow, #818cf8);
+  text-shadow: 0 0 12px var(--sl-glow, #818cf8);
+}
+
+@keyframes slPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.sl-pulse {
+  animation: slPulse 2.2s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════
    TRANSIÇÃO DE ABA
 ══════════════════════════════════════ */
 @keyframes fadeInUp {
