@@ -1,4 +1,7 @@
 import { supabase } from "./supabase";
+import { gerarConquista } from "./social";
+
+const RANK_LETRAS = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A", 6: "S" };
 
 const XP_REGRAS = {
   treino_finalizado: 50,
@@ -59,10 +62,11 @@ export async function ganharXP(userId, motivo) {
 
   const { data } = await supabase
     .from("rpg_perfil")
-    .select("xp, streak, ultimo_dia_ativo")
+    .select("xp, nivel, streak, ultimo_dia_ativo")
     .eq("user_id", userId)
     .single();
   const novoXP = (data?.xp || 0) + xp;
+  const nivelAnterior = data?.nivel || 1;
 
   // Streak global
   const hoje2 = new Date();
@@ -94,6 +98,13 @@ export async function ganharXP(userId, motivo) {
         },
       ]);
     }
+    if (novoStreak > 1 && novoStreak % 5 === 0) {
+      await gerarConquista(
+        userId,
+        "streak",
+        `🔥 Bateu uma sequência de ${novoStreak} dias seguidos!`,
+      );
+    }
   }
 
   const nivel =
@@ -120,4 +131,12 @@ export async function ganharXP(userId, motivo) {
     },
     { onConflict: "user_id" },
   );
+
+  if (nivel > nivelAnterior) {
+    await gerarConquista(
+      userId,
+      "rank_up",
+      `⚡ Alcançou o RANK ${RANK_LETRAS[nivel] || nivel}!`,
+    );
+  }
 }

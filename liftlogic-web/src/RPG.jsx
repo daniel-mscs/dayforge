@@ -13,7 +13,20 @@ import {
   Check,
   Shield,
   Sparkles,
+  Users,
+  UserPlus,
+  Heart,
+  Search,
+  X,
 } from "lucide-react";
+import {
+  buscarUsuarios,
+  enviarPedidoAmizade,
+  aceitarPedido,
+  recusarOuRemoverAmizade,
+  curtirConquista,
+  descurtirConquista,
+} from "./lib/social";
 
 // Rank ao estilo "sistema" — E é o começo, S é o topo.
 const NIVEIS = [
@@ -105,6 +118,13 @@ export default function RPG({ user, xpExterno }) {
   const [itensSel, setItensSel] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [missoesConcluidas, setMissoesConcluidas] = useState([]);
+  const [amizades, setAmizades] = useState([]);
+  const [feed, setFeed] = useState([]);
+  const [impactos, setImpactos] = useState([]);
+  const [subAbaComunidade, setSubAbaComunidade] = useState("feed");
+  const [buscaNome, setBuscaNome] = useState("");
+  const [resultadosBusca, setResultadosBusca] = useState([]);
+  const [buscando, setBuscando] = useState(false);
 
   const buscarTudo = useCallback(async () => {
     setCarregando(true);
@@ -166,6 +186,40 @@ export default function RPG({ user, xpExterno }) {
       }),
     );
     setRanking(rankComPerfil);
+
+    const { data: amizadesData } = await supabase
+      .from("rpg_amizades")
+      .select("*")
+      .or(`solicitante_id.eq.${user.id},destinatario_id.eq.${user.id}`);
+    setAmizades(amizadesData || []);
+
+    const idsAmigos = (amizadesData || [])
+      .filter((a) => a.status === "aceito")
+      .map((a) =>
+        a.solicitante_id === user.id ? a.destinatario_id : a.solicitante_id,
+      );
+
+    const { data: feedData } = await supabase
+      .from("rpg_conquistas")
+      .select("*")
+      .in("user_id", [user.id, ...idsAmigos])
+      .order("created_at", { ascending: false })
+      .limit(40);
+    setFeed(feedData || []);
+
+    if ((feedData || []).length > 0) {
+      const { data: impactosData } = await supabase
+        .from("rpg_impactos")
+        .select("*")
+        .in(
+          "conquista_id",
+          feedData.map((f) => f.id),
+        );
+      setImpactos(impactosData || []);
+    } else {
+      setImpactos([]);
+    }
+
     const hoje = new Date();
     const offset = hoje.getTimezoneOffset();
     const hojeStr = new Date(hoje.getTime() - offset * 60000)
@@ -208,6 +262,64 @@ export default function RPG({ user, xpExterno }) {
     );
   };
 
+  const enviarPedido = async (alvoId) => {
+    await enviarPedidoAmizade(user.id, alvoId);
+    toast("Pedido de amizade enviado!", "success");
+    setResultadosBusca((prev) => prev.filter((u) => u.user_id !== alvoId));
+    buscarTudo();
+  };
+
+  const responderPedido = async (amizadeId, aceitar) => {
+    if (aceitar) {
+      await aceitarPedido(amizadeId);
+      toast("Vocês agora são aliados!", "success");
+    } else {
+      await recusarOuRemoverAmizade(amizadeId);
+    }
+    buscarTudo();
+  };
+
+  const removerAmigo = async (amizadeId) => {
+    await recusarOuRemoverAmizade(amizadeId);
+    toast("Aliança desfeita.", "info");
+    buscarTudo();
+  };
+
+  const toggleImpacto = async (conquistaId) => {
+    const jaImpactou = impactos.some(
+      (i) => i.conquista_id === conquistaId && i.user_id === user.id,
+    );
+    if (jaImpactou) {
+      setImpactos((prev) =>
+        prev.filter(
+          (i) => !(i.conquista_id === conquistaId && i.user_id === user.id),
+        ),
+      );
+      await descurtirConquista(conquistaId, user.id);
+    } else {
+      setImpactos((prev) => [
+        ...prev,
+        { conquista_id: conquistaId, user_id: user.id },
+      ]);
+      await curtirConquista(conquistaId, user.id);
+    }
+  };
+
+  useEffect(() => {
+    if (buscaNome.trim().length < 2) {
+      setResultadosBusca([]);
+      setBuscando(false);
+      return;
+    }
+    setBuscando(true);
+    const t = setTimeout(async () => {
+      const resultados = await buscarUsuarios(buscaNome, user.id);
+      setResultadosBusca(resultados);
+      setBuscando(false);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [buscaNome, user.id]);
+
   if (carregando)
     return (
       <div style={{ textAlign: "center", color: "#64748b", paddingTop: 40 }}>
@@ -227,6 +339,19 @@ export default function RPG({ user, xpExterno }) {
     : 100;
 
   const sysVars = { "--sl-glow": corSel };
+
+  const idsAmigosAceitos = amizades
+    .filter((a) => a.status === "aceito")
+    .map((a) =>
+      a.solicitante_id === user.id ? a.destinatario_id : a.solicitante_id,
+    );
+  const pedidosRecebidos = amizades.filter(
+    (a) => a.status === "pendente" && a.destinatario_id === user.id,
+  );
+  const pedidosEnviadosIds = amizades
+    .filter((a) => a.status === "pendente" && a.solicitante_id === user.id)
+    .map((a) => a.destinatario_id);
+  const buscarNoDiretorio = (id) => ranking.find((r) => r.user_id === id);
 
   return (
     <div
@@ -292,6 +417,7 @@ export default function RPG({ user, xpExterno }) {
         {[
           { id: "status", icon: Zap, label: "Status" },
           { id: "missoes", icon: ListChecks, label: "Quests" },
+          { id: "comunidade", icon: Users, label: "Aliados" },
           { id: "ranking", icon: Trophy, label: "Ranking" },
           { id: "log", icon: ScrollText, label: "Log" },
         ].map((a) => (
@@ -299,6 +425,7 @@ export default function RPG({ user, xpExterno }) {
             key={a.id}
             onClick={() => setAba(a.id)}
             style={{
+              position: "relative",
               flex: 1,
               display: "flex",
               flexDirection: "column",
@@ -318,6 +445,20 @@ export default function RPG({ user, xpExterno }) {
           >
             <a.icon size={16} strokeWidth={2} />
             {a.label}
+            {a.id === "comunidade" && pedidosRecebidos.length > 0 && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: "22%",
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#f87171",
+                  boxShadow: "0 0 6px #f87171",
+                }}
+              />
+            )}
           </button>
         ))}
       </div>
@@ -783,6 +924,426 @@ export default function RPG({ user, xpExterno }) {
         })()}
 
       {/* ABA RANKING */}
+      {/* ABA COMUNIDADE (ALIADOS) */}
+      {aba === "comunidade" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            {[
+              { id: "feed", label: "Feed" },
+              {
+                id: "amigos",
+                label:
+                  pedidosRecebidos.length > 0
+                    ? `Aliados (${pedidosRecebidos.length})`
+                    : "Aliados",
+              },
+              { id: "buscar", label: "Buscar" },
+            ].map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSubAbaComunidade(s.id)}
+                style={{
+                  flex: 1,
+                  background: subAbaComunidade === s.id ? corSel : "#0b0e1a",
+                  border: `1px solid ${subAbaComunidade === s.id ? corSel : "#ffffff0d"}`,
+                  borderRadius: 8,
+                  color: subAbaComunidade === s.id ? "#05070d" : "#94a3b8",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "8px 4px",
+                  cursor: "pointer",
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {/* FEED */}
+          {subAbaComunidade === "feed" &&
+            (feed.length === 0 ? (
+              <p
+                style={{ textAlign: "center", color: "#475569", fontSize: 13 }}
+              >
+                Nenhuma conquista ainda. Adicione aliados pra ver o feed encher!
+              </p>
+            ) : (
+              feed.map((c) => {
+                const autor = buscarNoDiretorio(c.user_id) || {};
+                const nAutor = getNivel(autor.xp || 0);
+                const curtido = impactos.some(
+                  (i) => i.conquista_id === c.id && i.user_id === user.id,
+                );
+                const totalImpactos = impactos.filter(
+                  (i) => i.conquista_id === c.id,
+                ).length;
+                return (
+                  <div
+                    key={c.id}
+                    className="sl-panel"
+                    style={{ "--sl-glow": autor.avatar_cor || "#818cf8" }}
+                  >
+                    <span className="sl-corner-bl" />
+                    <span className="sl-corner-br" />
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 6,
+                          flexShrink: 0,
+                          background: "#05070d",
+                          border: `1px solid ${nAutor.cor}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: nAutor.cor,
+                        }}
+                      >
+                        {nAutor.letra}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "#f8fafc",
+                          }}
+                        >
+                          {autor.nome || "Caçador"}{" "}
+                          {c.user_id === user.id ? "(você)" : ""}
+                        </div>
+                        <div style={{ fontSize: 10, color: "#64748b" }}>
+                          {new Date(c.created_at).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#e2e8f0",
+                        marginBottom: 10,
+                      }}
+                    >
+                      {c.descricao}
+                    </div>
+                    <button
+                      onClick={() => toggleImpacto(c.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        background: "transparent",
+                        border: "none",
+                        color: curtido ? "#f472b6" : "#64748b",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    >
+                      <Heart
+                        size={15}
+                        fill={curtido ? "#f472b6" : "none"}
+                        style={
+                          curtido
+                            ? {
+                                filter:
+                                  "drop-shadow(0 0 4px rgba(244,114,182,0.7))",
+                              }
+                            : undefined
+                        }
+                      />
+                      {totalImpactos > 0 ? totalImpactos : "Impacto"}
+                    </button>
+                  </div>
+                );
+              })
+            ))}
+
+          {/* AMIGOS */}
+          {subAbaComunidade === "amigos" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pedidosRecebidos.length > 0 && (
+                <>
+                  <div className="sl-title" style={{ marginBottom: 2 }}>
+                    [ PEDIDOS PENDENTES ]
+                  </div>
+                  {pedidosRecebidos.map((p) => {
+                    const solicitante =
+                      buscarNoDiretorio(p.solicitante_id) || {};
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          background: "#0b0e1a",
+                          border: "1px solid #ffffff0d",
+                          borderRadius: 10,
+                          padding: "10px 14px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            flex: 1,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#f8fafc",
+                          }}
+                        >
+                          {solicitante.nome || "Caçador"}
+                        </span>
+                        <button
+                          onClick={() => responderPedido(p.id, true)}
+                          style={{
+                            background: "#34d399",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 8px",
+                            cursor: "pointer",
+                            display: "flex",
+                          }}
+                        >
+                          <Check size={14} color="#05070d" strokeWidth={3} />
+                        </button>
+                        <button
+                          onClick={() => responderPedido(p.id, false)}
+                          style={{
+                            background: "#151a2c",
+                            border: "1px solid #ffffff1a",
+                            borderRadius: 6,
+                            padding: "6px 8px",
+                            cursor: "pointer",
+                            display: "flex",
+                          }}
+                        >
+                          <X size={14} color="#94a3b8" strokeWidth={3} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              <div className="sl-title" style={{ marginTop: 6 }}>
+                [ MEUS ALIADOS ]
+              </div>
+              {idsAmigosAceitos.length === 0 ? (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "#475569",
+                    fontSize: 13,
+                  }}
+                >
+                  Você ainda não tem aliados. Procura na aba Buscar!
+                </p>
+              ) : (
+                idsAmigosAceitos.map((id) => {
+                  const amigo = buscarNoDiretorio(id) || {};
+                  const nAmigo = getNivel(amigo.xp || 0);
+                  const amizadeObj = amizades.find(
+                    (a) =>
+                      a.status === "aceito" &&
+                      (a.solicitante_id === id || a.destinatario_id === id),
+                  );
+                  return (
+                    <div
+                      key={id}
+                      style={{
+                        background: "#0b0e1a",
+                        border: "1px solid #ffffff0d",
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: 6,
+                          flexShrink: 0,
+                          background: "#05070d",
+                          border: `1px solid ${nAmigo.cor}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: nAmigo.cor,
+                        }}
+                      >
+                        {nAmigo.letra}
+                      </div>
+                      <span
+                        style={{
+                          flex: 1,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#f8fafc",
+                        }}
+                      >
+                        {amigo.nome || "Caçador"}
+                      </span>
+                      <button
+                        onClick={() => removerAmigo(amizadeObj?.id)}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #ffffff1a",
+                          borderRadius: 6,
+                          color: "#64748b",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "5px 8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* BUSCAR */}
+          {subAbaComunidade === "buscar" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "#0b0e1a",
+                  border: "1px solid #ffffff0d",
+                  borderRadius: 10,
+                  padding: "8px 12px",
+                }}
+              >
+                <Search size={15} color="#64748b" />
+                <input
+                  value={buscaNome}
+                  onChange={(e) => setBuscaNome(e.target.value)}
+                  placeholder="Buscar caçador pelo nome..."
+                  style={{
+                    flex: 1,
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    color: "#f8fafc",
+                    fontSize: 13,
+                  }}
+                />
+              </div>
+
+              {buscando && (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "#64748b",
+                    fontSize: 12,
+                  }}
+                >
+                  Buscando...
+                </p>
+              )}
+
+              {!buscando &&
+                buscaNome.trim().length >= 2 &&
+                resultadosBusca.length === 0 && (
+                  <p
+                    style={{
+                      textAlign: "center",
+                      color: "#475569",
+                      fontSize: 13,
+                    }}
+                  >
+                    Nenhum caçador encontrado.
+                  </p>
+                )}
+
+              {resultadosBusca.map((r) => {
+                const jaAmigo = idsAmigosAceitos.includes(r.user_id);
+                const jaPediu = pedidosEnviadosIds.includes(r.user_id);
+                return (
+                  <div
+                    key={r.user_id}
+                    style={{
+                      background: "#0b0e1a",
+                      border: "1px solid #ffffff0d",
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#f8fafc",
+                      }}
+                    >
+                      {r.nome}
+                    </span>
+                    {jaAmigo ? (
+                      <span style={{ fontSize: 11, color: "#34d399" }}>
+                        Já são aliados
+                      </span>
+                    ) : jaPediu ? (
+                      <span style={{ fontSize: 11, color: "#64748b" }}>
+                        Pedido enviado
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => enviarPedido(r.user_id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          background: corSel,
+                          border: "none",
+                          borderRadius: 6,
+                          color: "#05070d",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "6px 10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <UserPlus size={12} /> Adicionar
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {aba === "ranking" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div className="sl-title" style={{ marginBottom: 4 }}>
