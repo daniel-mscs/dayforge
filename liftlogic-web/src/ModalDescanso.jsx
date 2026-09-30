@@ -18,6 +18,7 @@ export default function ModalDescanso({
   setModalDescanso,
   setSeriesFeitas,
   setConcluidos,
+  onFechar,
 }) {
   if (!modalDescanso) return null;
 
@@ -51,6 +52,9 @@ export default function ModalDescanso({
       setModalDescanso(null);
       return;
     }
+    const supersetGrupo = proximo.superset_id
+      ? exerciciosFiltrados.filter((e) => e.superset_id === proximo.superset_id)
+      : null;
     setModalDescanso({
       exId: proximo.id,
       nomeEx: proximo.nome,
@@ -61,6 +65,10 @@ export default function ModalDescanso({
       repeticoes: proximo.repeticoes,
       repsPorSerie: proximo.reps_por_serie || null,
       cargaPorSerie: proximo.carga_por_serie || null,
+      supersetExs: supersetGrupo,
+      supersetIdx: supersetGrupo
+        ? supersetGrupo.findIndex((e) => e.id === proximo.id)
+        : 0,
     });
   };
 
@@ -545,6 +553,9 @@ export default function ModalDescanso({
                   cargaPorSerie: proximo.carga_por_serie || null,
                   totalSeries: Number(proximo.series),
                   serieAtual: seriesFeitas[proximo.id] || 0,
+                  supersetIdx: supersetExs.findIndex(
+                    (e) => e.id === proximo.id,
+                  ),
                 }));
                 return;
               }
@@ -577,6 +588,9 @@ export default function ModalDescanso({
                   cargaPorSerie: proximoAlvo.carga_por_serie || null,
                   totalSeries: Number(proximoAlvo.series),
                   serieAtual: contagemDe(proximoAlvo.id),
+                  supersetIdx: supersetExs.findIndex(
+                    (e) => e.id === proximoAlvo.id,
+                  ),
                 }));
               } else {
                 setModalDescanso((prev) => ({
@@ -659,10 +673,7 @@ export default function ModalDescanso({
             ← Anterior
           </button>
           <button
-            onClick={() => {
-              cancelarDescanso();
-              setModalDescanso(null);
-            }}
+            onClick={onFechar}
             style={{
               flex: 1,
               background: "transparent",
@@ -675,7 +686,7 @@ export default function ModalDescanso({
               cursor: "pointer",
             }}
           >
-            Fechar
+            {descanso > 0 ? "⤵ Minimizar" : "Fechar"}
           </button>
           <button
             onClick={() => {

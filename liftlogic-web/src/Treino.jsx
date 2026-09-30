@@ -431,6 +431,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [modalDuplicar, setModalDuplicar] = useState(null);
   const [seriesFeitas, setSeriesFeitas] = useState({});
   const [modalDescanso, setModalDescanso] = useState(null);
+  const [modalMinimizado, setModalMinimizado] = useState(false);
   const [modalEditEx, setModalEditEx] = useState(null);
   const [salvandoTreino, setSalvandoTreino] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -778,7 +779,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     if (divisao) localStorage.setItem("divisao", divisao);
   }, [divisao]);
   useEffect(() => {
-    if (!modalDescanso) return;
+    if (!modalDescanso || modalMinimizado) return;
     const scrollY = window.scrollY;
     document.body.style.position = "fixed";
     document.body.style.top = `-${scrollY}px`;
@@ -795,7 +796,29 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       document.documentElement.style.overscrollBehavior = "";
       window.scrollTo(0, scrollY);
     };
-  }, [modalDescanso]);
+  }, [modalDescanso, modalMinimizado]);
+
+  // Some o timer some se o exercício for finalizado por outro caminho
+  // (ex: "Parar aqui e marcar como concluído"), e reabre o modal cheio
+  // sozinho quando o descanso minimizado chega a zero.
+  useEffect(() => {
+    if (!modalDescanso) {
+      setModalMinimizado(false);
+      return;
+    }
+    if (modalMinimizado && descanso === 0) {
+      setModalMinimizado(false);
+    }
+  }, [modalDescanso, modalMinimizado, descanso]);
+
+  const fecharModalDescanso = () => {
+    if (descanso > 0) {
+      setModalMinimizado(true);
+    } else {
+      cancelarDescanso();
+      setModalDescanso(null);
+    }
+  };
   useEffect(() => {
     buscarHistorico();
   }, []);
@@ -1793,25 +1816,100 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       )}
 
       {/* ── Modal de exercício / descanso ── */}
-      <ModalDescanso
-        modalDescanso={modalDescanso}
-        descanso={descanso}
-        descansoPausado={descansoPausado}
-        pausarDescanso={pausarDescanso}
-        retomarDescanso={retomarDescanso}
-        seriesFeitas={seriesFeitas}
-        exerciciosFiltrados={exerciciosFiltrados}
-        formatarTempo={formatarTempo}
-        adicionarDescanso={adicionarDescanso}
-        cancelarDescanso={cancelarDescanso}
-        iniciarTimerDescanso={iniciarTimerDescanso}
-        iniciarDescansoManual={iniciarDescansoManual}
-        inputDescanso={inputDescanso}
-        setInputDescanso={setInputDescanso}
-        setModalDescanso={setModalDescanso}
-        setSeriesFeitas={setSeriesFeitas}
-        setConcluidos={setConcluidos}
-      />
+      {modalDescanso && !modalMinimizado && (
+        <ModalDescanso
+          modalDescanso={modalDescanso}
+          descanso={descanso}
+          descansoPausado={descansoPausado}
+          pausarDescanso={pausarDescanso}
+          retomarDescanso={retomarDescanso}
+          seriesFeitas={seriesFeitas}
+          exerciciosFiltrados={exerciciosFiltrados}
+          formatarTempo={formatarTempo}
+          adicionarDescanso={adicionarDescanso}
+          cancelarDescanso={cancelarDescanso}
+          iniciarTimerDescanso={iniciarTimerDescanso}
+          iniciarDescansoManual={iniciarDescansoManual}
+          inputDescanso={inputDescanso}
+          setInputDescanso={setInputDescanso}
+          setModalDescanso={setModalDescanso}
+          setSeriesFeitas={setSeriesFeitas}
+          setConcluidos={setConcluidos}
+          onFechar={fecharModalDescanso}
+        />
+      )}
+
+      {/* ── Timer flutuante (descanso minimizado) ── */}
+      {modalDescanso && modalMinimizado && descanso > 0 && (
+        <div
+          onClick={() => setModalMinimizado(false)}
+          style={{
+            position: "fixed",
+            bottom: 86,
+            right: 16,
+            zIndex: 9995,
+            background: "linear-gradient(135deg,#6366f1,#4f46e5)",
+            borderRadius: 999,
+            padding: "10px 10px 10px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            boxShadow: "0 8px 24px rgba(99,102,241,0.5)",
+            cursor: "pointer",
+            maxWidth: "calc(100% - 32px)",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 18,
+              fontWeight: 900,
+              color: "#fff",
+              fontVariantNumeric: "tabular-nums",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {formatarTempo(descanso)}
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#e0e7ff",
+              maxWidth: 110,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {modalDescanso.nomeEx}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelarDescanso();
+              setModalDescanso(null);
+              setModalMinimizado(false);
+            }}
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              borderRadius: "50%",
+              width: 22,
+              height: 22,
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ── Modal superset ── */}
       {modalSuperset && (
