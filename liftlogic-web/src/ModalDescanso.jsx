@@ -686,7 +686,7 @@ export default function ModalDescanso({
               cursor: "pointer",
             }}
           >
-            {descanso > 0 ? "⤵ Minimizar" : "Fechar"}
+            ⤵ Minimizar
           </button>
           <button
             onClick={() => {

@@ -798,26 +798,26 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     };
   }, [modalDescanso, modalMinimizado]);
 
-  // Some o timer some se o exercício for finalizado por outro caminho
-  // (ex: "Parar aqui e marcar como concluído"), e reabre o modal cheio
-  // sozinho quando o descanso minimizado chega a zero.
+  // Reabre o modal cheio sozinho quando o descanso minimizado CHEGA a
+  // zero (transição de >0 pra 0) — nunca por já estar em zero, senão
+  // minimizar sem descanso ativo desfazia a si mesmo na hora.
+  const descansoAnteriorRef = useRef(0);
   useEffect(() => {
     if (!modalDescanso) {
       setModalMinimizado(false);
+      descansoAnteriorRef.current = 0;
       return;
     }
-    if (modalMinimizado && descanso === 0) {
+    if (modalMinimizado && descansoAnteriorRef.current > 0 && descanso === 0) {
       setModalMinimizado(false);
     }
+    descansoAnteriorRef.current = descanso;
   }, [modalDescanso, modalMinimizado, descanso]);
 
+  // Minimizar sempre esconde o modal em vez de fechar — a única forma
+  // de encerrar de vez é o ✕ na pilula flutuante.
   const fecharModalDescanso = () => {
-    if (descanso > 0) {
-      setModalMinimizado(true);
-    } else {
-      cancelarDescanso();
-      setModalDescanso(null);
-    }
+    setModalMinimizado(true);
   };
   useEffect(() => {
     buscarHistorico();
@@ -1839,8 +1839,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         />
       )}
 
-      {/* ── Timer flutuante (descanso minimizado) ── */}
-      {modalDescanso && modalMinimizado && descanso > 0 && (
+      {/* ── Card flutuante (exercício minimizado) ── */}
+      {modalDescanso && modalMinimizado && (
         <div
           onClick={() => setModalMinimizado(false)}
           style={{
@@ -1868,7 +1868,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               whiteSpace: "nowrap",
             }}
           >
-            {formatarTempo(descanso)}
+            {descanso > 0 ? formatarTempo(descanso) : "▶"}
           </span>
           <span
             style={{
