@@ -914,21 +914,27 @@ export default function SmartPocket({ user }) {
     if (tipo === "cartao") {
       setEditCampos({
         item: item.item,
-        valor: String(item.valor),
+        valor: Number(item.valor).toFixed(2),
         categoria: item.categoria || CATEGORIAS[0],
         cartao_id: item.cartao_id || "",
       });
     } else if (tipo === "entrada") {
-      setEditCampos({ nome: item.nome, valor: String(item.valor) });
+      setEditCampos({ nome: item.nome, valor: Number(item.valor).toFixed(2) });
     } else if (tipo === "investimento") {
-      setEditCampos({ tipo: item.tipo, valor: String(item.valor) });
+      setEditCampos({
+        tipo: item.tipo,
+        valor: Number(item.valor).toFixed(2),
+      });
     } else if (tipo === "conta") {
-      setEditCampos({ nome: item.nome, planejado: String(item.planejado) });
+      setEditCampos({
+        nome: item.nome,
+        planejado: Number(item.planejado).toFixed(2),
+      });
     } else if (tipo === "divida") {
       setEditCampos({
         pessoa: item.pessoa,
         descricao: item.descricao || "",
-        valor: String(item.valor),
+        valor: Number(item.valor).toFixed(2),
       });
     }
   };
