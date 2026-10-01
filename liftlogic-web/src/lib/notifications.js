@@ -371,6 +371,54 @@ function idNotifSuplemento(suplementoId) {
   return BASE_ID_SUPLEMENTOS + h;
 }
 
+// Lembrete de contas pendentes perto do fim do mês — reagendado toda vez
+// que a aba Contas é aberta, sempre com o total atualizado em tempo real.
+const ID_NOTIF_CONTAS = 9601;
+
+export async function agendarNotificacaoContasPendentes(
+  totalPendente,
+  dia = 25,
+  hora = 19,
+) {
+  try {
+    if (!Capacitor.isNativePlatform()) return;
+
+    await LocalNotifications.cancel({
+      notifications: [{ id: ID_NOTIF_CONTAS }],
+    });
+
+    if (!totalPendente || totalPendente <= 0) return;
+
+    const { display } = await LocalNotifications.requestPermissions();
+    if (display !== "granted") return;
+
+    const agora = new Date();
+    const alvo = new Date();
+    alvo.setDate(dia);
+    alvo.setHours(hora, 0, 0, 0);
+    if (alvo <= agora) return; // já passou esse dia nesse mês, não agenda
+
+    const valorFmt = totalPendente.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: ID_NOTIF_CONTAS,
+          title: "🧾 Contas do mês",
+          body: `Ainda falta pagar ${valorFmt} em contas esse mês.`,
+          smallIcon: "ic_notification",
+          schedule: { at: alvo, allowWhileIdle: true },
+        },
+      ],
+    });
+  } catch (err) {
+    console.error("Falha ao agendar notificação de contas:", err);
+  }
+}
+
 export async function agendarNotificacoesSuplementos(suplementos) {
   if (!Capacitor.isNativePlatform()) return;
   const { display } = await LocalNotifications.requestPermissions();

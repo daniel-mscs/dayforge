@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { agendarNotificacaoContasPendentes } from "./lib/notifications";
 import { askConfirm } from "./lib/confirm";
 import {
   Wallet,
@@ -176,6 +177,7 @@ export default function SmartPocket({ user }) {
   });
   const [gastosMesPassado, setGastosMesPassado] = useState([]);
   const [saldoAcumulado, setSaldoAcumulado] = useState(0);
+  const [evolucaoMensal, setEvolucaoMensal] = useState([]);
   const [cartaoFuturo, setCartaoFuturo] = useState([]);
   const [novoLimiteCategoria, setNovoLimiteCategoria] = useState(CATEGORIAS[0]);
   const [categoriaAberta, setCategoriaAberta] = useState(null);
@@ -373,6 +375,7 @@ export default function SmartPocket({ user }) {
     const recGastos = (rec || []).filter((r) => !r.tipo || r.tipo === "gasto");
     const recCartao = (rec || []).filter((r) => r.tipo === "cartao");
     const recInvest = (rec || []).filter((r) => r.tipo === "investimento");
+    const recConta = (rec || []).filter((r) => r.tipo === "conta");
 
     const nomesGastosJaLancados = new Set((g || []).map((x) => x.nome));
     const faltandoGastos = recGastos.filter(
@@ -443,6 +446,27 @@ export default function SmartPocket({ user }) {
     }
     setInvestimentos(investFinal);
 
+    const nomesContaJaLancada = new Set((contasData || []).map((x) => x.nome));
+    const faltandoConta = recConta.filter(
+      (r) => !nomesContaJaLancada.has(r.nome),
+    );
+    let contasFinal = contasData || [];
+    if (faltandoConta.length > 0) {
+      const { data: inseridos } = await supabase
+        .from("financeiro_contas")
+        .insert(
+          faltandoConta.map((r) => ({
+            user_id: user.id,
+            mes,
+            ano,
+            nome: r.nome,
+            planejado: r.valor,
+          })),
+        )
+        .select();
+      contasFinal = [...(inseridos || []), ...(contasData || [])];
+    }
+
     setEntradas(e || []);
     setLimites(lim || []);
     setRecorrentes(rec || []);
@@ -509,9 +533,55 @@ export default function SmartPocket({ user }) {
         { onConflict: "user_id,mes,ano" },
       );
     }
-    setContas(contasData || []);
+    setContas(contasFinal);
     setMetas(metasData || []);
     setDividas(dividasData || []);
+
+    // Evolução do saldo nos últimos meses — usa o histórico completo que já
+    // vem de gastosHistData/investHistData/entradasHistData/contasHistData,
+    // sem precisar de nenhuma query extra.
+    const mapaEvolucao = new Map();
+    const acumular = (arr, campo, chave) => {
+      (arr || []).forEach((l) => {
+        const k = `${l.ano}-${l.mes}`;
+        if (!mapaEvolucao.has(k)) {
+          mapaEvolucao.set(k, {
+            ano: l.ano,
+            mes: l.mes,
+            entradas: 0,
+            saidas: 0,
+          });
+        }
+        mapaEvolucao.get(k)[chave] += Number(l[campo] ?? 0);
+      });
+    };
+    acumular(entradasHistData, "valor", "entradas");
+    acumular(gastosHistData, "valor", "saidas");
+    acumular(investHistData, "valor", "saidas");
+    (contasHistData || []).forEach((cta) => {
+      const k = `${cta.ano}-${cta.mes}`;
+      if (!mapaEvolucao.has(k)) {
+        mapaEvolucao.set(k, {
+          ano: cta.ano,
+          mes: cta.mes,
+          entradas: 0,
+          saidas: 0,
+        });
+      }
+      const efetivo =
+        cta.valor_pago !== null && cta.valor_pago !== undefined
+          ? cta.valor_pago
+          : cta.planejado;
+      mapaEvolucao.get(k).saidas += Number(efetivo || 0);
+    });
+    const evolucao = Array.from(mapaEvolucao.values())
+      .sort((a, b) => a.ano * 12 + a.mes - (b.ano * 12 + b.mes))
+      .slice(-6)
+      .map((m) => ({
+        name: `${MESES[m.mes].slice(0, 3)}/${String(m.ano).slice(-2)}`,
+        saldo: m.entradas - m.saidas,
+      }));
+    setEvolucaoMensal(evolucao);
 
     setCarregando(false);
   }, [user.id, mes, ano]);
@@ -705,7 +775,8 @@ export default function SmartPocket({ user }) {
           valor: parseFloat(novoRecorrenteValor),
           tipo: novoRecorrenteTipo,
           categoria:
-            novoRecorrenteTipo !== "investimento"
+            novoRecorrenteTipo !== "investimento" &&
+            novoRecorrenteTipo !== "conta"
               ? novoRecorrenteCategoria
               : null,
           cartao_id:
@@ -1221,6 +1292,19 @@ export default function SmartPocket({ user }) {
   const contasPendentes = contas.filter(
     (c) => c.valor_pago === null || c.valor_pago === undefined,
   );
+
+  // Lembrete push de contas pendentes perto do fim do mês — só faz
+  // sentido reagendar olhando o mês/ano ATUAL de verdade (não um mês
+  // passado ou futuro que você esteja só consultando).
+  useEffect(() => {
+    if (mes !== hoje.getMonth() || ano !== hoje.getFullYear()) return;
+    const totalPendente = contasPendentes.reduce(
+      (s, c) => s + Number(c.planejado || 0),
+      0,
+    );
+    agendarNotificacaoContasPendentes(totalPendente);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contas, mes, ano]);
   // Parcelas futuras (próximos meses) ficam escondidas até o mês delas
   // chegar — igual a fatura do cartão, não aparece tudo de uma vez.
   const hojeStrDividas = formatarDataHoje();
@@ -3590,6 +3674,62 @@ export default function SmartPocket({ user }) {
             </div>
           </div>
 
+          {/* Evolução do saldo nos últimos meses */}
+          {evolucaoMensal.length >= 2 && (
+            <div
+              style={{
+                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                border: "1px solid #ffffff10",
+                borderRadius: 16,
+                padding: 16,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#64748b",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  marginBottom: 12,
+                }}
+              >
+                EVOLUÇÃO DO SALDO
+              </div>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={evolucaoMensal}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: "#64748b", fontSize: 10 }}
+                  />
+                  <YAxis
+                    tick={{ fill: "#64748b", fontSize: 10 }}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      border: "1px solid #ffffff10",
+                      borderRadius: 8,
+                      color: "#f8fafc",
+                      fontSize: 12,
+                    }}
+                    formatter={(v) => [fmtBRL(v), "Saldo"]}
+                  />
+                  <Bar dataKey="saldo" radius={[4, 4, 0, 0]}>
+                    {evolucaoMensal.map((m, idx) => (
+                      <Cell
+                        key={idx}
+                        fill={m.saldo >= 0 ? "#10b981" : "#ef4444"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Contas previstas do mês */}
           {contas.length > 0 && (
             <div
@@ -3868,14 +4008,18 @@ export default function SmartPocket({ user }) {
                       ? "Cartão"
                       : r.tipo === "investimento"
                         ? "Investimento"
-                        : "Gasto";
+                        : r.tipo === "conta"
+                          ? "Conta"
+                          : "Gasto";
                   const detalhe =
                     r.tipo === "cartao"
                       ? cartoes.find((c) => c.id === r.cartao_id)?.nome ||
                         "cartão"
                       : r.tipo === "investimento"
                         ? r.invest_tipo
-                        : r.categoria;
+                        : r.tipo === "conta"
+                          ? null
+                          : r.categoria;
                   return (
                     <div
                       key={r.id}
@@ -3899,7 +4043,8 @@ export default function SmartPocket({ user }) {
                           {r.nome}
                         </div>
                         <div style={{ fontSize: 11, color: "#64748b" }}>
-                          {tipoLabel} · {detalhe} · {fmtBRL(r.valor)}
+                          {tipoLabel}
+                          {detalhe ? ` · ${detalhe}` : ""} · {fmtBRL(r.valor)}
                         </div>
                       </div>
                       <button
@@ -3925,6 +4070,7 @@ export default function SmartPocket({ user }) {
               <option value="gasto">💸 Gasto fixo</option>
               <option value="cartao">💳 Lançamento de cartão</option>
               <option value="investimento">📈 Investimento</option>
+              <option value="conta">🧾 Conta planejada</option>
             </select>
             <input
               id="recorrente-nome"
@@ -3933,7 +4079,9 @@ export default function SmartPocket({ user }) {
                   ? "Nome (ex: Aluguel)"
                   : novoRecorrenteTipo === "cartao"
                     ? "Nome (ex: Netflix)"
-                    : "Nome (ex: Aporte mensal)"
+                    : novoRecorrenteTipo === "conta"
+                      ? "Nome (ex: Conta de luz)"
+                      : "Nome (ex: Aporte mensal)"
               }
               value={novoRecorrenteNome}
               onChange={(e) => setNovoRecorrenteNome(e.target.value)}
@@ -3946,19 +4094,20 @@ export default function SmartPocket({ user }) {
               onChange={(e) => setNovoRecorrenteValor(e.target.value)}
               style={{ marginTop: 8 }}
             />
-            {novoRecorrenteTipo !== "investimento" && (
-              <select
-                value={novoRecorrenteCategoria}
-                onChange={(e) => setNovoRecorrenteCategoria(e.target.value)}
-                style={{ marginTop: 8 }}
-              >
-                {CATEGORIAS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            )}
+            {novoRecorrenteTipo !== "investimento" &&
+              novoRecorrenteTipo !== "conta" && (
+                <select
+                  value={novoRecorrenteCategoria}
+                  onChange={(e) => setNovoRecorrenteCategoria(e.target.value)}
+                  style={{ marginTop: 8 }}
+                >
+                  {CATEGORIAS.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              )}
             {novoRecorrenteTipo === "cartao" && (
               <select
                 value={novoRecorrenteCartaoId}
