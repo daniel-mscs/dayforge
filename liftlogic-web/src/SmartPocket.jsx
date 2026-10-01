@@ -1207,8 +1207,7 @@ export default function SmartPocket({ user }) {
   const totalDividasReceber = dividas
     .filter((d) => !d.recebido)
     .reduce((s, d) => s + Number(d.valor), 0);
-  const totalDescontos = totalGastos + totalInvest + totalContasPagas;
-  const saldo = totalEntradas - totalDescontos;
+  const saldo = totalEntradas - (totalGastos + totalInvest + totalContasPagas);
 
   // Soma Gastos (já efetivado) + Contas (pago, ou planejado se ainda não
   // pago) — dá a visão de "quanto eu vou gastar no total esse mês" sem
@@ -1225,6 +1224,10 @@ export default function SmartPocket({ user }) {
         ),
       0,
     );
+
+  // Previsão do que vai sobrar no final do mês, já descontando as contas
+  // que ainda não foram pagas (não só as que já foram, como no saldo atual).
+  const saldoFinalPrevisto = totalEntradas - totalInvest - totalComprometido;
 
   // Comparação com o mês passado
   const totalGastosMesPassado = gastosMesPassado.reduce(
@@ -3517,7 +3520,7 @@ export default function SmartPocket({ user }) {
               {fmtBRL(saldo)}
             </div>
             <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-              ({fmtBRL(totalEntradas)} - {fmtBRL(totalDescontos)})
+              (vai sobrar {fmtBRL(saldoFinalPrevisto)} depois de pagar tudo)
             </div>
             <div
               style={{
