@@ -100,6 +100,17 @@ function formatarDataHoje() {
   return local.toISOString().split("T")[0];
 }
 
+// Soma N meses a uma data "YYYY-MM-DD" (usado pra espalhar parcelas de
+// dívida mês a mês, igual a fatura do cartão).
+function adicionarMeses(dataStr, n) {
+  const [y, m, d] = dataStr.split("-").map(Number);
+  const dt = new Date(y, m - 1 + n, d);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
 // Uma compra feita DEPOIS do dia de fechamento do cartão cai
 // automaticamente na fatura do mês seguinte — igual acontece de
 // verdade no extrato do banco.
@@ -854,7 +865,7 @@ export default function SmartPocket({ user }) {
       pessoa: dividaPessoa,
       descricao: dividaDescricao || null,
       valor: valorParcela,
-      data: hojeStr,
+      data: dividaParcelado ? adicionarMeses(hojeStr, idx) : hojeStr,
       parcela_atual: dividaParcelado ? idx + 1 : null,
       total_parcelas: dividaParcelado ? numParcelas : null,
       grupo_parcela_id: grupoId,
@@ -1210,7 +1221,13 @@ export default function SmartPocket({ user }) {
   const contasPendentes = contas.filter(
     (c) => c.valor_pago === null || c.valor_pago === undefined,
   );
-  const totalDividasReceber = dividas
+  // Parcelas futuras (próximos meses) ficam escondidas até o mês delas
+  // chegar — igual a fatura do cartão, não aparece tudo de uma vez.
+  const hojeStrDividas = formatarDataHoje();
+  const dividasVisiveis = dividas.filter(
+    (d) => d.recebido || !d.data || d.data <= hojeStrDividas,
+  );
+  const totalDividasReceber = dividasVisiveis
     .filter((d) => !d.recebido)
     .reduce((s, d) => s + Number(d.valor), 0);
   const saldo = totalEntradas - (totalGastos + totalInvest + totalContasPagas);
@@ -3380,12 +3397,12 @@ export default function SmartPocket({ user }) {
             </div>
           )}
 
-          {dividas.length === 0 ? (
+          {dividasVisiveis.length === 0 ? (
             <p style={{ textAlign: "center", color: "#475569", fontSize: 13 }}>
               Ninguém te deve nada no momento. 🎉
             </p>
           ) : (
-            dividas.map((d) => (
+            dividasVisiveis.map((d) => (
               <div
                 key={d.id}
                 style={{
