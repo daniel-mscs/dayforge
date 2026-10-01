@@ -4455,7 +4455,7 @@ export default function SmartPocket({ user }) {
       )}
 
       {editandoItem && (
-        <div className="modal-overlay" onClick={fecharEdicaoItem}>
+        <div className="modal-overlay">
           <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontSize: "1rem", marginBottom: 12 }}>
               Editar{" "}
