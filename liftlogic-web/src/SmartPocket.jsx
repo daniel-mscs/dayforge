@@ -1209,6 +1209,22 @@ export default function SmartPocket({ user }) {
     .reduce((s, d) => s + Number(d.valor), 0);
   const saldo = totalEntradas - (totalGastos + totalInvest + totalContasPagas);
 
+  // Soma Gastos (já efetivado) + Contas (pago, ou planejado se ainda não
+  // pago) — dá a visão de "quanto eu vou gastar no total esse mês" sem
+  // precisar duplicar lançamento em Gastos e em Contas.
+  const totalComprometido =
+    totalGastos +
+    contas.reduce(
+      (s, c) =>
+        s +
+        Number(
+          c.valor_pago !== null && c.valor_pago !== undefined
+            ? c.valor_pago
+            : c.planejado,
+        ),
+      0,
+    );
+
   // Comparação com o mês passado
   const totalGastosMesPassado = gastosMesPassado.reduce(
     (s, r) => s + Number(r.valor),
@@ -3509,6 +3525,38 @@ export default function SmartPocket({ user }) {
               {saldo >= 0
                 ? "✅ Você está no positivo!"
                 : "⚠️ Você está no negativo!"}
+            </div>
+          </div>
+
+          {/* Total comprometido do mês (Gastos + Contas, pagas ou previstas) */}
+          <div
+            style={{
+              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              border: "1px solid #ffffff10",
+              borderRadius: 16,
+              padding: "14px 18px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#64748b",
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                }}
+              >
+                TOTAL COMPROMETIDO DO MÊS
+              </div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                Gastos + Contas (pagas ou previstas)
+              </div>
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#f59e0b" }}>
+              {fmtBRL(totalComprometido)}
             </div>
           </div>
 
