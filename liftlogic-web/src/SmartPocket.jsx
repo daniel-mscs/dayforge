@@ -201,12 +201,18 @@ export default function SmartPocket({ user }) {
   const [dividaPessoa, setDividaPessoa] = useState("");
   const [dividaDescricao, setDividaDescricao] = useState("");
   const [dividaValor, setDividaValor] = useState("");
+  const [dividaParcelado, setDividaParcelado] = useState(false);
+  const [dividaParcelas, setDividaParcelas] = useState("2");
 
   const [editandoGasto, setEditandoGasto] = useState(null);
   const [editNome, setEditNome] = useState("");
   const [editValor, setEditValor] = useState("");
   const [editCategoria, setEditCategoria] = useState(CATEGORIAS[0]);
   const [editData, setEditData] = useState("");
+
+  // Edição genérica — cobre cartão, entrada, investimento, conta e dívida
+  const [editandoItem, setEditandoItem] = useState(null); // { tipo, id }
+  const [editCampos, setEditCampos] = useState({});
 
   useEffect(() => {
     if (["cartao", "invest", "contas", "metas"].includes(aba)) {
@@ -834,23 +840,37 @@ export default function SmartPocket({ user }) {
   const adicionarDivida = async () => {
     if (!dividaPessoa || !dividaValor)
       return toast("Preencha quem deve e o valor!", "error");
+
+    const valorTotal = parseFloat(dividaValor);
+    const numParcelas = dividaParcelado
+      ? Math.max(2, parseInt(dividaParcelas, 10) || 2)
+      : 1;
+    const valorParcela = valorTotal / numParcelas;
+    const grupoId = dividaParcelado ? gerarUUID() : null;
+    const hojeStr = formatarDataHoje();
+
+    const linhas = Array.from({ length: numParcelas }, (_, idx) => ({
+      user_id: user.id,
+      pessoa: dividaPessoa,
+      descricao: dividaDescricao || null,
+      valor: valorParcela,
+      data: hojeStr,
+      parcela_atual: dividaParcelado ? idx + 1 : null,
+      total_parcelas: dividaParcelado ? numParcelas : null,
+      grupo_parcela_id: grupoId,
+    }));
+
     const { data, error } = await supabase
       .from("financeiro_dividas")
-      .insert([
-        {
-          user_id: user.id,
-          pessoa: dividaPessoa,
-          descricao: dividaDescricao || null,
-          valor: parseFloat(dividaValor),
-          data: formatarDataHoje(),
-        },
-      ])
+      .insert(linhas)
       .select();
     if (error) return toast(error.message, "error");
-    setDividas((prev) => [data[0], ...prev]);
+    setDividas((prev) => [...data, ...prev]);
     setDividaPessoa("");
     setDividaDescricao("");
     setDividaValor("");
+    setDividaParcelado(false);
+    setDividaParcelas("2");
     document.getElementById("divida-pessoa")?.focus();
   };
 
@@ -878,6 +898,105 @@ export default function SmartPocket({ user }) {
         d.id === id ? { ...d, recebido: false, data_recebido: null } : d,
       ),
     );
+  };
+
+  // ── Edição genérica (cartão, entrada, investimento, conta, dívida) ──
+  const TABELA_POR_TIPO = {
+    cartao: "financeiro_cartao",
+    entrada: "financeiro_entradas",
+    investimento: "financeiro_investimentos",
+    conta: "financeiro_contas",
+    divida: "financeiro_dividas",
+  };
+
+  const abrirEdicaoItem = (tipo, item) => {
+    setEditandoItem({ tipo, id: item.id });
+    if (tipo === "cartao") {
+      setEditCampos({
+        item: item.item,
+        valor: String(item.valor),
+        categoria: item.categoria || CATEGORIAS[0],
+        cartao_id: item.cartao_id || "",
+      });
+    } else if (tipo === "entrada") {
+      setEditCampos({ nome: item.nome, valor: String(item.valor) });
+    } else if (tipo === "investimento") {
+      setEditCampos({ tipo: item.tipo, valor: String(item.valor) });
+    } else if (tipo === "conta") {
+      setEditCampos({ nome: item.nome, planejado: String(item.planejado) });
+    } else if (tipo === "divida") {
+      setEditCampos({
+        pessoa: item.pessoa,
+        descricao: item.descricao || "",
+        valor: String(item.valor),
+      });
+    }
+  };
+
+  const fecharEdicaoItem = () => {
+    setEditandoItem(null);
+    setEditCampos({});
+  };
+
+  const salvarEdicaoItem = async () => {
+    if (!editandoItem) return;
+    const { tipo, id } = editandoItem;
+    let payload = {};
+
+    if (tipo === "cartao") {
+      if (!editCampos.item || !editCampos.valor)
+        return toast("Preencha nome e valor!", "error");
+      payload = {
+        item: editCampos.item,
+        valor: parseFloat(editCampos.valor),
+        categoria: editCampos.categoria,
+        cartao_id: editCampos.cartao_id || null,
+      };
+    } else if (tipo === "entrada") {
+      if (!editCampos.nome || !editCampos.valor)
+        return toast("Preencha nome e valor!", "error");
+      payload = { nome: editCampos.nome, valor: parseFloat(editCampos.valor) };
+    } else if (tipo === "investimento") {
+      if (!editCampos.valor) return toast("Informe o valor!", "error");
+      payload = {
+        tipo: editCampos.tipo,
+        valor: parseFloat(editCampos.valor),
+      };
+    } else if (tipo === "conta") {
+      if (!editCampos.nome || !editCampos.planejado)
+        return toast("Preencha nome e valor planejado!", "error");
+      payload = {
+        nome: editCampos.nome,
+        planejado: parseFloat(editCampos.planejado),
+      };
+    } else if (tipo === "divida") {
+      if (!editCampos.pessoa || !editCampos.valor)
+        return toast("Preencha quem deve e o valor!", "error");
+      payload = {
+        pessoa: editCampos.pessoa,
+        descricao: editCampos.descricao || null,
+        valor: parseFloat(editCampos.valor),
+      };
+    }
+
+    const { error } = await supabase
+      .from(TABELA_POR_TIPO[tipo])
+      .update(payload)
+      .eq("id", id);
+    if (error) return toast(error.message, "error");
+
+    const setters = {
+      cartao: setCartao,
+      entrada: setEntradas,
+      investimento: setInvestimentos,
+      conta: setContas,
+      divida: setDividas,
+    };
+    setters[tipo]((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, ...payload } : it)),
+    );
+    toast("Atualizado! ✅", "success");
+    fecharEdicaoItem();
   };
 
   const abrirEdicaoGasto = (g) => {
@@ -2278,6 +2397,18 @@ export default function SmartPocket({ user }) {
                     {fmtBRL(c.valor)}
                   </span>
                   <button
+                    onClick={() => abrirEdicaoItem("cartao", c)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#818cf8",
+                      cursor: "pointer",
+                      opacity: 0.7,
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
                     onClick={() =>
                       deletar("financeiro_cartao", c.id, setCartao)
                     }
@@ -2449,6 +2580,18 @@ export default function SmartPocket({ user }) {
                     {fmtBRL(i.valor)}
                   </span>
                   <button
+                    onClick={() => abrirEdicaoItem("investimento", i)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#818cf8",
+                      cursor: "pointer",
+                      opacity: 0.7,
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
                     onClick={() =>
                       deletar(
                         "financeiro_investimentos",
@@ -2571,6 +2714,18 @@ export default function SmartPocket({ user }) {
                   >
                     {fmtBRL(e.valor)}
                   </span>
+                  <button
+                    onClick={() => abrirEdicaoItem("entrada", e)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#818cf8",
+                      cursor: "pointer",
+                      opacity: 0.7,
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     onClick={() =>
                       deletar("financeiro_entradas", e.id, setEntradas)
@@ -2732,6 +2887,18 @@ export default function SmartPocket({ user }) {
                           Pendente
                         </span>
                       )}
+                      <button
+                        onClick={() => abrirEdicaoItem("conta", c)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#818cf8",
+                          cursor: "pointer",
+                          opacity: 0.7,
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </button>
                       <button
                         onClick={() =>
                           deletar("financeiro_contas", c.id, setContas)
@@ -3120,6 +3287,35 @@ export default function SmartPocket({ user }) {
               style={{ marginTop: 8 }}
               onKeyDown={(e) => e.key === "Enter" && adicionarDivida()}
             />
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 10,
+                fontSize: 12,
+                color: "#cbd5e1",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={dividaParcelado}
+                onChange={(e) => setDividaParcelado(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              Vai me pagar parcelado
+            </label>
+            {dividaParcelado && (
+              <input
+                type="number"
+                min="2"
+                placeholder="Número de parcelas"
+                value={dividaParcelas}
+                onChange={(e) => setDividaParcelas(e.target.value)}
+                style={{ marginTop: 8 }}
+              />
+            )}
             <button
               onClick={adicionarDivida}
               style={{
@@ -3191,11 +3387,14 @@ export default function SmartPocket({ user }) {
                     >
                       {d.pessoa}
                     </div>
-                    {d.descricao && (
+                    {(d.descricao || d.total_parcelas > 1) && (
                       <div
                         style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}
                       >
                         {d.descricao}
+                        {d.descricao && d.total_parcelas > 1 && " · "}
+                        {d.total_parcelas > 1 &&
+                          `Parcela ${d.parcela_atual}/${d.total_parcelas}`}
                       </div>
                     )}
                     {d.recebido && d.data_recebido && (
@@ -3221,6 +3420,18 @@ export default function SmartPocket({ user }) {
                     >
                       {fmtBRL(d.valor)}
                     </span>
+                    <button
+                      onClick={() => abrirEdicaoItem("divida", d)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#818cf8",
+                        cursor: "pointer",
+                        opacity: 0.7,
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </button>
                     <button
                       onClick={() =>
                         deletar("financeiro_dividas", d.id, setDividas)
@@ -4147,6 +4358,216 @@ export default function SmartPocket({ user }) {
               </button>
               <button
                 onClick={() => setEditandoGasto(null)}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "1px solid #ffffff0d",
+                  color: "#64748b",
+                  borderRadius: 8,
+                  padding: "11px 0",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editandoItem && (
+        <div className="modal-overlay" onClick={fecharEdicaoItem}>
+          <div className="modal-resumo" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: "1rem", marginBottom: 12 }}>
+              Editar{" "}
+              {
+                {
+                  cartao: "Lançamento do Cartão",
+                  entrada: "Entrada",
+                  investimento: "Investimento",
+                  conta: "Conta",
+                  divida: "Dívida",
+                }[editandoItem.tipo]
+              }
+            </h2>
+
+            {editandoItem.tipo === "cartao" && (
+              <>
+                <input
+                  placeholder="Descrição"
+                  value={editCampos.item || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, item: e.target.value }))
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Valor R$"
+                  value={editCampos.valor || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, valor: e.target.value }))
+                  }
+                  style={{ marginTop: 8 }}
+                />
+                <select
+                  value={editCampos.categoria || CATEGORIAS[0]}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({
+                      ...p,
+                      categoria: e.target.value,
+                    }))
+                  }
+                  style={{ marginTop: 8 }}
+                >
+                  {CATEGORIAS.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={editCampos.cartao_id || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({
+                      ...p,
+                      cartao_id: e.target.value,
+                    }))
+                  }
+                  style={{ marginTop: 8 }}
+                >
+                  <option value="">Sem cartão</option>
+                  {cartoes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            {editandoItem.tipo === "entrada" && (
+              <>
+                <input
+                  placeholder="Descrição"
+                  value={editCampos.nome || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, nome: e.target.value }))
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Valor R$"
+                  value={editCampos.valor || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, valor: e.target.value }))
+                  }
+                  style={{ marginTop: 8 }}
+                />
+              </>
+            )}
+
+            {editandoItem.tipo === "investimento" && (
+              <>
+                <select
+                  value={editCampos.tipo || INVEST_TIPOS[0]}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, tipo: e.target.value }))
+                  }
+                >
+                  {INVEST_TIPOS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  placeholder="Valor R$"
+                  value={editCampos.valor || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, valor: e.target.value }))
+                  }
+                  style={{ marginTop: 8 }}
+                />
+              </>
+            )}
+
+            {editandoItem.tipo === "conta" && (
+              <>
+                <input
+                  placeholder="Nome da conta"
+                  value={editCampos.nome || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, nome: e.target.value }))
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Valor planejado R$"
+                  value={editCampos.planejado || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({
+                      ...p,
+                      planejado: e.target.value,
+                    }))
+                  }
+                  style={{ marginTop: 8 }}
+                />
+              </>
+            )}
+
+            {editandoItem.tipo === "divida" && (
+              <>
+                <input
+                  placeholder="Quem deve?"
+                  value={editCampos.pessoa || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, pessoa: e.target.value }))
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Valor R$"
+                  value={editCampos.valor || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({ ...p, valor: e.target.value }))
+                  }
+                  style={{ marginTop: 8 }}
+                />
+                <input
+                  placeholder="Motivo (opcional)"
+                  value={editCampos.descricao || ""}
+                  onChange={(e) =>
+                    setEditCampos((p) => ({
+                      ...p,
+                      descricao: e.target.value,
+                    }))
+                  }
+                  style={{ marginTop: 8 }}
+                />
+              </>
+            )}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                onClick={salvarEdicaoItem}
+                style={{
+                  flex: 1,
+                  background: "#6366f1",
+                  border: "none",
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "11px 0",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Salvar
+              </button>
+              <button
+                onClick={fecharEdicaoItem}
                 style={{
                   flex: 1,
                   background: "transparent",
