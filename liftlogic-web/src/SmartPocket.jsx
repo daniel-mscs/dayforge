@@ -574,7 +574,11 @@ export default function SmartPocket({ user }) {
           : cta.planejado;
       mapaEvolucao.get(k).saidas += Number(efetivo || 0);
     });
+    // Ignora meses futuros (ex: lançamentos de teste feitos navegando pra
+    // frente) — a evolução só faz sentido até o mês atual de verdade.
+    const idxHoje = hoje.getFullYear() * 12 + hoje.getMonth();
     const evolucao = Array.from(mapaEvolucao.values())
+      .filter((m) => m.ano * 12 + m.mes <= idxHoje)
       .sort((a, b) => a.ano * 12 + a.mes - (b.ano * 12 + b.mes))
       .slice(-6)
       .map((m) => ({
