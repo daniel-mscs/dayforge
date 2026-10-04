@@ -3,7 +3,7 @@ import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { agendarNotificacoesRotina } from "./lib/notifications";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, FileDown } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -566,6 +566,92 @@ export default function Rotina({ user }) {
   };
 
   const diaSel = dias.find((d) => d.id === diaSelecionado);
+
+  const exportarPdfDia = async () => {
+    if (!diaSel) return;
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const margemX = 48;
+      let y = 56;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("DayForge — Rotina", margemX, y);
+      y += 22;
+
+      doc.setFontSize(12);
+      doc.setTextColor(100);
+      const dataFormatada = new Date(
+        diaSel.data + "T00:00:00",
+      ).toLocaleDateString("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      doc.text(`${labelData(diaSel.data)} — ${dataFormatada}`, margemX, y);
+      y += 28;
+      doc.setTextColor(0);
+
+      PERIODOS.forEach((periodo) => {
+        const itens = tarefas[diaSel.id]?.[periodo] || [];
+        if (itens.length === 0) return;
+
+        if (y > 760) {
+          doc.addPage();
+          y = 56;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(periodo, margemX, y);
+        y += 18;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        itens.forEach((t) => {
+          if (y > 780) {
+            doc.addPage();
+            y = 56;
+          }
+          const caixa = t.concluida ? "[x]" : "[ ]";
+          const linhas = doc.splitTextToSize(
+            `${caixa} ${t.texto}`,
+            500 - margemX,
+          );
+          doc.text(linhas, margemX + 10, y);
+          y += 16 * linhas.length;
+        });
+        y += 10;
+      });
+
+      const nomeArquivo = `rotina-${diaSel.data}.pdf`;
+      const blob = doc.output("blob");
+
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({
+          files: [new File([blob], nomeArquivo, { type: "application/pdf" })],
+        })
+      ) {
+        await navigator.share({
+          title: "Minha rotina — DayForge",
+          files: [new File([blob], nomeArquivo, { type: "application/pdf" })],
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nomeArquivo;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      toast("Erro ao gerar PDF: " + e.message, "error");
+    }
+  };
 
   const mesIdx = mesesDisponiveis.findIndex(
     (m) => m.ano === mesAtual.ano && m.mes === mesAtual.mes,
@@ -1267,6 +1353,13 @@ export default function Rotina({ user }) {
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button
+                    className="rotina-btn-clonar"
+                    onClick={exportarPdfDia}
+                    title="Exportar PDF"
+                  >
+                    <FileDown size={14} />
+                  </button>
                   {(() => {
                     const total = PERIODOS.flatMap(
                       (p) => tarefas[diaSel.id]?.[p] || [],
