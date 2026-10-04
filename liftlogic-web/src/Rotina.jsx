@@ -180,6 +180,13 @@ export default function Rotina({ user }) {
   });
   const [diasSelecionadosClone, setDiasSelecionadosClone] = useState([]);
   const [tarefasSelecionadasClone, setTarefasSelecionadasClone] = useState([]);
+  const [modalExportPdf, setModalExportPdf] = useState(false);
+  const [mesExportPdf, setMesExportPdf] = useState(() => {
+    const h = new Date();
+    return { ano: h.getFullYear(), mes: h.getMonth() };
+  });
+  const [diasSelecionadosPdf, setDiasSelecionadosPdf] = useState([]);
+  const [exportandoPdf, setExportandoPdf] = useState(false);
   const [resumoAtivado, setResumoAtivado] = useState(
     () => localStorage.getItem("df_resumo_rotina_ativado") !== "false",
   );
@@ -567,66 +574,99 @@ export default function Rotina({ user }) {
 
   const diaSel = dias.find((d) => d.id === diaSelecionado);
 
-  const exportarPdfDia = async () => {
-    if (!diaSel) return;
+  // Gera um PDF com uma seção por dia (ordenados por data), cada um com
+  // suas tarefas por período — usado tanto pro atalho de 1 dia quanto pro
+  // modal de seleção de vários dias.
+  const exportarPdfDias = async (diaIds) => {
+    const diasOrdenados = diaIds
+      .map((id) => dias.find((d) => d.id === id))
+      .filter(Boolean)
+      .sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+    if (diasOrdenados.length === 0) return;
+
+    setExportandoPdf(true);
     try {
       const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({ unit: "pt", format: "a4" });
       const margemX = 48;
       let y = 56;
+      let primeiraPagina = true;
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("DayForge — Rotina", margemX, y);
-      y += 22;
-
-      doc.setFontSize(12);
-      doc.setTextColor(100);
-      const dataFormatada = new Date(
-        diaSel.data + "T00:00:00",
-      ).toLocaleDateString("pt-BR", {
-        weekday: "long",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-      doc.text(`${labelData(diaSel.data)} — ${dataFormatada}`, margemX, y);
-      y += 28;
-      doc.setTextColor(0);
-
-      PERIODOS.forEach((periodo) => {
-        const itens = tarefas[diaSel.id]?.[periodo] || [];
-        if (itens.length === 0) return;
-
-        if (y > 760) {
+      diasOrdenados.forEach((dia) => {
+        if (!primeiraPagina) {
           doc.addPage();
           y = 56;
         }
+        primeiraPagina = false;
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(13);
-        doc.text(periodo, margemX, y);
-        y += 18;
+        doc.setFontSize(16);
+        doc.text("DayForge — Rotina", margemX, y);
+        y += 22;
 
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(11);
-        itens.forEach((t) => {
-          if (y > 780) {
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        const dataFormatada = new Date(
+          dia.data + "T00:00:00",
+        ).toLocaleDateString("pt-BR", {
+          weekday: "long",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        doc.text(`${labelData(dia.data)} — ${dataFormatada}`, margemX, y);
+        y += 28;
+        doc.setTextColor(0);
+
+        const temAlgumaTarefa = PERIODOS.some(
+          (p) => (tarefas[dia.id]?.[p] || []).length > 0,
+        );
+        if (!temAlgumaTarefa) {
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(11);
+          doc.setTextColor(140);
+          doc.text("Sem tarefas nesse dia.", margemX, y);
+          doc.setTextColor(0);
+          return;
+        }
+
+        PERIODOS.forEach((periodo) => {
+          const itens = tarefas[dia.id]?.[periodo] || [];
+          if (itens.length === 0) return;
+
+          if (y > 760) {
             doc.addPage();
             y = 56;
           }
-          const caixa = t.concluida ? "[x]" : "[ ]";
-          const linhas = doc.splitTextToSize(
-            `${caixa} ${t.texto}`,
-            500 - margemX,
-          );
-          doc.text(linhas, margemX + 10, y);
-          y += 16 * linhas.length;
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(13);
+          doc.text(periodo, margemX, y);
+          y += 18;
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(11);
+          itens.forEach((t) => {
+            if (y > 780) {
+              doc.addPage();
+              y = 56;
+            }
+            const caixa = t.concluida ? "[x]" : "[ ]";
+            const linhas = doc.splitTextToSize(
+              `${caixa} ${t.texto}`,
+              500 - margemX,
+            );
+            doc.text(linhas, margemX + 10, y);
+            y += 16 * linhas.length;
+          });
+          y += 10;
         });
-        y += 10;
       });
 
-      const nomeArquivo = `rotina-${diaSel.data}.pdf`;
+      const nomeArquivo =
+        diasOrdenados.length === 1
+          ? `rotina-${diasOrdenados[0].data}.pdf`
+          : `rotina-${diasOrdenados[0].data}_a_${diasOrdenados[diasOrdenados.length - 1].data}.pdf`;
       const blob = doc.output("blob");
 
       if (
@@ -651,6 +691,15 @@ export default function Rotina({ user }) {
     } catch (e) {
       toast("Erro ao gerar PDF: " + e.message, "error");
     }
+    setExportandoPdf(false);
+  };
+
+  const toggleDiaExportPdf = (diaId) => {
+    setDiasSelecionadosPdf((prev) =>
+      prev.includes(diaId)
+        ? prev.filter((id) => id !== diaId)
+        : [...prev, diaId],
+    );
   };
 
   const mesIdx = mesesDisponiveis.findIndex(
@@ -1142,6 +1191,293 @@ export default function Rotina({ user }) {
           );
         })()}
 
+      {modalExportPdf &&
+        (() => {
+          const mesIdxPdf = mesesDisponiveis.findIndex(
+            (m) => m.ano === mesExportPdf.ano && m.mes === mesExportPdf.mes,
+          );
+          const podePrevPdf = mesIdxPdf > 0;
+          const podeNextPdf = mesIdxPdf < mesesDisponiveis.length - 1;
+          const diasDoMesPdf = dias.filter((d) => {
+            const dt = new Date(d.data + "T00:00:00");
+            return (
+              dt.getFullYear() === mesExportPdf.ano &&
+              dt.getMonth() === mesExportPdf.mes
+            );
+          });
+          const primeiroDiaPdf = new Date(
+            mesExportPdf.ano,
+            mesExportPdf.mes,
+            1,
+          ).getDay();
+          const diasNoMesPdf = new Date(
+            mesExportPdf.ano,
+            mesExportPdf.mes + 1,
+            0,
+          ).getDate();
+          const todasDatasPdf = Array.from({ length: diasNoMesPdf }, (_, i) => {
+            const d = new Date(mesExportPdf.ano, mesExportPdf.mes, i + 1);
+            return formatarData(d);
+          });
+          const cellsPdf = [
+            ...Array.from({ length: primeiroDiaPdf }, (_, i) => ({
+              vazio: true,
+              key: `pre-${i}`,
+            })),
+            ...todasDatasPdf.map((data) => {
+              const diaObj = diasDoMesPdf.find((d) => d.data === data);
+              return { vazio: false, data, diaObj };
+            }),
+          ];
+          const restoPdf = cellsPdf.length % 7;
+          if (restoPdf !== 0)
+            for (let i = 0; i < 7 - restoPdf; i++)
+              cellsPdf.push({ vazio: true, key: `pos-${i}` });
+          const semanasPdf = chunkArray(cellsPdf, 7);
+
+          return (
+            <div
+              className="modal-overlay"
+              onClick={() => setModalExportPdf(false)}
+            >
+              <div
+                className="modal-resumo"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2
+                  style={{
+                    fontSize: "1rem",
+                    marginBottom: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 30,
+                      height: 30,
+                      borderRadius: 9,
+                      background: "rgba(99,102,241,0.15)",
+                    }}
+                  >
+                    <FileDown size={15} />
+                  </span>
+                  Exportar PDF
+                </h2>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#64748b",
+                    textAlign: "center",
+                    marginBottom: 14,
+                  }}
+                >
+                  Selecione os dias que quer exportar
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                  }}
+                >
+                  <button
+                    onClick={() =>
+                      podePrevPdf &&
+                      setMesExportPdf(mesesDisponiveis[mesIdxPdf - 1])
+                    }
+                    disabled={!podePrevPdf}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: podePrevPdf ? "#6366f1" : "#334155",
+                      fontSize: 20,
+                      cursor: podePrevPdf ? "pointer" : "default",
+                      padding: "0 8px",
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <div style={{ textAlign: "center" }}>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: "#f8fafc",
+                      }}
+                    >
+                      {MESES[mesExportPdf.mes]}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                      {mesExportPdf.ano}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      podeNextPdf &&
+                      setMesExportPdf(mesesDisponiveis[mesIdxPdf + 1])
+                    }
+                    disabled={!podeNextPdf}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: podeNextPdf ? "#6366f1" : "#334155",
+                      fontSize: 20,
+                      cursor: podeNextPdf ? "pointer" : "default",
+                      padding: "0 8px",
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: 2,
+                    marginBottom: 4,
+                  }}
+                >
+                  {DOW.map((d) => (
+                    <div
+                      key={d}
+                      style={{
+                        textAlign: "center",
+                        fontSize: 10,
+                        color: "#475569",
+                        fontWeight: 700,
+                        padding: "2px 0",
+                      }}
+                    >
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    marginBottom: 16,
+                  }}
+                >
+                  {semanasPdf.map((semana, si) => (
+                    <div
+                      key={si}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(7, 1fr)",
+                        gap: 2,
+                      }}
+                    >
+                      {semana.map((cell, ci) => {
+                        if (cell.vazio)
+                          return <div key={cell.key || `${si}-${ci}`} />;
+                        const { data, diaObj } = cell;
+                        const isHoje = data === hoje;
+                        const fora = !diaObj;
+                        const selecionado = diasSelecionadosPdf.includes(
+                          diaObj?.id,
+                        );
+                        const dayNum = new Date(data + "T00:00:00").getDate();
+                        return (
+                          <button
+                            key={data}
+                            disabled={fora || exportandoPdf}
+                            onClick={() => {
+                              if (diaObj) toggleDiaExportPdf(diaObj.id);
+                            }}
+                            style={{
+                              background: selecionado
+                                ? "linear-gradient(135deg, #6366f1, #4f46e5)"
+                                : isHoje
+                                  ? "#6366f122"
+                                  : "#24282d",
+                              border: isHoje
+                                ? "1px solid #6366f1"
+                                : "1px solid #ffffff0d",
+                              borderRadius: 8,
+                              color: fora ? "#334155" : "#f8fafc",
+                              fontSize: 12,
+                              fontWeight: selecionado ? 700 : 400,
+                              padding: "7px 0",
+                              cursor: fora ? "default" : "pointer",
+                            }}
+                          >
+                            {dayNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={async () => {
+                      await exportarPdfDias(diasSelecionadosPdf);
+                      setModalExportPdf(false);
+                      setDiasSelecionadosPdf([]);
+                    }}
+                    disabled={diasSelecionadosPdf.length === 0 || exportandoPdf}
+                    style={{
+                      flex: 2,
+                      background:
+                        diasSelecionadosPdf.length > 0
+                          ? "linear-gradient(135deg, #6366f1, #4f46e5)"
+                          : "#24282d",
+                      border: "none",
+                      color:
+                        diasSelecionadosPdf.length > 0 ? "#fff" : "#475569",
+                      borderRadius: 8,
+                      padding: "11px 0",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor:
+                        diasSelecionadosPdf.length > 0 && !exportandoPdf
+                          ? "pointer"
+                          : "default",
+                    }}
+                  >
+                    {exportandoPdf
+                      ? "Gerando..."
+                      : diasSelecionadosPdf.length > 0
+                        ? `Exportar ${diasSelecionadosPdf.length} dia(s)`
+                        : "Selecione os dias"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setModalExportPdf(false);
+                      setDiasSelecionadosPdf([]);
+                    }}
+                    style={{
+                      flex: 1,
+                      background: "transparent",
+                      border: "1px solid #ffffff0d",
+                      color: "#64748b",
+                      borderRadius: 8,
+                      padding: "11px 0",
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
       {dias.length === 0 ? (
         <p className="empty-msg" style={{ marginTop: 40 }}>
           {gerando ? "Gerando sua rotina..." : "Carregando..."}
@@ -1355,7 +1691,14 @@ export default function Rotina({ user }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <button
                     className="rotina-btn-clonar"
-                    onClick={exportarPdfDia}
+                    onClick={() => {
+                      setDiasSelecionadosPdf([diaSel.id]);
+                      setMesExportPdf({
+                        ano: new Date(diaSel.data + "T00:00:00").getFullYear(),
+                        mes: new Date(diaSel.data + "T00:00:00").getMonth(),
+                      });
+                      setModalExportPdf(true);
+                    }}
                     title="Exportar PDF"
                   >
                     <FileDown size={14} />
