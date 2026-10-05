@@ -75,6 +75,11 @@ import {
   Flame,
   BarChart3,
   Settings,
+  StretchHorizontal,
+  Play,
+  Pause,
+  SkipForward,
+  X,
 } from "lucide-react";
 import {
   extrairTextoPDF,
@@ -441,6 +446,14 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [modalResumo, setModalResumo] = useState(null);
   const [showMore, setShowMore] = useState(false);
   const [subAbaTreino, setSubAbaTreino] = useState("exercicios");
+  const [mobilidadeExercicios, setMobilidadeExercicios] = useState([]);
+  const [mobilidadeCarregando, setMobilidadeCarregando] = useState(false);
+  const [novoMobNome, setNovoMobNome] = useState("");
+  const [novoMobDuracao, setNovoMobDuracao] = useState("30");
+  const [modoGuiadoMobilidade, setModoGuiadoMobilidade] = useState(false);
+  const [idxMobilidadeAtual, setIdxMobilidadeAtual] = useState(0);
+  const [tempoRestanteMobilidade, setTempoRestanteMobilidade] = useState(0);
+  const [pausadoMobilidade, setPausadoMobilidade] = useState(false);
   const [subAbaPerfil, setSubAbaPerfil] = useState("perfil");
   const [ajudaAncora, setAjudaAncora] = useState(null);
   const { ativo: tourAtivo, fechar: fecharTour } = useTour();
@@ -854,6 +867,123 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       setPrs(map);
     });
   }, [subAbaTreino, exercicios.length]);
+
+  // ── Mobilidade ──────────────────────────────────────────────
+  const DEFAULT_MOBILIDADE = [
+    { nome: "Gato-camelo", duracao_segundos: 30 },
+    { nome: "Rotação de quadril", duracao_segundos: 30 },
+    { nome: "Mobilidade de tornozelo", duracao_segundos: 30 },
+    { nome: "Rotação de ombros", duracao_segundos: 30 },
+    { nome: "Alongamento de isquiotibiais", duracao_segundos: 30 },
+    { nome: "Prancha", duracao_segundos: 30 },
+    { nome: "Alongamento de quadríceps", duracao_segundos: 30 },
+    { nome: "Rotação de tronco", duracao_segundos: 30 },
+  ];
+
+  const buscarMobilidade = async () => {
+    setMobilidadeCarregando(true);
+    const { data } = await supabase
+      .from("mobilidade_exercicios")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("ordem", { ascending: true });
+
+    if (!data || data.length === 0) {
+      const { data: inseridos } = await supabase
+        .from("mobilidade_exercicios")
+        .insert(
+          DEFAULT_MOBILIDADE.map((ex, i) => ({
+            user_id: user.id,
+            nome: ex.nome,
+            duracao_segundos: ex.duracao_segundos,
+            ordem: i,
+          })),
+        )
+        .select();
+      setMobilidadeExercicios(inseridos || []);
+    } else {
+      setMobilidadeExercicios(data);
+    }
+    setMobilidadeCarregando(false);
+  };
+
+  useEffect(() => {
+    if (subAbaTreino !== "mobilidade") return;
+    buscarMobilidade();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subAbaTreino]);
+
+  const adicionarExercicioMobilidade = async () => {
+    if (!novoMobNome.trim()) return toast("Dá um nome pro exercício!", "error");
+    const duracao = Math.max(5, parseInt(novoMobDuracao, 10) || 30);
+    const { data, error } = await supabase
+      .from("mobilidade_exercicios")
+      .insert([
+        {
+          user_id: user.id,
+          nome: novoMobNome.trim(),
+          duracao_segundos: duracao,
+          ordem: mobilidadeExercicios.length,
+        },
+      ])
+      .select();
+    if (error) return toast(error.message, "error");
+    setMobilidadeExercicios((prev) => [...prev, data[0]]);
+    setNovoMobNome("");
+    setNovoMobDuracao("30");
+  };
+
+  const removerExercicioMobilidade = async (id) => {
+    await supabase.from("mobilidade_exercicios").delete().eq("id", id);
+    setMobilidadeExercicios((prev) => prev.filter((ex) => ex.id !== id));
+  };
+
+  const iniciarRotinaMobilidade = () => {
+    if (mobilidadeExercicios.length === 0) return;
+    setIdxMobilidadeAtual(0);
+    setTempoRestanteMobilidade(mobilidadeExercicios[0].duracao_segundos);
+    setPausadoMobilidade(false);
+    setModoGuiadoMobilidade(true);
+  };
+
+  const sairRotinaMobilidade = () => {
+    setModoGuiadoMobilidade(false);
+  };
+
+  const finalizarRotinaMobilidade = async () => {
+    setModoGuiadoMobilidade(false);
+    const hojeStr = new Date().toISOString().split("T")[0];
+    await supabase
+      .from("mobilidade_log")
+      .insert([{ user_id: user.id, data: hojeStr }]);
+    await ganharXP(user.id, "mobilidade_concluida");
+    toast("Mobilidade concluída! 🧘", "success");
+  };
+
+  const proximoExercicioMobilidade = () => {
+    const proximoIdx = idxMobilidadeAtual + 1;
+    if (proximoIdx >= mobilidadeExercicios.length) {
+      finalizarRotinaMobilidade();
+      return;
+    }
+    setIdxMobilidadeAtual(proximoIdx);
+    setTempoRestanteMobilidade(
+      mobilidadeExercicios[proximoIdx].duracao_segundos,
+    );
+  };
+
+  useEffect(() => {
+    if (!modoGuiadoMobilidade || pausadoMobilidade) return;
+    if (tempoRestanteMobilidade <= 0) {
+      proximoExercicioMobilidade();
+      return;
+    }
+    const id = setTimeout(() => {
+      setTempoRestanteMobilidade((t) => t - 1);
+    }, 1000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modoGuiadoMobilidade, pausadoMobilidade, tempoRestanteMobilidade]);
 
   useEffect(() => {
     if (treinando) {
@@ -3595,6 +3725,20 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
               />
               Histórico
             </button>
+            <button
+              className={
+                subAbaTreino === "mobilidade"
+                  ? "treino-subnav-btn active"
+                  : "treino-subnav-btn"
+              }
+              onClick={() => setSubAbaTreino("mobilidade")}
+            >
+              <StretchHorizontal
+                size={14}
+                style={{ verticalAlign: -2, marginRight: 5 }}
+              />
+              Mobilidade
+            </button>
           </div>
 
           {subAbaTreino === "exercicios" && (
@@ -4525,6 +4669,285 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          )}
+
+          {subAbaTreino === "mobilidade" && (
+            <div className="mobilidade-section" style={{ padding: "4px 0" }}>
+              <h1
+                className="title-divisao"
+                style={{ display: "flex", alignItems: "center", gap: 8 }}
+              >
+                Mobilidade
+                <StretchHorizontal size={18} />
+              </h1>
+
+              {modoGuiadoMobilidade ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    background: "linear-gradient(155deg, #1c2026, #17191d)",
+                    border: "1px solid #ffffff10",
+                    borderRadius: 16,
+                    padding: "32px 20px",
+                  }}
+                >
+                  <div
+                    style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}
+                  >
+                    {idxMobilidadeAtual + 1}/{mobilidadeExercicios.length}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 700,
+                      color: "#f8fafc",
+                      marginBottom: 18,
+                    }}
+                  >
+                    {mobilidadeExercicios[idxMobilidadeAtual]?.nome}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 56,
+                      fontWeight: 800,
+                      color: "#6366f1",
+                      marginBottom: 20,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {tempoRestanteMobilidade}s
+                  </div>
+                  {mobilidadeExercicios[idxMobilidadeAtual + 1] && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#64748b",
+                        marginBottom: 22,
+                      }}
+                    >
+                      Próximo:{" "}
+                      {mobilidadeExercicios[idxMobilidadeAtual + 1].nome}
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      justifyContent: "center",
+                    }}
+                  >
+                    <button
+                      onClick={() => setPausadoMobilidade((p) => !p)}
+                      style={{
+                        background: "#24282d",
+                        border: "1px solid #ffffff0d",
+                        borderRadius: 10,
+                        color: "#f8fafc",
+                        padding: "10px 16px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      {pausadoMobilidade ? (
+                        <Play size={16} />
+                      ) : (
+                        <Pause size={16} />
+                      )}
+                      {pausadoMobilidade ? "Continuar" : "Pausar"}
+                    </button>
+                    <button
+                      onClick={proximoExercicioMobilidade}
+                      style={{
+                        background: "#24282d",
+                        border: "1px solid #ffffff0d",
+                        borderRadius: 10,
+                        color: "#f8fafc",
+                        padding: "10px 16px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <SkipForward size={16} />
+                      Pular
+                    </button>
+                    <button
+                      onClick={sairRotinaMobilidade}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid #ef444444",
+                        borderRadius: 10,
+                        color: "#ef4444",
+                        padding: "10px 16px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <X size={16} />
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={iniciarRotinaMobilidade}
+                    disabled={mobilidadeExercicios.length === 0}
+                    style={{
+                      width: "100%",
+                      background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                      border: "none",
+                      borderRadius: 12,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      padding: 14,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Play size={16} />
+                    Iniciar rotina (
+                    {mobilidadeExercicios.reduce(
+                      (s, ex) => s + Number(ex.duracao_segundos || 0),
+                      0,
+                    )}
+                    s)
+                  </button>
+
+                  {mobilidadeCarregando ? (
+                    <p
+                      style={{
+                        textAlign: "center",
+                        color: "#475569",
+                        fontSize: 13,
+                      }}
+                    >
+                      Carregando...
+                    </p>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        marginBottom: 16,
+                      }}
+                    >
+                      {mobilidadeExercicios.map((ex) => (
+                        <div
+                          key={ex.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            background: "#1a1d21",
+                            border: "1px solid #ffffff0d",
+                            borderRadius: 10,
+                            padding: "10px 12px",
+                          }}
+                        >
+                          <span style={{ fontSize: 13, color: "#f8fafc" }}>
+                            {ex.nome}
+                          </span>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                            }}
+                          >
+                            <span style={{ fontSize: 12, color: "#64748b" }}>
+                              {ex.duracao_segundos}s
+                            </span>
+                            <button
+                              onClick={() => removerExercicioMobilidade(ex.id)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#ef4444",
+                                opacity: 0.6,
+                                cursor: "pointer",
+                                fontSize: 15,
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      border: "1px solid #ffffff10",
+                      borderRadius: 16,
+                      padding: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#64748b",
+                        fontWeight: 800,
+                        letterSpacing: "0.08em",
+                        marginBottom: 10,
+                      }}
+                    >
+                      ADICIONAR EXERCÍCIO
+                    </div>
+                    <input
+                      placeholder="Nome (ex: Alongamento de panturrilha)"
+                      value={novoMobNome}
+                      onChange={(e) => setNovoMobNome(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        document.getElementById("mob-duracao")?.focus()
+                      }
+                    />
+                    <input
+                      id="mob-duracao"
+                      type="number"
+                      placeholder="Duração (segundos)"
+                      value={novoMobDuracao}
+                      onChange={(e) => setNovoMobDuracao(e.target.value)}
+                      style={{ marginTop: 8 }}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && adicionarExercicioMobilidade()
+                      }
+                    />
+                    <button
+                      onClick={adicionarExercicioMobilidade}
+                      style={{
+                        marginTop: 10,
+                        width: "100%",
+                        background: "#6366f1",
+                        border: "none",
+                        borderRadius: 10,
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        padding: 10,
+                        cursor: "pointer",
+                      }}
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           )}
