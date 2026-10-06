@@ -3631,7 +3631,9 @@ export default function SmartPocket({ user }) {
               {fmtBRL(saldo)}
             </div>
             <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-              (vai sobrar {fmtBRL(saldoFinalPrevisto)} depois de pagar tudo)
+              {saldoFinalPrevisto >= 0
+                ? `(vai sobrar ${fmtBRL(saldoFinalPrevisto)} depois de pagar tudo)`
+                : `(vai faltar ${fmtBRL(Math.abs(saldoFinalPrevisto))} depois de pagar tudo)`}
             </div>
             <div
               style={{
