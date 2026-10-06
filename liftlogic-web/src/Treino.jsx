@@ -450,6 +450,11 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [mobilidadeCarregando, setMobilidadeCarregando] = useState(false);
   const [novoMobNome, setNovoMobNome] = useState("");
   const [novoMobDuracao, setNovoMobDuracao] = useState("30");
+  const [novoMobTipo, setNovoMobTipo] = useState("reps");
+  const [novoMobReps, setNovoMobReps] = useState("10");
+  const [novoMobLados, setNovoMobLados] = useState(false);
+  const [novoMobInstrucoes, setNovoMobInstrucoes] = useState("");
+  const [ladoMobilidade, setLadoMobilidade] = useState(1);
   const [modoGuiadoMobilidade, setModoGuiadoMobilidade] = useState(false);
   const [idxMobilidadeAtual, setIdxMobilidadeAtual] = useState(0);
   const [tempoRestanteMobilidade, setTempoRestanteMobilidade] = useState(0);
@@ -869,16 +874,52 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   }, [subAbaTreino, exercicios.length]);
 
   // ── Mobilidade ──────────────────────────────────────────────
-  const DEFAULT_MOBILIDADE = [
-    { nome: "Gato-camelo", duracao_segundos: 30 },
-    { nome: "Rotação de quadril", duracao_segundos: 30 },
-    { nome: "Mobilidade de tornozelo", duracao_segundos: 30 },
-    { nome: "Rotação de ombros", duracao_segundos: 30 },
-    { nome: "Alongamento de isquiotibiais", duracao_segundos: 30 },
-    { nome: "Prancha", duracao_segundos: 30 },
-    { nome: "Alongamento de quadríceps", duracao_segundos: 30 },
-    { nome: "Rotação de tronco", duracao_segundos: 30 },
+  const ROTINA_5_MIN = [
+    {
+      nome: "Balanço frontal",
+      tipo: "reps",
+      repeticoes: 20,
+      lados: false,
+      instrucoes:
+        "Em pé, apoie uma mão na parede ou numa cadeira. Com a perna esticada, balance ela pra frente e pra trás de forma controlada, sem arquear as costas. Faça 10 com uma perna e 10 com a outra.",
+    },
+    {
+      nome: "Balanço lateral",
+      tipo: "reps",
+      repeticoes: 20,
+      lados: false,
+      instrucoes:
+        "De frente pra parede, apoie as duas mãos. Balance a perna esticada de um lado pro outro, cruzando na frente do corpo, mantendo o tronco parado. Faça 10 com uma perna e 10 com a outra.",
+    },
+    {
+      nome: "Abrir e fechar o quadril",
+      tipo: "reps",
+      repeticoes: 15,
+      lados: false,
+      instrucoes:
+        "Em pé, levante um joelho na frente do corpo (na altura do quadril). Gire o joelho pra fora, abrindo o quadril, e traga de volta pro meio. Alterne as pernas durante as repetições, sem tombar o tronco.",
+    },
+    {
+      nome: "Cossack Squat",
+      tipo: "reps",
+      repeticoes: 10,
+      lados: true,
+      instrucoes:
+        "Pés bem afastados, bem mais que a largura dos ombros. Jogue o peso pra um lado e agache fundo nessa perna, com o calcanhar no chão e o peito erguido. A outra perna fica esticada, com a ponta do pé pra cima. Empurre de volta pro centro e faça pro outro lado.",
+    },
+    {
+      nome: "Segurar joelho alto",
+      tipo: "tempo",
+      duracao_segundos: 20,
+      lados: true,
+      instrucoes:
+        "Em pé, puxe um joelho em direção ao peito com as duas mãos e segure. Mantenha o corpo alto e a perna de apoio firme (estica o joelho dela). Depois troque de perna.",
+    },
   ];
+
+  const rotuloMob = (ex) =>
+    (ex.tipo === "reps" ? `${ex.repeticoes}x` : `${ex.duracao_segundos}s`) +
+    (ex.lados ? " cada lado" : "");
 
   const buscarMobilidade = async () => {
     setMobilidadeCarregando(true);
@@ -887,24 +928,28 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       .select("*")
       .eq("user_id", user.id)
       .order("ordem", { ascending: true });
-
-    if (!data || data.length === 0) {
-      const { data: inseridos } = await supabase
-        .from("mobilidade_exercicios")
-        .insert(
-          DEFAULT_MOBILIDADE.map((ex, i) => ({
-            user_id: user.id,
-            nome: ex.nome,
-            duracao_segundos: ex.duracao_segundos,
-            ordem: i,
-          })),
-        )
-        .select();
-      setMobilidadeExercicios(inseridos || []);
-    } else {
-      setMobilidadeExercicios(data);
-    }
+    setMobilidadeExercicios(data || []);
     setMobilidadeCarregando(false);
+  };
+
+  const carregarRotina5Min = async () => {
+    const { data, error } = await supabase
+      .from("mobilidade_exercicios")
+      .insert(
+        ROTINA_5_MIN.map((ex, i) => ({
+          user_id: user.id,
+          nome: ex.nome,
+          tipo: ex.tipo,
+          repeticoes: ex.repeticoes || null,
+          duracao_segundos: ex.duracao_segundos || 30,
+          lados: ex.lados,
+          instrucoes: ex.instrucoes,
+          ordem: mobilidadeExercicios.length + i,
+        })),
+      )
+      .select();
+    if (error) return toast(error.message, "error");
+    setMobilidadeExercicios((prev) => [...prev, ...(data || [])]);
   };
 
   useEffect(() => {
@@ -915,14 +960,20 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
 
   const adicionarExercicioMobilidade = async () => {
     if (!novoMobNome.trim()) return toast("Dá um nome pro exercício!", "error");
-    const duracao = Math.max(5, parseInt(novoMobDuracao, 10) || 30);
+    const ehReps = novoMobTipo === "reps";
     const { data, error } = await supabase
       .from("mobilidade_exercicios")
       .insert([
         {
           user_id: user.id,
           nome: novoMobNome.trim(),
-          duracao_segundos: duracao,
+          tipo: novoMobTipo,
+          repeticoes: ehReps
+            ? Math.max(1, parseInt(novoMobReps, 10) || 10)
+            : null,
+          duracao_segundos: Math.max(5, parseInt(novoMobDuracao, 10) || 30),
+          lados: novoMobLados,
+          instrucoes: novoMobInstrucoes.trim() || null,
           ordem: mobilidadeExercicios.length,
         },
       ])
@@ -931,6 +982,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setMobilidadeExercicios((prev) => [...prev, data[0]]);
     setNovoMobNome("");
     setNovoMobDuracao("30");
+    setNovoMobReps("10");
+    setNovoMobLados(false);
+    setNovoMobInstrucoes("");
   };
 
   const removerExercicioMobilidade = async (id) => {
@@ -941,6 +995,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const iniciarRotinaMobilidade = () => {
     if (mobilidadeExercicios.length === 0) return;
     setIdxMobilidadeAtual(0);
+    setLadoMobilidade(1);
     setTempoRestanteMobilidade(mobilidadeExercicios[0].duracao_segundos);
     setPausadoMobilidade(false);
     setModoGuiadoMobilidade(true);
@@ -967,15 +1022,28 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       return;
     }
     setIdxMobilidadeAtual(proximoIdx);
+    setLadoMobilidade(1);
     setTempoRestanteMobilidade(
       mobilidadeExercicios[proximoIdx].duracao_segundos,
     );
   };
 
+  // fim do tempo: se o exercício tem 2 lados, troca de lado antes de avançar
+  const terminouTempoMobilidade = () => {
+    const ex = mobilidadeExercicios[idxMobilidadeAtual];
+    if (ex?.lados && ladoMobilidade === 1) {
+      setLadoMobilidade(2);
+      setTempoRestanteMobilidade(ex.duracao_segundos);
+      return;
+    }
+    proximoExercicioMobilidade();
+  };
+
   useEffect(() => {
     if (!modoGuiadoMobilidade || pausadoMobilidade) return;
+    if (mobilidadeExercicios[idxMobilidadeAtual]?.tipo === "reps") return;
     if (tempoRestanteMobilidade <= 0) {
-      proximoExercicioMobilidade();
+      terminouTempoMobilidade();
       return;
     }
     const id = setTimeout(() => {
@@ -4708,17 +4776,102 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   >
                     {mobilidadeExercicios[idxMobilidadeAtual]?.nome}
                   </div>
-                  <div
+                  {mobilidadeExercicios[idxMobilidadeAtual]?.instrucoes && (
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "#94a3b8",
+                        lineHeight: 1.5,
+                        textAlign: "left",
+                        background: "#ffffff08",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        margin: "0 0 12px",
+                      }}
+                    >
+                      {mobilidadeExercicios[idxMobilidadeAtual].instrucoes}
+                    </p>
+                  )}
+                  <a
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                      mobilidadeExercicios[idxMobilidadeAtual]?.nome +
+                        " como fazer exercício",
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
                     style={{
-                      fontSize: 56,
-                      fontWeight: 800,
-                      color: "#6366f1",
-                      marginBottom: 20,
-                      fontVariantNumeric: "tabular-nums",
+                      display: "inline-block",
+                      fontSize: 12,
+                      color: "#818cf8",
+                      marginBottom: 18,
                     }}
                   >
-                    {tempoRestanteMobilidade}s
-                  </div>
+                    ▶ Ver vídeo de como fazer
+                  </a>
+                  {mobilidadeExercicios[idxMobilidadeAtual]?.tipo === "reps" ? (
+                    <div style={{ marginBottom: 20 }}>
+                      <div
+                        style={{
+                          fontSize: 56,
+                          fontWeight: 800,
+                          color: "#6366f1",
+                        }}
+                      >
+                        {mobilidadeExercicios[idxMobilidadeAtual].repeticoes}x
+                      </div>
+                      {mobilidadeExercicios[idxMobilidadeAtual].lados && (
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#94a3b8",
+                            marginBottom: 14,
+                          }}
+                        >
+                          cada lado
+                        </div>
+                      )}
+                      <button
+                        onClick={proximoExercicioMobilidade}
+                        style={{
+                          background: "#6366f1",
+                          border: "none",
+                          borderRadius: 10,
+                          color: "#fff",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          padding: "12px 28px",
+                          cursor: "pointer",
+                          marginTop: 8,
+                        }}
+                      >
+                        ✓ Feito
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: 20 }}>
+                      {mobilidadeExercicios[idxMobilidadeAtual]?.lados && (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#94a3b8",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Lado {ladoMobilidade}/2
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          fontSize: 56,
+                          fontWeight: 800,
+                          color: "#6366f1",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {tempoRestanteMobilidade}s
+                      </div>
+                    </div>
+                  )}
                   {mobilidadeExercicios[idxMobilidadeAtual + 1] && (
                     <div
                       style={{
@@ -4728,7 +4881,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       }}
                     >
                       Próximo:{" "}
-                      {mobilidadeExercicios[idxMobilidadeAtual + 1].nome}
+                      {mobilidadeExercicios[idxMobilidadeAtual + 1].nome} (
+                      {rotuloMob(mobilidadeExercicios[idxMobilidadeAtual + 1])})
                     </div>
                   )}
                   <div
@@ -4738,27 +4892,30 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       justifyContent: "center",
                     }}
                   >
-                    <button
-                      onClick={() => setPausadoMobilidade((p) => !p)}
-                      style={{
-                        background: "#24282d",
-                        border: "1px solid #ffffff0d",
-                        borderRadius: 10,
-                        color: "#f8fafc",
-                        padding: "10px 16px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      {pausadoMobilidade ? (
-                        <Play size={16} />
-                      ) : (
-                        <Pause size={16} />
-                      )}
-                      {pausadoMobilidade ? "Continuar" : "Pausar"}
-                    </button>
+                    {mobilidadeExercicios[idxMobilidadeAtual]?.tipo !==
+                      "reps" && (
+                      <button
+                        onClick={() => setPausadoMobilidade((p) => !p)}
+                        style={{
+                          background: "#24282d",
+                          border: "1px solid #ffffff0d",
+                          borderRadius: 10,
+                          color: "#f8fafc",
+                          padding: "10px 16px",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        {pausadoMobilidade ? (
+                          <Play size={16} />
+                        ) : (
+                          <Pause size={16} />
+                        )}
+                        {pausadoMobilidade ? "Continuar" : "Pausar"}
+                      </button>
+                    )}
                     <button
                       onClick={proximoExercicioMobilidade}
                       style={{
@@ -4818,12 +4975,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     }}
                   >
                     <Play size={16} />
-                    Iniciar rotina (
-                    {mobilidadeExercicios.reduce(
-                      (s, ex) => s + Number(ex.duracao_segundos || 0),
-                      0,
-                    )}
-                    s)
+                    Iniciar rotina ({mobilidadeExercicios.length} exercícios)
                   </button>
 
                   {mobilidadeCarregando ? (
@@ -4845,6 +4997,23 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         marginBottom: 16,
                       }}
                     >
+                      {mobilidadeExercicios.length === 0 && (
+                        <button
+                          onClick={carregarRotina5Min}
+                          style={{
+                            background: "#1a1d21",
+                            border: "1px dashed #6366f1",
+                            borderRadius: 10,
+                            color: "#818cf8",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            padding: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          + Carregar &quot;Rotina de 5 minutos&quot;
+                        </button>
+                      )}
                       {mobilidadeExercicios.map((ex) => (
                         <div
                           key={ex.id}
@@ -4858,9 +5027,23 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                             padding: "10px 12px",
                           }}
                         >
-                          <span style={{ fontSize: 13, color: "#f8fafc" }}>
-                            {ex.nome}
-                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, color: "#f8fafc" }}>
+                              {ex.nome}
+                            </div>
+                            {ex.instrucoes && (
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  color: "#64748b",
+                                  marginTop: 3,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {ex.instrucoes}
+                              </div>
+                            )}
+                          </div>
                           <div
                             style={{
                               display: "flex",
@@ -4869,7 +5052,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                             }}
                           >
                             <span style={{ fontSize: 12, color: "#64748b" }}>
-                              {ex.duracao_segundos}s
+                              {rotuloMob(ex)}
                             </span>
                             <button
                               onClick={() => removerExercicioMobilidade(ex.id)}
@@ -4918,16 +5101,60 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         document.getElementById("mob-duracao")?.focus()
                       }
                     />
-                    <input
-                      id="mob-duracao"
-                      type="number"
-                      placeholder="Duração (segundos)"
-                      value={novoMobDuracao}
-                      onChange={(e) => setNovoMobDuracao(e.target.value)}
+                    <select
+                      value={novoMobTipo}
+                      onChange={(e) => setNovoMobTipo(e.target.value)}
                       style={{ marginTop: 8 }}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && adicionarExercicioMobilidade()
-                      }
+                    >
+                      <option value="reps">Repetições</option>
+                      <option value="tempo">Tempo (segundos)</option>
+                    </select>
+                    {novoMobTipo === "reps" ? (
+                      <input
+                        type="number"
+                        placeholder="Repetições"
+                        value={novoMobReps}
+                        onChange={(e) => setNovoMobReps(e.target.value)}
+                        style={{ marginTop: 8 }}
+                      />
+                    ) : (
+                      <input
+                        id="mob-duracao"
+                        type="number"
+                        placeholder="Duração (segundos)"
+                        value={novoMobDuracao}
+                        onChange={(e) => setNovoMobDuracao(e.target.value)}
+                        style={{ marginTop: 8 }}
+                      />
+                    )}
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontSize: 13,
+                        color: "#94a3b8",
+                        marginTop: 10,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={novoMobLados}
+                        onChange={(e) => setNovoMobLados(e.target.checked)}
+                        style={{ width: "auto", margin: 0 }}
+                      />
+                      Cada lado
+                    </label>
+                    <textarea
+                      placeholder="Como fazer (opcional)"
+                      value={novoMobInstrucoes}
+                      onChange={(e) => setNovoMobInstrucoes(e.target.value)}
+                      rows={3}
+                      style={{
+                        marginTop: 8,
+                        width: "100%",
+                        resize: "vertical",
+                      }}
                     />
                     <button
                       onClick={adicionarExercicioMobilidade}
