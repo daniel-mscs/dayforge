@@ -52,6 +52,7 @@ import ModalResumo from "./ModalResumo";
 import TreinoStats from "./TreinoStats";
 import PerfilTab from "./PerfilTab";
 import { ganharXP } from "./lib/rpg";
+import { acharGif, rankearGifs, buscarGifs } from "./lib/gifs";
 import { toast } from "./lib/toast";
 import Tour from "./lib/tour";
 import { useTour } from "./lib/useTour";
@@ -148,6 +149,7 @@ function ExercicioCard({
   desfazerPular,
   corSuperset,
   onDuplicar,
+  onVerGif,
 }) {
   const {
     attributes,
@@ -284,6 +286,21 @@ function ExercicioCard({
         )}
         <div className="exercise-details">
           <h3>{ex.nome}</h3>
+          <button
+            onClick={() => onVerGif(ex)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#818cf8",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              padding: 0,
+              marginBottom: 6,
+            }}
+          >
+            🎬 Ver movimento
+          </button>
           {ex.superset_id && (
             <div
               style={{
@@ -596,6 +613,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [sugestoesExercicio, setSugestoesExercicio] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const [exerciciosPreset, setExerciciosPreset] = useState([]);
+  const [gifsBanco, setGifsBanco] = useState([]);
+  const [modalGif, setModalGif] = useState(null);
+  const [buscaGif, setBuscaGif] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -783,6 +803,13 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       .then(({ data, error }) => {
         if (error) console.error("Erro ao buscar presets:", error.message);
         else setExerciciosPreset(data || []);
+      });
+    supabase
+      .from("exercicio_gifs")
+      .select("nome, grupo, url")
+      .then(({ data, error }) => {
+        if (error) console.error("Erro ao buscar GIFs:", error.message);
+        else setGifsBanco(data || []);
       });
   }, []);
 
@@ -1308,6 +1335,26 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setXpGanho(50);
     setCelebrando(true);
     setTimeout(() => setCelebrando(false), 3500);
+  };
+
+  // GIF do exercício: o escolhido à mão (gif_url) ou o mais parecido pelo nome
+  const gifDoExercicio = (ex) => {
+    if (ex.gif_url) return { url: ex.gif_url, automatico: false };
+    const g = acharGif(ex.nome, gifsBanco);
+    return g ? { url: g.url, automatico: true, nome: g.nome } : null;
+  };
+
+  const salvarGifExercicio = async (ex, url) => {
+    const { error } = await supabase
+      .from("exercicio")
+      .update({ gif_url: url })
+      .eq("id", ex.id);
+    if (error) return toast(error.message, "error");
+    setExercicios((prev) =>
+      prev.map((e) => (e.id === ex.id ? { ...e, gif_url: url } : e)),
+    );
+    setModalGif((m) => (m ? { ...m, ex: { ...m.ex, gif_url: url } } : m));
+    setBuscaGif("");
   };
 
   const buscarSugestoesExercicio = (texto) => {
@@ -2234,6 +2281,152 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       )}
 
       {/* ── Modal editar exercício ── */}
+      {modalGif &&
+        (() => {
+          const atual = gifDoExercicio(modalGif.ex);
+          const opcoes = buscaGif.trim()
+            ? buscarGifs(buscaGif, gifsBanco, 20)
+            : rankearGifs(modalGif.ex.nome, gifsBanco)
+                .slice(0, 8)
+                .map((r) => r.gif);
+          return (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.75)",
+                zIndex: 1000,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+              }}
+            >
+              <div
+                style={{
+                  background: "#1a1d21",
+                  border: "1px solid #ffffff10",
+                  borderRadius: 16,
+                  width: "100%",
+                  maxWidth: 420,
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                  padding: 16,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{ fontSize: 15, fontWeight: 700, color: "#f8fafc" }}
+                  >
+                    {modalGif.ex.nome}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setModalGif(null);
+                      setBuscaGif("");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#94a3b8",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                {atual ? (
+                  <>
+                    <img
+                      src={atual.url}
+                      alt={modalGif.ex.nome}
+                      style={{
+                        width: "100%",
+                        maxHeight: "55vh",
+                        objectFit: "contain",
+                        borderRadius: 10,
+                        background: "#fff",
+                      }}
+                    />
+                    {atual.automatico && (
+                      <div
+                        style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}
+                      >
+                        GIF sugerido pelo nome ({atual.nome}). Se não for esse,
+                        escolhe outro abaixo.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ fontSize: 13, color: "#94a3b8" }}>
+                    Não achei um GIF parecido. Busca abaixo.
+                  </div>
+                )}
+                <input
+                  placeholder="Buscar outro GIF (ex: supino inclinado)"
+                  value={buscaGif}
+                  onChange={(e) => setBuscaGif(e.target.value)}
+                  style={{ marginTop: 12 }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                    marginTop: 8,
+                  }}
+                >
+                  {opcoes.map((g) => (
+                    <button
+                      key={g.url}
+                      onClick={() => salvarGifExercicio(modalGif.ex, g.url)}
+                      style={{
+                        textAlign: "left",
+                        background:
+                          modalGif.ex.gif_url === g.url
+                            ? "#6366f122"
+                            : "#24282d",
+                        border: "1px solid #ffffff0d",
+                        borderRadius: 8,
+                        color: "#f8fafc",
+                        fontSize: 12,
+                        padding: "8px 10px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {g.nome}{" "}
+                      <span style={{ color: "#64748b" }}>· {g.grupo}</span>
+                    </button>
+                  ))}
+                </div>
+                {modalGif.ex.gif_url && (
+                  <button
+                    onClick={() => salvarGifExercicio(modalGif.ex, null)}
+                    style={{
+                      marginTop: 10,
+                      background: "none",
+                      border: "none",
+                      color: "#94a3b8",
+                      fontSize: 12,
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Voltar pro GIF automático
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
       {modalEditEx && (
         <div
           style={{
@@ -4608,6 +4801,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                             desfazerPular={desfazerPular}
                             corSuperset={corSuperset}
                             onDuplicar={(ex) => setModalDuplicar(ex)}
+                            onVerGif={(ex) => setModalGif({ ex })}
                           />
                         ))}
                       </SortableContext>
@@ -4776,6 +4970,26 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   >
                     {mobilidadeExercicios[idxMobilidadeAtual]?.nome}
                   </div>
+                  {(() => {
+                    const g = acharGif(
+                      mobilidadeExercicios[idxMobilidadeAtual]?.nome,
+                      gifsBanco,
+                    );
+                    return g ? (
+                      <img
+                        src={g.url}
+                        alt={g.nome}
+                        style={{
+                          width: "100%",
+                          maxHeight: 220,
+                          objectFit: "contain",
+                          borderRadius: 10,
+                          background: "#fff",
+                          marginBottom: 12,
+                        }}
+                      />
+                    ) : null;
+                  })()}
                   {mobilidadeExercicios[idxMobilidadeAtual]?.instrucoes && (
                     <p
                       style={{
