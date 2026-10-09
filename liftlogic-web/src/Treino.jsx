@@ -53,6 +53,7 @@ import TreinoStats from "./TreinoStats";
 import PerfilTab from "./PerfilTab";
 import { ganharXP } from "./lib/rpg";
 import { acharGif, rankearGifs, buscarGifs } from "./lib/gifs";
+import { ROTINAS_MOBILIDADE, tempoEstimadoMin } from "./lib/mobilidadeRotinas";
 import { toast } from "./lib/toast";
 import Tour from "./lib/tour";
 import { useTour } from "./lib/useTour";
@@ -472,6 +473,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [novoMobLados, setNovoMobLados] = useState(false);
   const [novoMobInstrucoes, setNovoMobInstrucoes] = useState("");
   const [ladoMobilidade, setLadoMobilidade] = useState(1);
+  const [mobRotinaAberta, setMobRotinaAberta] = useState(null);
+  const [nomeRotinaGuiada, setNomeRotinaGuiada] = useState("");
   const [modoGuiadoMobilidade, setModoGuiadoMobilidade] = useState(false);
   const [idxMobilidadeAtual, setIdxMobilidadeAtual] = useState(0);
   const [tempoRestanteMobilidade, setTempoRestanteMobilidade] = useState(0);
@@ -979,8 +982,31 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setMobilidadeExercicios((prev) => [...prev, ...(data || [])]);
   };
 
+  // copia uma rotina pronta pra "Minha rotina" (aí dá pra editar/apagar)
+  const copiarRotinaParaMinha = async (rotina) => {
+    const { data, error } = await supabase
+      .from("mobilidade_exercicios")
+      .insert(
+        rotina.exercicios.map((ex, i) => ({
+          user_id: user.id,
+          nome: ex.nome,
+          tipo: ex.tipo,
+          repeticoes: ex.repeticoes || null,
+          duracao_segundos: ex.duracao_segundos || 30,
+          lados: ex.lados,
+          instrucoes: ex.instrucoes,
+          ordem: mobilidadeExercicios.length + i,
+        })),
+      )
+      .select();
+    if (error) return toast(error.message, "error");
+    setMobilidadeExercicios((prev) => [...prev, ...(data || [])]);
+    toast(`"${rotina.nome}" copiada pra Minha rotina ✅`, "success");
+  };
+
   useEffect(() => {
-    if (subAbaTreino !== "mobilidade") return;
+    // não recarrega a lista no meio de uma rotina guiada
+    if (subAbaTreino !== "mobilidade" || modoGuiadoMobilidade) return;
     buscarMobilidade();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subAbaTreino]);
@@ -1019,27 +1045,58 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setMobilidadeExercicios((prev) => prev.filter((ex) => ex.id !== id));
   };
 
-  const iniciarRotinaMobilidade = () => {
-    if (mobilidadeExercicios.length === 0) return;
+  const iniciarListaMobilidade = (lista, nome) => {
+    if (lista.length === 0) return;
+    setNomeRotinaGuiada(nome);
     setIdxMobilidadeAtual(0);
     setLadoMobilidade(1);
-    setTempoRestanteMobilidade(mobilidadeExercicios[0].duracao_segundos);
+    setTempoRestanteMobilidade(lista[0].duracao_segundos || 30);
     setPausadoMobilidade(false);
     setModoGuiadoMobilidade(true);
   };
 
+  const iniciarRotinaMobilidade = () =>
+    iniciarListaMobilidade(mobilidadeExercicios, "Minha rotina");
+
+  // rotina pronta: a lista guiada usa o mesmo estado; ao sair, recarrega a sua
+  const iniciarRotinaPronta = (rotina) => {
+    const lista = rotina.exercicios.map((ex, i) => ({
+      ...ex,
+      id: `${rotina.id}-${i}`,
+      duracao_segundos: ex.duracao_segundos || 30,
+    }));
+    setMobilidadeExercicios(lista);
+    iniciarListaMobilidade(lista, rotina.nome);
+  };
+
   const sairRotinaMobilidade = () => {
     setModoGuiadoMobilidade(false);
+    buscarMobilidade();
   };
 
   const finalizarRotinaMobilidade = async () => {
     setModoGuiadoMobilidade(false);
-    const hojeStr = new Date().toISOString().split("T")[0];
+    const agora = new Date();
+    const hojeStr = new Date(
+      agora.getTime() - agora.getTimezoneOffset() * 60000,
+    )
+      .toISOString()
+      .split("T")[0];
+    // XP só na primeira rotina do dia
+    const { count } = await supabase
+      .from("mobilidade_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("data", hojeStr);
     await supabase
       .from("mobilidade_log")
-      .insert([{ user_id: user.id, data: hojeStr }]);
-    await ganharXP(user.id, "mobilidade_concluida");
-    toast("Mobilidade concluída! 🧘", "success");
+      .insert([{ user_id: user.id, data: hojeStr, rotina: nomeRotinaGuiada }]);
+    if (!count) await ganharXP(user.id, "mobilidade_concluida");
+    toast(
+      count ? "Mobilidade concluída! 🧘" : "Mobilidade concluída! +15 XP 🧘",
+      "success",
+    );
+    buscarMobilidade();
   };
 
   const proximoExercicioMobilidade = () => {
@@ -4958,7 +5015,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   <div
                     style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}
                   >
-                    {idxMobilidadeAtual + 1}/{mobilidadeExercicios.length}
+                    {nomeRotinaGuiada} · {idxMobilidadeAtual + 1}/
+                    {mobilidadeExercicios.length}
                   </div>
                   <div
                     style={{
@@ -5168,6 +5226,201 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 </div>
               ) : (
                 <>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#64748b",
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      margin: "4px 0 8px",
+                    }}
+                  >
+                    ROTINAS PRONTAS
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {ROTINAS_MOBILIDADE.map((r) => (
+                      <div
+                        key={r.id}
+                        style={{
+                          background:
+                            "linear-gradient(155deg, #1c2026, #17191d)",
+                          border: "1px solid #ffffff10",
+                          borderRadius: 14,
+                          padding: 14,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: "#f8fafc",
+                              }}
+                            >
+                              {r.emoji} {r.nome}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "#64748b",
+                                marginTop: 2,
+                              }}
+                            >
+                              {r.exercicios.length} exercícios · ~
+                              {tempoEstimadoMin(r)} min
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => iniciarRotinaPronta(r)}
+                            style={{
+                              background: "#6366f1",
+                              border: "none",
+                              borderRadius: 10,
+                              color: "#fff",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              padding: "8px 14px",
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                          >
+                            ▶ Iniciar
+                          </button>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#94a3b8",
+                            marginTop: 6,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {r.descricao}
+                        </div>
+                        <div style={{ display: "flex", gap: 14, marginTop: 8 }}>
+                          <button
+                            onClick={() =>
+                              setMobRotinaAberta(
+                                mobRotinaAberta === r.id ? null : r.id,
+                              )
+                            }
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#818cf8",
+                              fontSize: 12,
+                              cursor: "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            {mobRotinaAberta === r.id
+                              ? "Esconder exercícios"
+                              : "Ver exercícios"}
+                          </button>
+                          <button
+                            onClick={() => copiarRotinaParaMinha(r)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#818cf8",
+                              fontSize: 12,
+                              cursor: "pointer",
+                              padding: 0,
+                            }}
+                          >
+                            Copiar pra minha rotina
+                          </button>
+                        </div>
+                        {mobRotinaAberta === r.id && (
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 6,
+                            }}
+                          >
+                            {r.exercicios.map((ex, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  background: "#1a1d21",
+                                  border: "1px solid #ffffff0d",
+                                  borderRadius: 8,
+                                  padding: "8px 10px",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: 8,
+                                    fontSize: 12,
+                                    color: "#f8fafc",
+                                  }}
+                                >
+                                  <span>{ex.nome}</span>
+                                  <span
+                                    style={{ color: "#64748b", flexShrink: 0 }}
+                                  >
+                                    {rotuloMob(ex)}
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: "#64748b",
+                                    marginTop: 3,
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  {ex.instrucoes}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#f59e0b",
+                      marginBottom: 20,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    ⚠️ Alongamento é desconforto leve, nunca dor. Se sentir dor
+                    aguda, para.
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#64748b",
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      marginBottom: 8,
+                    }}
+                  >
+                    MINHA ROTINA
+                  </div>
                   <button
                     onClick={iniciarRotinaMobilidade}
                     disabled={mobilidadeExercicios.length === 0}
