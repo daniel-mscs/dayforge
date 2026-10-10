@@ -5,6 +5,7 @@ import ModalDescanso from "./ModalDescanso";
 import {
   DndContext,
   closestCenter,
+  MouseSensor,
   PointerSensor,
   TouchSensor,
   useSensor,
