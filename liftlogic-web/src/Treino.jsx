@@ -4472,7 +4472,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           >
                             {sugestoesExercicio.map((preset) => (
                               <button
-                                key={(preset.gif_url ? "g-" : "p-") + preset.nome}
+                                key={
+                                  (preset.gif_url ? "g-" : "p-") + preset.nome
+                                }
                                 type="button"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() =>
@@ -4506,8 +4508,6 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           </div>
                         )}
                       </div>
-                      <input
-                        type="text"
                       {novoExercicio.gif_url && (
                         <div
                           style={{
@@ -4531,6 +4531,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           <span>🎬 GIF vinculado ao exercício</span>
                         </div>
                       )}
+                      <input
+                        type="text"
+                        placeholder="Grupo Muscular (ex: Peitoral)"
                         value={novoExercicio.grupo_muscular}
                         onChange={(e) =>
                           setNovoExercicio({
