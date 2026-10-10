@@ -7,6 +7,8 @@ export default function ModalDescanso({
   pausarDescanso,
   retomarDescanso,
   seriesFeitas,
+  concluidos = {},
+  pulados = {},
   exerciciosFiltrados,
   formatarTempo,
   adicionarDescanso,
@@ -45,6 +47,26 @@ export default function ModalDescanso({
   const temAnterior = posicaoAtual > 0;
   const temProximo =
     posicaoAtual >= 0 && posicaoAtual < exerciciosFiltrados.length - 1;
+
+  // Exercício ainda pendente = não concluído, não pulado e com séries faltando.
+  const estaPendente = (e) =>
+    !concluidos[e.id] &&
+    !pulados[e.id] &&
+    (seriesFeitas[e.id] || 0) < Number(e.series);
+  const pendentes = exerciciosFiltrados.filter(
+    (e) => estaPendente(e) && e.id !== modalDescanso.exId,
+  );
+  // Próximo pendente depois do atual (dá a volta na lista); ignora os ids em `ignorar`.
+  const proximoPendente = (ignorar = [modalDescanso.exId]) => {
+    const n = exerciciosFiltrados.length;
+    for (let i = 1; i <= n; i++) {
+      const e = exerciciosFiltrados[(Math.max(posicaoAtual, 0) + i) % n];
+      if (!ignorar.includes(e.id) && estaPendente(e)) return e;
+    }
+    return null;
+  };
+  const faltam = exerciciosFiltrados.filter(estaPendente).length;
+  const temProximoPendente = !!proximoPendente();
 
   const irParaExercicio = (proximo, manterDescanso = false) => {
     if (!manterDescanso) cancelarDescanso();
@@ -126,6 +148,7 @@ export default function ModalDescanso({
               }}
             >
               EXERCÍCIO {posicaoAtual + 1}/{exerciciosFiltrados.length}
+              {faltam > 0 ? ` · FALTAM ${faltam}` : " · TUDO FEITO ✅"}
             </span>
           )}
         </div>
@@ -567,10 +590,15 @@ export default function ModalDescanso({
                 ? supersetExs.every((e) => contagemDe(e.id) >= Number(e.series))
                 : novasSeries >= modalDescanso.totalSeries;
 
-              if (todosTerminaram && temProximo) {
-                const proximo = exerciciosFiltrados[posicaoAtual + 1];
-                irParaExercicio(proximo, true);
-                return;
+              if (todosTerminaram) {
+                const idsAtuais = emSuperset
+                  ? supersetExs.map((e) => e.id)
+                  : [modalDescanso.exId];
+                const proximo = proximoPendente(idsAtuais);
+                if (proximo) {
+                  irParaExercicio(proximo, true);
+                  return;
+                }
               }
 
               if (emSuperset) {
@@ -626,8 +654,8 @@ export default function ModalDescanso({
                   [modalDescanso.exId]: true,
                 }));
                 cancelarDescanso();
-                if (temProximo) {
-                  const proximo = exerciciosFiltrados[posicaoAtual + 1];
+                const proximo = proximoPendente();
+                if (proximo) {
                   irParaExercicio(proximo);
                 } else {
                   setModalDescanso(null);
@@ -650,6 +678,52 @@ export default function ModalDescanso({
               {modalDescanso.totalSeries} séries)
             </button>
           )}
+
+        {pendentes.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "#475569",
+                letterSpacing: "0.08em",
+                marginBottom: 6,
+              }}
+            >
+              AINDA FALTAM
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                overflowX: "auto",
+                paddingBottom: 4,
+                touchAction: "pan-x",
+              }}
+            >
+              {pendentes.map((e) => (
+                <button
+                  key={e.id}
+                  onClick={() => irParaExercicio(e)}
+                  style={{
+                    flexShrink: 0,
+                    background: "rgba(99,102,241,0.1)",
+                    border: "1px solid rgba(99,102,241,0.25)",
+                    borderRadius: 999,
+                    color: "#a5b4fc",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "6px 12px",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {e.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -690,25 +764,28 @@ export default function ModalDescanso({
           </button>
           <button
             onClick={() => {
-              const proximo = exerciciosFiltrados[posicaoAtual + 1];
+              // Prioriza o que ainda falta; se não sobrar nada, segue a ordem normal.
+              const proximo =
+                proximoPendente() || exerciciosFiltrados[posicaoAtual + 1];
               irParaExercicio(proximo);
             }}
-            disabled={!temProximo}
+            disabled={!temProximoPendente && !temProximo}
             style={{
               flex: 1,
-              background: temProximo
-                ? "rgba(99,102,241,0.1)"
-                : "rgba(255,255,255,0.02)",
-              border: `1px solid ${temProximo ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.06)"}`,
+              background:
+                temProximoPendente || temProximo
+                  ? "rgba(99,102,241,0.1)"
+                  : "rgba(255,255,255,0.02)",
+              border: `1px solid ${temProximoPendente || temProximo ? "rgba(99,102,241,0.25)" : "rgba(255,255,255,0.06)"}`,
               borderRadius: 12,
-              color: temProximo ? "#818cf8" : "#334155",
+              color: temProximoPendente || temProximo ? "#818cf8" : "#334155",
               fontSize: 13,
               fontWeight: 700,
               padding: "13px 0",
-              cursor: temProximo ? "pointer" : "default",
+              cursor: temProximoPendente || temProximo ? "pointer" : "default",
             }}
           >
-            Próximo →
+            {temProximoPendente ? "Próx. pendente →" : "Próximo →"}
           </button>
         </div>
       </div>

@@ -621,9 +621,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [buscaGif, setBuscaGif] = useState("");
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
+      activationConstraint: { delay: 400, tolerance: 6 },
     }),
   );
 
@@ -2126,6 +2126,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
           pausarDescanso={pausarDescanso}
           retomarDescanso={retomarDescanso}
           seriesFeitas={seriesFeitas}
+          concluidos={concluidos}
+          pulados={pulados}
           exerciciosFiltrados={exerciciosFiltrados}
           formatarTempo={formatarTempo}
           adicionarDescanso={adicionarDescanso}

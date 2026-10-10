@@ -1,0 +1,5 @@
+[33m8559ce8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m style: give each main bottom nav icon its own signature color with glow when active; fix: remove leftover duplicated JSX from prior patch that broke the build
+[33maab7e15[m style: give each main bottom nav icon its own signature color with a glow when active
+[33mac2c3db[m feat: rename bottom nav Stats button to Metas with Target icon
+[33m7cb94ee[m feat: replace equipamento selector emoji (halter/barra/máquina) with lucide icons — was a custom button group, not a native select, so icons work fine
+[33m394d7e3[m feat: replace default Stats view with Metas Pessoais — deadline-based personal goals with auto-tracking for peso/treinos and manual mode for anything else

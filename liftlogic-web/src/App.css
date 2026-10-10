@@ -815,8 +815,10 @@ input::-webkit-inner-spin-button {
   cursor: grab;
   font-size: 1.2rem;
   color: #888;
-  padding: 0 4px;
-  touch-action: none;
+  padding: 8px 10px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .drag-handle:active {
