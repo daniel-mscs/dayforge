@@ -809,10 +809,16 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       });
     supabase
       .from("exercicio_gifs")
-      .select("nome, grupo, url")
+      .select("*")
       .then(({ data, error }) => {
         if (error) console.error("Erro ao buscar GIFs:", error.message);
-        else setGifsBanco(data || []);
+        else
+          setGifsBanco(
+            (data || []).map((g) => ({
+              ...g,
+              nome: g.nome_exibicao || g.nome,
+            })),
+          );
       });
   }, []);
 
@@ -1414,8 +1420,20 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setBuscaGif("");
   };
 
+  const GRUPO_DO_GIF = {
+    "ABDOMEN E CORE": "Abdômen",
+    "BÍCEPS E ANTE BRAÇO": "Bíceps",
+    "COSTAS E TRAPEZIO": "Costas",
+    OMBRO: "Ombro",
+    PANTURRILHA: "Panturrilha",
+    PEITORAL: "Peitoral",
+    PERNAS: "Pernas",
+    TRÍCEPS: "Tríceps",
+  };
+
   const buscarSugestoesExercicio = (texto) => {
-    setNovoExercicio({ ...novoExercicio, nome: texto });
+    // digitou à mão = desvincula o GIF escolhido antes
+    setNovoExercicio({ ...novoExercicio, nome: texto, gif_url: null });
     if (texto.trim().length < 2) {
       setSugestoesExercicio([]);
       setMostrarSugestoes(false);
@@ -1427,13 +1445,28 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
     const termo = normalizar(texto.trim());
-    const encontrados = exerciciosPreset
+    const palavras = termo.split(/\s+/).filter(Boolean);
+    const dosGifs = gifsBanco
+      .filter((g) => {
+        const n = normalizar(g.nome);
+        return palavras.every((p) => n.includes(p));
+      })
+      .slice(0, 6)
+      .map((g) => ({
+        nome: g.nome,
+        grupo_muscular: GRUPO_DO_GIF[g.grupo] || g.grupo,
+        gif_url: g.url,
+      }));
+    const nomesGif = new Set(dosGifs.map((g) => normalizar(g.nome)));
+    const dosPresets = exerciciosPreset
       .filter(
         (ex) =>
-          normalizar(ex.nome).includes(termo) ||
-          normalizar(ex.grupo_muscular).includes(termo),
+          !nomesGif.has(normalizar(ex.nome)) &&
+          (normalizar(ex.nome).includes(termo) ||
+            normalizar(ex.grupo_muscular).includes(termo)),
       )
-      .slice(0, 8);
+      .slice(0, 8 - dosGifs.length);
+    const encontrados = [...dosGifs, ...dosPresets];
     setSugestoesExercicio(encontrados);
     setMostrarSugestoes(encontrados.length > 0);
   };
@@ -1443,6 +1476,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       ...novoExercicio,
       nome: preset.nome,
       grupo_muscular: preset.grupo_muscular,
+      gif_url: preset.gif_url || null,
     });
     setSugestoesExercicio([]);
     setMostrarSugestoes(false);
@@ -1474,6 +1508,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         ordem: exerciciosFiltrados.length,
         equipamento: novoExercicio.equipamento,
         descanso_segundos: Number(novoExercicio.descanso_segundos) || 90,
+        gif_url: novoExercicio.gif_url || null,
       },
     ]);
     if (error) toast(error.message, "error");
@@ -1485,6 +1520,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         repeticoes: "",
         carga: "",
         grupo_muscular: "",
+        gif_url: null,
         treino: treinoAtivo,
         equipamento: "maquina",
         reps_variam: false,
@@ -4436,7 +4472,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           >
                             {sugestoesExercicio.map((preset) => (
                               <button
-                                key={preset.nome}
+                                key={(preset.gif_url ? "g-" : "p-") + preset.nome}
                                 type="button"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() =>
@@ -4456,7 +4492,10 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                                   textAlign: "left",
                                 }}
                               >
-                                <span>{preset.nome}</span>
+                                <span>
+                                  {preset.gif_url ? "🎬 " : ""}
+                                  {preset.nome}
+                                </span>
                                 <span
                                   style={{ color: "#64748b", fontSize: 11 }}
                                 >
@@ -4469,7 +4508,29 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       </div>
                       <input
                         type="text"
-                        placeholder="Grupo Muscular (ex: Peitoral)"
+                      {novoExercicio.gif_url && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            fontSize: 12,
+                            color: "#94a3b8",
+                          }}
+                        >
+                          <img
+                            src={novoExercicio.gif_url}
+                            alt=""
+                            style={{
+                              width: 56,
+                              height: 56,
+                              objectFit: "cover",
+                              borderRadius: 10,
+                            }}
+                          />
+                          <span>🎬 GIF vinculado ao exercício</span>
+                        </div>
+                      )}
                         value={novoExercicio.grupo_muscular}
                         onChange={(e) =>
                           setNovoExercicio({
