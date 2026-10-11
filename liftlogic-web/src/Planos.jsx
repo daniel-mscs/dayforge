@@ -3,7 +3,7 @@ import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { askConfirm, askPrompt } from "./lib/confirm";
 import { MODELOS_PLANO } from "./lib/planosModelos";
-import { Interruptor, PainelDinheiro } from "./PlanosUI";
+import { Interruptor, PainelDinheiro, ResumoMensal } from "./PlanosUI";
 import {
   DndContext,
   closestCenter,
@@ -226,6 +226,16 @@ export default function Planos({ user }) {
   useEffect(() => {
     buscar();
   }, [buscar]);
+
+  // aportes mensais (histórico de quanto foi guardado em cada item)
+  const [aportes, setAportes] = useState([]);
+  useEffect(() => {
+    supabase
+      .from("plano_aportes")
+      .select("*")
+      .eq("user_id", user.id)
+      .then(({ data }) => setAportes(data || []));
+  }, [user.id]);
 
   const escolherModelo = (id) => {
     setModeloId(id);
@@ -481,6 +491,7 @@ export default function Planos({ user }) {
       usaValor: item.valor_alvo !== null && item.valor_alvo !== undefined,
       alvo: item.valor_alvo ?? "",
       atual: item.valor_atual ?? 0,
+      mensal: item.aporte_mensal ?? "",
     });
 
   const salvarEdicao = async () => {
@@ -491,6 +502,10 @@ export default function Planos({ user }) {
       grupo: (editando.grupo || "Geral").trim() || "Geral",
       valor_alvo: editando.usaValor ? parseFloat(editando.alvo) || 0 : null,
       valor_atual: editando.usaValor ? parseFloat(editando.atual) || 0 : 0,
+      aporte_mensal:
+        editando.usaValor && parseFloat(editando.mensal) > 0
+          ? parseFloat(editando.mensal)
+          : null,
     };
     const { error } = await supabase
       .from("plano_itens")
@@ -519,6 +534,21 @@ export default function Planos({ user }) {
     setItens((prev) =>
       prev.map((i) => (i.id === item.id ? { ...i, valor_atual: novo } : i)),
     );
+    const agora = new Date();
+    const { data: ap } = await supabase
+      .from("plano_aportes")
+      .insert([
+        {
+          user_id: user.id,
+          plano_id: item.plano_id,
+          item_id: item.id,
+          valor: n,
+          mes: agora.getMonth(),
+          ano: agora.getFullYear(),
+        },
+      ])
+      .select();
+    if (ap) setAportes((prev) => [...prev, ...ap]);
     toast("Valor somado! 💰", "success");
   };
 
@@ -773,6 +803,14 @@ export default function Planos({ user }) {
                                         >
                                           {item.texto}
                                         </div>
+                                        {temValor && item.aporte_mensal > 0 && (
+                                          <ResumoMensal
+                                            item={item}
+                                            aportes={aportes}
+                                            prazo={plano.prazo}
+                                            onAportar={() => guardarValor(item)}
+                                          />
+                                        )}
                                         {temValor && (
                                           <div style={{ marginTop: 6 }}>
                                             <div
@@ -880,12 +918,20 @@ export default function Planos({ user }) {
                                         </datalist>
                                         <Interruptor
                                           ligado={editando.usaValor}
-                                          onChange={(v) => setEditando({ ...editando, usaValor: v })}
+                                          onChange={(v) =>
+                                            setEditando({
+                                              ...editando,
+                                              usaValor: v,
+                                            })
+                                          }
                                           titulo="Juntar dinheiro"
                                           sub="Acompanhe meta e quanto já guardou"
                                         />
                                         {editando.usaValor && (
-                                          <PainelDinheiro editando={editando} setEditando={setEditando} />
+                                          <PainelDinheiro
+                                            editando={editando}
+                                            setEditando={setEditando}
+                                          />
                                         )}
                                         <div
                                           style={{ display: "flex", gap: 8 }}
