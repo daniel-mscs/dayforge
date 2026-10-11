@@ -4,6 +4,21 @@ import { toast } from "./lib/toast";
 import { askConfirm, askPrompt } from "./lib/confirm";
 import { MODELOS_PLANO } from "./lib/planosModelos";
 import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   ArrowLeft,
   Plus,
   Pencil,
@@ -11,6 +26,7 @@ import {
   Check,
   Compass,
   PiggyBank,
+  GripVertical,
 } from "lucide-react";
 
 function fmtBRL(v) {
@@ -90,6 +106,56 @@ const iconBtn = {
   alignItems: "center",
 };
 
+// Envolve algo que pode ser arrastado pra reordenar. O `alca` vai no
+// ícone de arrastar — só ele inicia o arrasto, então rolar a tela não
+// mexe em nada sem querer.
+function Ordenavel({ id, children }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.6 : 1,
+        position: "relative",
+        zIndex: isDragging ? 5 : "auto",
+      }}
+    >
+      {children({ alca: { ...attributes, ...listeners } })}
+    </div>
+  );
+}
+
+function Alca({ props, tamanho = 16 }) {
+  return (
+    <span
+      {...props}
+      title="Segure e arraste pra mudar a ordem"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "6px 4px",
+        color: "#64748b",
+        cursor: "grab",
+        touchAction: "manipulation",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        flexShrink: 0,
+      }}
+    >
+      <GripVertical size={tamanho} />
+    </span>
+  );
+}
+
 function Barra({ pct, cor = "#6366f1", altura = 8 }) {
   return (
     <div
@@ -128,6 +194,13 @@ export default function Planos({ user }) {
 
   // edição de item
   const [editando, setEditando] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 300, tolerance: 6 },
+    }),
+  );
 
   const buscar = useCallback(async () => {
     const [{ data: p, error: e1 }, { data: i, error: e2 }] = await Promise.all([
@@ -218,7 +291,62 @@ export default function Planos({ user }) {
   };
 
   const plano = planos.find((p) => p.id === abertoId);
-  const itensDoPlano = itens.filter((i) => i.plano_id === abertoId);
+  const itensDoPlano = itens
+    .filter((i) => i.plano_id === abertoId)
+    .sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+
+  // Grava a nova ordem (lista completa do plano, já na ordem desejada).
+  const salvarOrdem = async (listaNova) => {
+    const mudancas = [];
+    const mapaOrdem = {};
+    listaNova.forEach((it, idx) => {
+      mapaOrdem[it.id] = idx;
+      if ((it.ordem || 0) !== idx) mudancas.push({ id: it.id, ordem: idx });
+    });
+    if (mudancas.length === 0) return;
+    setItens((prev) =>
+      prev.map((i) =>
+        mapaOrdem[i.id] !== undefined ? { ...i, ordem: mapaOrdem[i.id] } : i,
+      ),
+    );
+    const resultados = await Promise.all(
+      mudancas.map((m) =>
+        supabase.from("plano_itens").update({ ordem: m.ordem }).eq("id", m.id),
+      ),
+    );
+    if (resultados.some((r) => r.error)) {
+      toast("Não consegui salvar a nova ordem", "error");
+      buscar();
+    }
+  };
+
+  const reordenarGrupos = (event, grupos) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = grupos.map((g) => "g:" + g);
+    const de = ids.indexOf(active.id);
+    const para = ids.indexOf(over.id);
+    if (de < 0 || para < 0) return;
+    const novaOrdemGrupos = arrayMove(grupos, de, para);
+    salvarOrdem(
+      novaOrdemGrupos.flatMap((g) => itensDoPlano.filter((i) => i.grupo === g)),
+    );
+  };
+
+  const reordenarItens = (event, grupo, grupos) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const lista = itensDoPlano.filter((i) => i.grupo === grupo);
+    const de = lista.findIndex((i) => i.id === active.id);
+    const para = lista.findIndex((i) => i.id === over.id);
+    if (de < 0 || para < 0) return;
+    const listaNova = arrayMove(lista, de, para);
+    salvarOrdem(
+      grupos.flatMap((g) =>
+        g === grupo ? listaNova : itensDoPlano.filter((i) => i.grupo === g),
+      ),
+    );
+  };
 
   const progresso = (lista) => {
     const total = lista.length;
@@ -505,326 +633,387 @@ export default function Planos({ user }) {
           )}
         </div>
 
-        {grupos.map((grupo) => {
-          const lista = itensDoPlano.filter((i) => i.grupo === grupo);
-          const p = progresso(lista);
-          return (
-            <div key={grupo} style={card}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 10,
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      letterSpacing: "0.08em",
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {grupo}
-                  </div>
-                  <div style={{ fontSize: 10, color: "#475569" }}>
-                    {p.feitos}/{p.total}
-                  </div>
-                </div>
-                <button
-                  style={iconBtn}
-                  onClick={() => renomearGrupo(grupo)}
-                  title="Renomear grupo"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  style={{ ...iconBtn, color: "#7f1d1d" }}
-                  onClick={() => apagarGrupo(grupo)}
-                  title="Apagar grupo"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-
-              {lista.map((item) => {
-                const temValor =
-                  item.valor_alvo !== null && item.valor_alvo !== undefined;
-                const pctValor =
-                  temValor && Number(item.valor_alvo) > 0
-                    ? (Number(item.valor_atual || 0) /
-                        Number(item.valor_alvo)) *
-                      100
-                    : 0;
-                const emEdicao = editando?.id === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    style={{
-                      borderTop: "1px solid #ffffff08",
-                      padding: "10px 0",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 10,
-                      }}
-                    >
-                      <button
-                        onClick={() => alternarFeito(item)}
-                        aria-label={
-                          item.feito ? "Desmarcar" : "Marcar como feito"
-                        }
-                        style={{
-                          flexShrink: 0,
-                          width: 24,
-                          height: 24,
-                          marginTop: 1,
-                          borderRadius: 7,
-                          border: item.feito
-                            ? "1px solid #10b981"
-                            : "1px solid #475569",
-                          background: item.feito ? "#10b981" : "transparent",
-                          color: "#fff",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 0,
-                        }}
-                      >
-                        {item.feito && <Check size={15} strokeWidth={3} />}
-                      </button>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontSize: 14,
-                            color: item.feito ? "#64748b" : "#f8fafc",
-                            textDecoration: item.feito
-                              ? "line-through"
-                              : "none",
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {item.texto}
-                        </div>
-                        {temValor && (
-                          <div style={{ marginTop: 6 }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontSize: 11,
-                                color: "#94a3b8",
-                                marginBottom: 3,
-                              }}
-                            >
-                              <span>{fmtBRL(item.valor_atual)}</span>
-                              <span>
-                                {Number(item.valor_alvo) > 0
-                                  ? `meta ${fmtBRL(item.valor_alvo)}`
-                                  : "defina a meta em ✎"}
-                              </span>
-                            </div>
-                            <Barra pct={pctValor} cor="#10b981" altura={5} />
-                            <button
-                              onClick={() => guardarValor(item)}
-                              style={{
-                                marginTop: 6,
-                                background: "rgba(16,185,129,0.1)",
-                                border: "1px solid rgba(16,185,129,0.3)",
-                                borderRadius: 8,
-                                color: "#34d399",
-                                fontSize: 11,
-                                fontWeight: 700,
-                                padding: "5px 10px",
-                                cursor: "pointer",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 5,
-                              }}
-                            >
-                              <PiggyBank size={12} /> Guardei mais
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        style={iconBtn}
-                        onClick={() =>
-                          emEdicao ? setEditando(null) : abrirEdicao(item)
-                        }
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    </div>
-
-                    {emEdicao && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => reordenarGrupos(e, grupos)}
+        >
+          <SortableContext
+            items={grupos.map((g) => "g:" + g)}
+            strategy={verticalListSortingStrategy}
+          >
+            {grupos.map((grupo) => {
+              const lista = itensDoPlano.filter((i) => i.grupo === grupo);
+              const p = progresso(lista);
+              return (
+                <Ordenavel key={grupo} id={"g:" + grupo}>
+                  {({ alca: alcaGrupo }) => (
+                    <div style={card}>
                       <div
                         style={{
-                          marginTop: 10,
                           display: "flex",
-                          flexDirection: "column",
-                          gap: 8,
-                          background: "#0f1115",
-                          border: "1px solid #ffffff10",
-                          borderRadius: 12,
-                          padding: 10,
+                          alignItems: "center",
+                          gap: 6,
+                          marginBottom: 10,
                         }}
                       >
-                        <input
-                          style={inputStyle}
-                          value={editando.texto}
-                          onChange={(e) =>
-                            setEditando({ ...editando, texto: e.target.value })
-                          }
-                          placeholder="O que precisa ser feito"
-                        />
-                        <input
-                          style={inputStyle}
-                          list="planos-grupos"
-                          value={editando.grupo}
-                          onChange={(e) =>
-                            setEditando({ ...editando, grupo: e.target.value })
-                          }
-                          placeholder="Grupo (ex: Dinheiro)"
-                        />
-                        <datalist id="planos-grupos">
-                          {grupos.map((g) => (
-                            <option key={g} value={g} />
-                          ))}
-                        </datalist>
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            fontSize: 13,
-                            color: "#cbd5e1",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={editando.usaValor}
-                            onChange={(e) =>
-                              setEditando({
-                                ...editando,
-                                usaValor: e.target.checked,
-                              })
-                            }
-                          />
-                          Tem valor em dinheiro pra juntar
-                        </label>
-                        {editando.usaValor && (
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              style={inputStyle}
-                              type="number"
-                              inputMode="decimal"
-                              value={editando.alvo}
-                              onChange={(e) =>
-                                setEditando({
-                                  ...editando,
-                                  alvo: e.target.value,
-                                })
-                              }
-                              placeholder="Meta (R$)"
-                            />
-                            <input
-                              style={inputStyle}
-                              type="number"
-                              inputMode="decimal"
-                              value={editando.atual}
-                              onChange={(e) =>
-                                setEditando({
-                                  ...editando,
-                                  atual: e.target.value,
-                                })
-                              }
-                              placeholder="Já juntei (R$)"
-                            />
+                        <Alca props={alcaGrupo} tamanho={18} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 800,
+                              letterSpacing: "0.08em",
+                              color: "#64748b",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {grupo}
                           </div>
-                        )}
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={salvarEdicao}
-                            style={{
-                              flex: 1,
-                              background:
-                                "linear-gradient(135deg,#6366f1,#4f46e5)",
-                              border: "none",
-                              borderRadius: 10,
-                              color: "#fff",
-                              fontWeight: 700,
-                              fontSize: 13,
-                              padding: "10px 0",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Salvar
-                          </button>
-                          <button
-                            onClick={() => setEditando(null)}
-                            style={{
-                              flex: 1,
-                              background: "transparent",
-                              border: "1px solid #ffffff14",
-                              borderRadius: 10,
-                              color: "#94a3b8",
-                              fontSize: 13,
-                              padding: "10px 0",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={() => apagarItem(item)}
-                            style={{
-                              background: "transparent",
-                              border: "1px solid #7f1d1d",
-                              borderRadius: 10,
-                              color: "#ef4444",
-                              padding: "10px 14px",
-                              cursor: "pointer",
-                            }}
-                            aria-label="Apagar item"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          <div style={{ fontSize: 10, color: "#475569" }}>
+                            {p.feitos}/{p.total}
+                          </div>
                         </div>
+                        <button
+                          style={iconBtn}
+                          onClick={() => renomearGrupo(grupo)}
+                          title="Renomear grupo"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          style={{ ...iconBtn, color: "#7f1d1d" }}
+                          onClick={() => apagarGrupo(grupo)}
+                          title="Apagar grupo"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
 
-              <button
-                onClick={() => adicionarItem(grupo)}
-                style={{
-                  marginTop: 6,
-                  width: "100%",
-                  background: "transparent",
-                  border: "1px dashed #ffffff1a",
-                  borderRadius: 10,
-                  color: "#818cf8",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: "9px 0",
-                  cursor: "pointer",
-                }}
-              >
-                + Adicionar item
-              </button>
-            </div>
-          );
-        })}
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(e) => reordenarItens(e, grupo, grupos)}
+                      >
+                        <SortableContext
+                          items={lista.map((i) => i.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {lista.map((item) => {
+                            const temValor =
+                              item.valor_alvo !== null &&
+                              item.valor_alvo !== undefined;
+                            const pctValor =
+                              temValor && Number(item.valor_alvo) > 0
+                                ? (Number(item.valor_atual || 0) /
+                                    Number(item.valor_alvo)) *
+                                  100
+                                : 0;
+                            const emEdicao = editando?.id === item.id;
+                            return (
+                              <Ordenavel key={item.id} id={item.id}>
+                                {({ alca: alcaItem }) => (
+                                  <div
+                                    style={{
+                                      borderTop: "1px solid #ffffff08",
+                                      padding: "10px 0",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: 10,
+                                      }}
+                                    >
+                                      <button
+                                        onClick={() => alternarFeito(item)}
+                                        aria-label={
+                                          item.feito
+                                            ? "Desmarcar"
+                                            : "Marcar como feito"
+                                        }
+                                        style={{
+                                          flexShrink: 0,
+                                          width: 24,
+                                          height: 24,
+                                          marginTop: 1,
+                                          borderRadius: 7,
+                                          border: item.feito
+                                            ? "1px solid #10b981"
+                                            : "1px solid #475569",
+                                          background: item.feito
+                                            ? "#10b981"
+                                            : "transparent",
+                                          color: "#fff",
+                                          cursor: "pointer",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          padding: 0,
+                                        }}
+                                      >
+                                        {item.feito && (
+                                          <Check size={15} strokeWidth={3} />
+                                        )}
+                                      </button>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div
+                                          style={{
+                                            fontSize: 14,
+                                            color: item.feito
+                                              ? "#64748b"
+                                              : "#f8fafc",
+                                            textDecoration: item.feito
+                                              ? "line-through"
+                                              : "none",
+                                            lineHeight: 1.35,
+                                          }}
+                                        >
+                                          {item.texto}
+                                        </div>
+                                        {temValor && (
+                                          <div style={{ marginTop: 6 }}>
+                                            <div
+                                              style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                fontSize: 11,
+                                                color: "#94a3b8",
+                                                marginBottom: 3,
+                                              }}
+                                            >
+                                              <span>
+                                                {fmtBRL(item.valor_atual)}
+                                              </span>
+                                              <span>
+                                                {Number(item.valor_alvo) > 0
+                                                  ? `meta ${fmtBRL(item.valor_alvo)}`
+                                                  : "defina a meta em ✎"}
+                                              </span>
+                                            </div>
+                                            <Barra
+                                              pct={pctValor}
+                                              cor="#10b981"
+                                              altura={5}
+                                            />
+                                            <button
+                                              onClick={() => guardarValor(item)}
+                                              style={{
+                                                marginTop: 6,
+                                                background:
+                                                  "rgba(16,185,129,0.1)",
+                                                border:
+                                                  "1px solid rgba(16,185,129,0.3)",
+                                                borderRadius: 8,
+                                                color: "#34d399",
+                                                fontSize: 11,
+                                                fontWeight: 700,
+                                                padding: "5px 10px",
+                                                cursor: "pointer",
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 5,
+                                              }}
+                                            >
+                                              <PiggyBank size={12} /> Guardei
+                                              mais
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <Alca props={alcaItem} />
+                                      <button
+                                        style={iconBtn}
+                                        onClick={() =>
+                                          emEdicao
+                                            ? setEditando(null)
+                                            : abrirEdicao(item)
+                                        }
+                                        title="Editar"
+                                      >
+                                        <Pencil size={14} />
+                                      </button>
+                                    </div>
+
+                                    {emEdicao && (
+                                      <div
+                                        style={{
+                                          marginTop: 10,
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          gap: 8,
+                                          background: "#0f1115",
+                                          border: "1px solid #ffffff10",
+                                          borderRadius: 12,
+                                          padding: 10,
+                                        }}
+                                      >
+                                        <input
+                                          style={inputStyle}
+                                          value={editando.texto}
+                                          onChange={(e) =>
+                                            setEditando({
+                                              ...editando,
+                                              texto: e.target.value,
+                                            })
+                                          }
+                                          placeholder="O que precisa ser feito"
+                                        />
+                                        <input
+                                          style={inputStyle}
+                                          list="planos-grupos"
+                                          value={editando.grupo}
+                                          onChange={(e) =>
+                                            setEditando({
+                                              ...editando,
+                                              grupo: e.target.value,
+                                            })
+                                          }
+                                          placeholder="Grupo (ex: Dinheiro)"
+                                        />
+                                        <datalist id="planos-grupos">
+                                          {grupos.map((g) => (
+                                            <option key={g} value={g} />
+                                          ))}
+                                        </datalist>
+                                        <label
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 8,
+                                            fontSize: 13,
+                                            color: "#cbd5e1",
+                                          }}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={editando.usaValor}
+                                            onChange={(e) =>
+                                              setEditando({
+                                                ...editando,
+                                                usaValor: e.target.checked,
+                                              })
+                                            }
+                                          />
+                                          Tem valor em dinheiro pra juntar
+                                        </label>
+                                        {editando.usaValor && (
+                                          <div
+                                            style={{ display: "flex", gap: 8 }}
+                                          >
+                                            <input
+                                              style={inputStyle}
+                                              type="number"
+                                              inputMode="decimal"
+                                              value={editando.alvo}
+                                              onChange={(e) =>
+                                                setEditando({
+                                                  ...editando,
+                                                  alvo: e.target.value,
+                                                })
+                                              }
+                                              placeholder="Meta (R$)"
+                                            />
+                                            <input
+                                              style={inputStyle}
+                                              type="number"
+                                              inputMode="decimal"
+                                              value={editando.atual}
+                                              onChange={(e) =>
+                                                setEditando({
+                                                  ...editando,
+                                                  atual: e.target.value,
+                                                })
+                                              }
+                                              placeholder="Já juntei (R$)"
+                                            />
+                                          </div>
+                                        )}
+                                        <div
+                                          style={{ display: "flex", gap: 8 }}
+                                        >
+                                          <button
+                                            onClick={salvarEdicao}
+                                            style={{
+                                              flex: 1,
+                                              background:
+                                                "linear-gradient(135deg,#6366f1,#4f46e5)",
+                                              border: "none",
+                                              borderRadius: 10,
+                                              color: "#fff",
+                                              fontWeight: 700,
+                                              fontSize: 13,
+                                              padding: "10px 0",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            Salvar
+                                          </button>
+                                          <button
+                                            onClick={() => setEditando(null)}
+                                            style={{
+                                              flex: 1,
+                                              background: "transparent",
+                                              border: "1px solid #ffffff14",
+                                              borderRadius: 10,
+                                              color: "#94a3b8",
+                                              fontSize: 13,
+                                              padding: "10px 0",
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            Cancelar
+                                          </button>
+                                          <button
+                                            onClick={() => apagarItem(item)}
+                                            style={{
+                                              background: "transparent",
+                                              border: "1px solid #7f1d1d",
+                                              borderRadius: 10,
+                                              color: "#ef4444",
+                                              padding: "10px 14px",
+                                              cursor: "pointer",
+                                            }}
+                                            aria-label="Apagar item"
+                                          >
+                                            <Trash2 size={15} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </Ordenavel>
+                            );
+                          })}
+                        </SortableContext>
+                      </DndContext>
+
+                      <button
+                        onClick={() => adicionarItem(grupo)}
+                        style={{
+                          marginTop: 6,
+                          width: "100%",
+                          background: "transparent",
+                          border: "1px dashed #ffffff1a",
+                          borderRadius: 10,
+                          color: "#818cf8",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: "9px 0",
+                          cursor: "pointer",
+                        }}
+                      >
+                        + Adicionar item
+                      </button>
+                    </div>
+                  )}
+                </Ordenavel>
+              );
+            })}
+          </SortableContext>
+        </DndContext>
 
         <button
           onClick={novoGrupo}
