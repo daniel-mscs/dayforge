@@ -3,6 +3,7 @@ import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { askConfirm, askPrompt } from "./lib/confirm";
 import { MODELOS_PLANO } from "./lib/planosModelos";
+import { Interruptor, PainelDinheiro } from "./PlanosUI";
 import {
   DndContext,
   closestCenter,
@@ -877,58 +878,14 @@ export default function Planos({ user }) {
                                             <option key={g} value={g} />
                                           ))}
                                         </datalist>
-                                        <label
-                                          style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: 8,
-                                            fontSize: 13,
-                                            color: "#cbd5e1",
-                                          }}
-                                        >
-                                          <input
-                                            type="checkbox"
-                                            checked={editando.usaValor}
-                                            onChange={(e) =>
-                                              setEditando({
-                                                ...editando,
-                                                usaValor: e.target.checked,
-                                              })
-                                            }
-                                          />
-                                          Tem valor em dinheiro pra juntar
-                                        </label>
+                                        <Interruptor
+                                          ligado={editando.usaValor}
+                                          onChange={(v) => setEditando({ ...editando, usaValor: v })}
+                                          titulo="Juntar dinheiro"
+                                          sub="Acompanhe meta e quanto já guardou"
+                                        />
                                         {editando.usaValor && (
-                                          <div
-                                            style={{ display: "flex", gap: 8 }}
-                                          >
-                                            <input
-                                              style={inputStyle}
-                                              type="number"
-                                              inputMode="decimal"
-                                              value={editando.alvo}
-                                              onChange={(e) =>
-                                                setEditando({
-                                                  ...editando,
-                                                  alvo: e.target.value,
-                                                })
-                                              }
-                                              placeholder="Meta (R$)"
-                                            />
-                                            <input
-                                              style={inputStyle}
-                                              type="number"
-                                              inputMode="decimal"
-                                              value={editando.atual}
-                                              onChange={(e) =>
-                                                setEditando({
-                                                  ...editando,
-                                                  atual: e.target.value,
-                                                })
-                                              }
-                                              placeholder="Já juntei (R$)"
-                                            />
-                                          </div>
+                                          <PainelDinheiro editando={editando} setEditando={setEditando} />
                                         )}
                                         <div
                                           style={{ display: "flex", gap: 8 }}
