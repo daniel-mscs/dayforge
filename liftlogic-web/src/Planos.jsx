@@ -443,7 +443,25 @@ export default function Planos({ user }) {
   const novoGrupo = async () => {
     const nome = await askPrompt("Nome do novo grupo (ex: Documentos):", "");
     if (!nome || !nome.trim()) return;
-    await adicionarItem(nome.trim());
+    const ordem = itens.length
+      ? Math.max(...itens.map((i) => i.ordem || 0)) + 1
+      : 0;
+    const { data, error } = await supabase
+      .from("plano_itens")
+      .insert([
+        {
+          plano_id: plano.id,
+          user_id: user.id,
+          grupo: nome.trim(),
+          texto: "Primeiro item (toque no lápis pra editar)",
+          valor_atual: 0,
+          ordem,
+        },
+      ])
+      .select();
+    if (error) return toast(error.message, "error");
+    setItens((prev) => [...prev, data[0]]);
+    toast("Grupo criado! ✅", "success");
   };
 
   const renomearGrupo = async (grupo) => {
