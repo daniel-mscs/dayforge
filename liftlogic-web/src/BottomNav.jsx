@@ -154,36 +154,46 @@ export default function BottomNav({
 
           {showMore && (
             <div className="bottom-nav-more-menu">
-              {CATEGORIAS.map((cat) => (
-                <div key={cat.label}>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      color: "#475569",
-                      letterSpacing: "0.06em",
-                      padding: "8px 12px 4px",
-                    }}
-                  >
-                    {cat.label}
-                  </div>
-                  {cat.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.id}
-                        className={`more-menu-item ${abaPrincipal === item.id ? "active" : ""}`}
-                        onClick={() => navegar(item.id)}
-                      >
-                        <Icon size={17} strokeWidth={2} />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
+              {[
+                [0, 2],
+                [1, 3],
+              ].map((idxs, col) => (
+                <div key={col} className="more-menu-col">
+                  {idxs
+                    .map((i) => CATEGORIAS[i])
+                    .map((cat) => (
+                      <div key={cat.label}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: "#475569",
+                            letterSpacing: "0.06em",
+                            padding: "8px 12px 4px",
+                          }}
+                        >
+                          {cat.label}
+                        </div>
+                        {cat.items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.id}
+                              className={`more-menu-item ${abaPrincipal === item.id ? "active" : ""}`}
+                              onClick={() => navegar(item.id)}
+                            >
+                              <Icon size={17} strokeWidth={2} />
+                              <span>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
                 </div>
               ))}
               <div
                 style={{
+                  gridColumn: "1 / -1",
                   borderTop: "1px solid #ffffff0d",
                   marginTop: 6,
                   paddingTop: 4,
