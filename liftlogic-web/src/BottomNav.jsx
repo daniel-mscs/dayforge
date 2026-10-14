@@ -22,6 +22,7 @@ import {
   Wallet,
   Swords,
   Compass,
+  GraduationCap,
 } from "lucide-react";
 
 const CATEGORIAS = [
@@ -58,6 +59,7 @@ const CATEGORIAS = [
       { id: "coach", icon: Bot, label: "Coach" },
       { id: "smartpocket", icon: Wallet, label: "Finanças" },
       { id: "foco", icon: Timer, label: "Foco" },
+      { id: "faculdade", icon: GraduationCap, label: "Faculdade" },
       { id: "planos", icon: Compass, label: "Planos" },
       { id: "rpg", icon: Swords, label: "RPG" },
     ],
