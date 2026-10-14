@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { PALAVRAS_INGLES } from "./lib/palavrasIngles";
+import MontarFrase from "./MontarFrase";
 import { Languages, Volume2, Flame } from "lucide-react";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
@@ -76,10 +77,18 @@ function montarFila(progresso, limiteNovas) {
     const p = mapa.get(w.en);
     return p && p.proxima <= hoje;
   }).slice(0, 15);
-  const novas = PALAVRAS_INGLES.filter((w) => !mapa.has(w.en)).slice(
-    0,
-    limiteNovas,
-  );
+  const naoVistas = PALAVRAS_INGLES.filter((w) => !mapa.has(w.en));
+  const frasesNovas = naoVistas.filter((w) => w.cat === "frase");
+  const palavrasNovas = naoVistas.filter((w) => w.cat !== "frase");
+  const qFrases = Math.min(2, frasesNovas.length);
+  const novas = [
+    ...palavrasNovas.slice(0, limiteNovas - qFrases),
+    ...frasesNovas.slice(0, qFrases),
+  ].slice(0, limiteNovas);
+  if (novas.length < limiteNovas) {
+    const resto = naoVistas.filter((w) => !novas.includes(w));
+    novas.push(...resto.slice(0, limiteNovas - novas.length));
+  }
   return { vencidas, novas };
 }
 
@@ -153,6 +162,7 @@ export default function Ingles({ user }) {
   const [qtdHoje, setQtdHoje] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [repetidas, setRepetidas] = useState({});
+  const [modo, setModo] = useState("cartas");
 
   const hoje = dataLocal(new Date());
 
@@ -221,6 +231,18 @@ export default function Ingles({ user }) {
     if (r1.error || r2.error) toast((r1.error || r2.error).message, "error");
   };
 
+  if (modo === "montar") {
+    return (
+      <MontarFrase
+        user={user}
+        onVoltar={() => {
+          setModo("cartas");
+          iniciar();
+        }}
+      />
+    );
+  }
+
   if (carregando) {
     return <div style={{ color: "#64748b", padding: 20 }}>Carregando...</div>;
   }
@@ -255,6 +277,22 @@ export default function Ingles({ user }) {
         <Languages size={20} color="#818cf8" />
         Inglês diário
       </h2>
+
+      <button
+        onClick={() => setModo("montar")}
+        style={{
+          background: "#6366f122",
+          border: "1px solid #6366f1",
+          borderRadius: 12,
+          color: "#c7d2fe",
+          fontWeight: 800,
+          fontSize: 14,
+          padding: "11px 0",
+          cursor: "pointer",
+        }}
+      >
+        🧩 Montar frases
+      </button>
 
       <div style={{ display: "flex", gap: 10 }}>
         {[
@@ -299,16 +337,18 @@ export default function Ingles({ user }) {
             }}
           >
             {fila.length} NA FILA ·{" "}
-            {w.cat === "dev"
-              ? "DEV"
-              : w.cat === "verbo"
-                ? "VERBO IRREGULAR"
-                : "ROTINA"}
+            {{
+              dev: "DEV",
+              verbo: "VERBO IRREGULAR",
+              frase: "FRASE",
+              saude: "SAÚDE",
+              viagem: "VIAGEM",
+            }[w.cat] || "ROTINA"}
             {!progresso.find((p) => p.palavra === w.en) && " · NOVA"}
           </div>
           <div
             style={{
-              fontSize: 30,
+              fontSize: w.en.length > 22 ? 22 : 30,
               fontWeight: 800,
               color: "#f8fafc",
               textAlign: "center",
@@ -353,7 +393,7 @@ export default function Ingles({ user }) {
                 }}
                 onClick={() => falar(w.ex)}
               >
-                “{w.ex}” 🔈
+                {w.ex ? `“${w.ex}” 🔈` : ""}
               </div>
             </div>
           ) : (
