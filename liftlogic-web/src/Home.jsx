@@ -46,6 +46,7 @@ import {
 } from "./lib/notifications";
 import RegistroRapido from "./RegistroRapido";
 import { FaculdadeHomeCard } from "./Faculdade";
+import { InglesHomeCard } from "./Ingles";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -400,6 +401,14 @@ export default function Home({
         localStorage.setItem("home_blocos", JSON.stringify(novo));
         return novo;
       }
+      if (!parsed.find((b) => b.id === "ingles")) {
+        const novo = [
+          { id: "ingles", label: "Inglês do dia", visivel: true },
+          ...parsed,
+        ];
+        localStorage.setItem("home_blocos", JSON.stringify(novo));
+        return novo;
+      }
       const temStreak = parsed.find((b) => b.id === "streak");
       if (!temStreak) {
         const novo = [
@@ -414,6 +423,7 @@ export default function Home({
     return [
       { id: "tarefas", label: "Tarefas", visivel: true },
       { id: "faculdade", label: "Faculdade", visivel: true },
+      { id: "ingles", label: "Inglês do dia", visivel: true },
       { id: "cards", label: "Água + Peso", visivel: true },
       { id: "kcal", label: "Kcal + Saldo", visivel: true },
       { id: "refeicao", label: "Refeição", visivel: true },
@@ -1975,6 +1985,14 @@ export default function Home({
                   user={user}
                   desativado={editandoHome}
                   onAbrir={() => onNavegar("faculdade")}
+                />
+              )}
+
+              {bloco.id === "ingles" && (
+                <InglesHomeCard
+                  user={user}
+                  desativado={editandoHome}
+                  onAbrir={() => onNavegar("ingles")}
                 />
               )}
 
