@@ -201,6 +201,9 @@ export default function Home({
   const [resumoRotinaSemana, setResumoRotinaSemana] = useState([]);
   const [chaveSemanaRotina, setChaveSemanaRotina] = useState("");
   const [mostrarResumoRotina, setMostrarResumoRotina] = useState(true);
+  const [resumoAtivado, setResumoAtivado] = useState(
+    () => localStorage.getItem("df_resumo_rotina_ativado") !== "false",
+  );
 
   const isNatal = (() => {
     const hoje = new Date();
@@ -646,8 +649,6 @@ export default function Home({
     const oculto =
       desativadoGeral ||
       localStorage.getItem(`home_resumo_rotina_oculto_${chave}`) === "true";
-    setMostrarResumoRotina(!oculto);
-    if (oculto) return;
 
     const { data: diasSemana } = await supabase
       .from("rotina_dias")
@@ -704,6 +705,12 @@ export default function Home({
   useEffect(() => {
     buscarResumoSemanaRotina();
   }, [buscarResumoSemanaRotina]);
+
+  const alternarResumoRotina = () => {
+    const novo = !resumoAtivado;
+    setResumoAtivado(novo);
+    localStorage.setItem("df_resumo_rotina_ativado", novo ? "true" : "false");
+  };
 
   const fecharResumoRotina = () => {
     localStorage.setItem(
@@ -1180,17 +1187,34 @@ export default function Home({
                 📋 Resumo da semana
               </div>
               <button
-                onClick={fecharResumoRotina}
+                onClick={alternarResumoRotina}
+                role="switch"
+                aria-checked={resumoAtivado}
+                aria-label="Ativar ou desativar o resumo da semana"
                 style={{
-                  background: "none",
+                  width: 46,
+                  height: 26,
+                  borderRadius: 99,
                   border: "none",
-                  color: "#475569",
-                  fontSize: 13,
+                  flexShrink: 0,
+                  background: resumoAtivado ? "#6366f1" : "#334155",
+                  position: "relative",
                   cursor: "pointer",
-                  padding: "4px 8px",
+                  transition: "background 0.2s",
                 }}
               >
-                ✕
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    background: "#fff",
+                    position: "absolute",
+                    top: 3,
+                    left: resumoAtivado ? 23 : 3,
+                    transition: "left 0.2s",
+                  }}
+                />
               </button>
             </div>
             <div
@@ -1200,7 +1224,7 @@ export default function Home({
                 gap: 10,
               }}
             >
-              {resumoRotinaSemana.map((d) => {
+              {(resumoAtivado ? resumoRotinaSemana : []).map((d) => {
                 const isHoje = d.data === formatarData(new Date());
                 const textos = d.extras.map((t) => t.texto).filter(Boolean);
                 const cor = d.feriado
