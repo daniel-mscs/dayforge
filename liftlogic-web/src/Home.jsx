@@ -47,6 +47,7 @@ import {
 import RegistroRapido from "./RegistroRapido";
 import { FaculdadeHomeCard } from "./Faculdade";
 import { InglesHomeCard } from "./Ingles";
+import { PlanosHomeCard } from "./PlanosHome";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -409,6 +410,14 @@ export default function Home({
         localStorage.setItem("home_blocos", JSON.stringify(novo));
         return novo;
       }
+      if (!parsed.find((b) => b.id === "planos")) {
+        const novo = [
+          ...parsed,
+          { id: "planos", label: "Planos", visivel: true },
+        ];
+        localStorage.setItem("home_blocos", JSON.stringify(novo));
+        return novo;
+      }
       const temStreak = parsed.find((b) => b.id === "streak");
       if (!temStreak) {
         const novo = [
@@ -433,6 +442,7 @@ export default function Home({
       { id: "sono", label: "Sono", visivel: true },
       { id: "treino_semana", label: "Semana de Treino", visivel: true },
       { id: "streak", label: "Calendário de Streak", visivel: true },
+      { id: "planos", label: "Planos", visivel: true },
     ];
   });
 
@@ -2064,6 +2074,14 @@ export default function Home({
                     {treinosSemana.length !== 1 ? "s" : ""} nesta semana
                   </div>
                 </div>
+              )}
+
+              {bloco.id === "planos" && (
+                <PlanosHomeCard
+                  user={user}
+                  desativado={editandoHome}
+                  onAbrir={() => onNavegar("planos")}
+                />
               )}
 
               {bloco.id === "streak" && streakDiasAtivos.size > 0 && (
