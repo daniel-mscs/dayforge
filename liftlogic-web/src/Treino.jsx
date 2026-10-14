@@ -2191,7 +2191,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
           onClick={() => setModalMinimizado(false)}
           style={{
             position: "fixed",
-            bottom: 86,
+            bottom: 150,
             right: 16,
             zIndex: 9995,
             background: "linear-gradient(135deg,#6366f1,#4f46e5)",
