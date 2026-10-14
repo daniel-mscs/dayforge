@@ -36,6 +36,7 @@ import Planos from "./Planos";
 import Foco from "./Foco";
 import Faculdade from "./Faculdade";
 import Ingles from "./Ingles";
+import Notas from "./Notas";
 import Habitos from "./Habitos";
 import Agua from "./Agua";
 import Peso from "./Peso";
@@ -4036,6 +4037,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       {abaPrincipal === "foco" && <Foco user={user} />}
       {abaPrincipal === "faculdade" && <Faculdade user={user} />}
       {abaPrincipal === "ingles" && <Ingles user={user} />}
+      {abaPrincipal === "notas" && <Notas user={user} />}
       {abaPrincipal === "rpg" && <RPG user={user} />}
       {abaPrincipal === "sono" && <Sono user={user} onAjuda={abrirAjuda} />}
       {abaPrincipal === "cardio" && <Cardio user={user} />}

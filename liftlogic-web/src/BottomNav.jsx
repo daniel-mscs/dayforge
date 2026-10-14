@@ -24,6 +24,7 @@ import {
   Compass,
   GraduationCap,
   Languages,
+  NotebookPen,
 } from "lucide-react";
 
 const CATEGORIAS = [
@@ -62,6 +63,7 @@ const CATEGORIAS = [
       { id: "foco", icon: Timer, label: "Foco" },
       { id: "faculdade", icon: GraduationCap, label: "Faculdade" },
       { id: "ingles", icon: Languages, label: "Inglês" },
+      { id: "notas", icon: NotebookPen, label: "Diário" },
       { id: "planos", icon: Compass, label: "Planos" },
       { id: "rpg", icon: Swords, label: "RPG" },
     ],

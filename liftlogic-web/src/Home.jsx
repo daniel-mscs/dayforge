@@ -48,6 +48,7 @@ import RegistroRapido from "./RegistroRapido";
 import { FaculdadeHomeCard } from "./Faculdade";
 import { InglesHomeCard } from "./Ingles";
 import { PlanosHomeCard } from "./PlanosHome";
+import { NotaRapidaHomeCard } from "./Notas";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -418,6 +419,14 @@ export default function Home({
         localStorage.setItem("home_blocos", JSON.stringify(novo));
         return novo;
       }
+      if (!parsed.find((b) => b.id === "notas")) {
+        const novo = [
+          ...parsed,
+          { id: "notas", label: "Nota rápida", visivel: true },
+        ];
+        localStorage.setItem("home_blocos", JSON.stringify(novo));
+        return novo;
+      }
       const temStreak = parsed.find((b) => b.id === "streak");
       if (!temStreak) {
         const novo = [
@@ -443,6 +452,7 @@ export default function Home({
       { id: "treino_semana", label: "Semana de Treino", visivel: true },
       { id: "streak", label: "Calendário de Streak", visivel: true },
       { id: "planos", label: "Planos", visivel: true },
+      { id: "notas", label: "Nota rápida", visivel: true },
     ];
   });
 
@@ -2081,6 +2091,14 @@ export default function Home({
                   user={user}
                   desativado={editandoHome}
                   onAbrir={() => onNavegar("planos")}
+                />
+              )}
+
+              {bloco.id === "notas" && (
+                <NotaRapidaHomeCard
+                  user={user}
+                  desativado={editandoHome}
+                  onAbrir={() => onNavegar("notas")}
                 />
               )}
 
