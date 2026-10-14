@@ -12,6 +12,7 @@ const XP_REGRAS = {
   macros_registrado: 15,
   streak_diario: 10,
   mobilidade_concluida: 15,
+  foco_concluido: 10,
 };
 
 export async function ganharXP(userId, motivo) {
@@ -27,6 +28,7 @@ export async function ganharXP(userId, motivo) {
     macros_registrado: "🍽️ Macros registrados",
     streak_diario: "🔥 Streak diário",
     mobilidade_concluida: "🧘 Mobilidade concluída",
+    foco_concluido: "🎯 Sessão de foco concluída",
   }[motivo];
 
   await supabase

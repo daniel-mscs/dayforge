@@ -57,6 +57,7 @@ const CATEGORIAS = [
     items: [
       { id: "coach", icon: Bot, label: "Coach" },
       { id: "smartpocket", icon: Wallet, label: "Finanças" },
+      { id: "foco", icon: Timer, label: "Foco" },
       { id: "planos", icon: Compass, label: "Planos" },
       { id: "rpg", icon: Swords, label: "RPG" },
     ],
