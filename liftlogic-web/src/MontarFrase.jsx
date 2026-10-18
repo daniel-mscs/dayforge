@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
-import { PALAVRAS_INGLES } from "./lib/palavrasIngles";
+import { PALAVRAS_INGLES, carregarBanco } from "./lib/bancoIngles";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 import { Volume2 } from "lucide-react";
 
 const INTERVALOS = [1, 2, 4, 8, 16, 30];
 
-const FRASES = PALAVRAS_INGLES.filter((p) => {
-  if (p.cat !== "frase") return false;
-  const n = p.en.split(" ").length;
-  return n >= 3 && n <= 9;
-});
+const getFrases = () =>
+  PALAVRAS_INGLES.filter((p) => {
+    if (p.cat !== "frase") return false;
+    const n = p.en.split(" ").length;
+    return n >= 3 && n <= 9;
+  });
 
 function dataLocal(d) {
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
@@ -64,6 +65,7 @@ function embaralhar(arr) {
 
 function novoExercicio(progresso, ultima) {
   const hoje = dataLocal(new Date());
+  const FRASES = getFrases();
   const mapa = new Map(progresso.map((p) => [p.palavra, p]));
   const vencidas = FRASES.filter((f) => {
     const p = mapa.get(f.en);
@@ -98,13 +100,14 @@ export default function MontarFrase({ user, onVoltar }) {
 
   useEffect(() => {
     Promise.all([
+      carregarBanco(),
       supabase.from("ingles_progresso").select("*").eq("user_id", user.id),
       supabase
         .from("ingles_dias")
         .select("*")
         .eq("user_id", user.id)
         .eq("data", hoje),
-    ]).then(([p, d]) => {
+    ]).then(([, p, d]) => {
       const prog = p.data || [];
       setProgresso(prog);
       setQtdHoje(d.data?.[0]?.qtd || 0);

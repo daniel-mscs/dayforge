@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
-import { PALAVRAS_INGLES } from "./lib/palavrasIngles";
+import { PALAVRAS_INGLES, carregarBanco } from "./lib/bancoIngles";
 import MontarFrase from "./MontarFrase";
 import { Languages, Volume2, Flame } from "lucide-react";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
@@ -58,6 +58,7 @@ function falar(texto) {
 const textoFalado = (p) => p.en.replace(/→/g, ",");
 
 async function carregarTudo(userId) {
+  await carregarBanco();
   const [prog, dias] = await Promise.all([
     supabase.from("ingles_progresso").select("*").eq("user_id", userId),
     supabase
