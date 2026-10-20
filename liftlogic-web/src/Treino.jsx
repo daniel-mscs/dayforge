@@ -59,7 +59,13 @@ import TreinoStats from "./TreinoStats";
 import PerfilTab from "./PerfilTab";
 import { ganharXP } from "./lib/rpg";
 import { acharGif, rankearGifs, buscarGifs } from "./lib/gifs";
-import { ROTINAS_MOBILIDADE, tempoEstimadoMin } from "./lib/mobilidadeRotinas";
+import {
+  ROTINAS_MOBILIDADE,
+  tempoEstimadoMin,
+  tipoRotina,
+  tipoPorNome,
+} from "./lib/mobilidadeRotinas";
+import { FlexHoje } from "./FlexHoje";
 import { toast } from "./lib/toast";
 import Tour from "./lib/tour";
 import { useTour } from "./lib/useTour";
@@ -470,6 +476,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [modalResumo, setModalResumo] = useState(null);
   const [showMore, setShowMore] = useState(false);
   const [subAbaTreino, setSubAbaTreino] = useState("exercicios");
+  const [tipoMobTab, setTipoMobTab] = useState("mobilidade");
   const [mobilidadeExercicios, setMobilidadeExercicios] = useState([]);
   const [mobilidadeCarregando, setMobilidadeCarregando] = useState(false);
   const [novoMobNome, setNovoMobNome] = useState("");
@@ -1099,11 +1106,23 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
       .from("mobilidade_log")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
+      .eq("tipo", tipoPorNome(nomeRotinaGuiada))
       .eq("data", hojeStr);
-    await supabase
-      .from("mobilidade_log")
-      .insert([{ user_id: user.id, data: hojeStr, rotina: nomeRotinaGuiada }]);
-    if (!count) await ganharXP(user.id, "mobilidade_concluida");
+    await supabase.from("mobilidade_log").insert([
+      {
+        user_id: user.id,
+        data: hojeStr,
+        rotina: nomeRotinaGuiada,
+        tipo: tipoPorNome(nomeRotinaGuiada),
+      },
+    ]);
+    if (!count)
+      await ganharXP(
+        user.id,
+        tipoPorNome(nomeRotinaGuiada) === "alongamento"
+          ? "alongamento_concluido"
+          : "mobilidade_concluida",
+      );
     toast(
       count ? "Mobilidade concluída! 🧘" : "Mobilidade concluída! +15 XP 🧘",
       "success",
@@ -5079,6 +5098,40 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 <StretchHorizontal size={18} />
               </h1>
 
+              {!modoGuiadoMobilidade && (
+                <>
+                  <FlexHoje user={user} refreshKey={modoGuiadoMobilidade} />
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    {[
+                      { id: "mobilidade", nome: "🧘 Mobilidade" },
+                      { id: "alongamento", nome: "🤸 Alongamento" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => setTipoMobTab(t.id)}
+                        style={{
+                          flex: 1,
+                          background:
+                            tipoMobTab === t.id ? "#6366f133" : "#0f1115",
+                          border:
+                            tipoMobTab === t.id
+                              ? "1px solid #6366f1"
+                              : "1px solid #ffffff14",
+                          borderRadius: 10,
+                          color: tipoMobTab === t.id ? "#f8fafc" : "#94a3b8",
+                          fontWeight: 700,
+                          fontSize: 13,
+                          padding: "9px 0",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {t.nome}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
               {modoGuiadoMobilidade ? (
                 <div
                   style={{
@@ -5322,7 +5375,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       marginBottom: 10,
                     }}
                   >
-                    {ROTINAS_MOBILIDADE.map((r) => (
+                    {ROTINAS_MOBILIDADE.filter(
+                      (r) => tipoRotina(r) === tipoMobTab,
+                    ).map((r) => (
                       <div
                         key={r.id}
                         style={{

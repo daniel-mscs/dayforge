@@ -337,6 +337,63 @@ export const ROTINAS_MOBILIDADE = [
   },
 ];
 
+// Rotinas que contam como ALONGAMENTO (o resto conta como mobilidade)
+export const IDS_ALONGAMENTO = [
+  "alongamento-dia",
+  "pos-treino",
+  "costas-pescoco",
+];
+
+export function tipoRotina(rotina) {
+  return IDS_ALONGAMENTO.includes(rotina.id) ? "alongamento" : "mobilidade";
+}
+
+// usado ao registrar a rotina concluída (guardamos só o nome no log)
+export function tipoPorNome(nome) {
+  const r = ROTINAS_MOBILIDADE.find((x) => x.nome === nome);
+  return r ? tipoRotina(r) : "mobilidade";
+}
+
+ROTINAS_MOBILIDADE.unshift({
+  id: "alongamento-dia",
+  nome: "Alongamento do dia",
+  emoji: "🤸",
+  descricao:
+    "7 alongamentos pra fazer no fim do treino ou em qualquer momento tranquilo do dia.",
+  exercicios: [
+    tempo(
+      "Posterior de coxa sentado",
+      60,
+      "Sente no chão com as pernas esticadas. Tente alcançar os pés, mantendo a coluna o mais reta possível.",
+    ),
+    tempo(
+      "Flexor do quadril",
+      60,
+      "Em um afundo, com o joelho de trás no chão, empurre o quadril pra frente, sentindo o alongamento na parte da frente do quadril.",
+      true,
+    ),
+    tempo(
+      "Glúteo (figura 4)",
+      60,
+      "Deitado, cruze o tornozelo sobre o joelho oposto e puxe a perna em direção a você, sentindo o alongamento no glúteo.",
+      true,
+    ),
+    EX.panturrilha,
+    tempo(
+      "Peito e ombro",
+      30,
+      "Com o antebraço apoiado no batente da porta, gire o corpo pro lado oposto, sentindo o alongamento no peito e no ombro.",
+      true,
+    ),
+    tempo(
+      "Postura da criança",
+      60,
+      "Ajoelhado, sente nos calcanhares e estique os braços à frente no chão. Relaxe o corpo e respire.",
+    ),
+    EX.torcaoDeitado,
+  ],
+});
+
 // Tempo aproximado da rotina em minutos (3s por repetição + 8s de troca).
 export function tempoEstimadoMin(rotina) {
   const seg = rotina.exercicios.reduce((total, ex) => {

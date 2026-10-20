@@ -13,6 +13,7 @@ const XP_REGRAS = {
   streak_diario: 10,
   mobilidade_concluida: 15,
   foco_concluido: 10,
+  alongamento_concluido: 15,
 };
 
 export async function ganharXP(userId, motivo) {
@@ -29,6 +30,7 @@ export async function ganharXP(userId, motivo) {
     streak_diario: "🔥 Streak diário",
     mobilidade_concluida: "🧘 Mobilidade concluída",
     foco_concluido: "🎯 Sessão de foco concluída",
+    alongamento_concluido: "🤸 Alongamento concluído",
   }[motivo];
 
   await supabase
