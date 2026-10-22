@@ -66,6 +66,8 @@ import {
   tipoPorNome,
 } from "./lib/mobilidadeRotinas";
 import { FlexHoje } from "./FlexHoje";
+import { gerarPdfTreino } from "./lib/pdfTreino";
+import { salvarECompartilhar } from "./lib/pdfRotina";
 import { toast } from "./lib/toast";
 import Tour from "./lib/tour";
 import { useTour } from "./lib/useTour";
@@ -660,6 +662,32 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     if (error) console.error("Erro:", error.message);
     else setExercicios(data || []);
     setCarregando(false);
+  };
+
+  const [exportandoTreinoPdf, setExportandoTreinoPdf] = useState(false);
+
+  const exportarTreinoPdf = async () => {
+    if (exercicios.length === 0) {
+      toast("Nenhum exercício pra exportar", "error");
+      return;
+    }
+    setExportandoTreinoPdf(true);
+    try {
+      const { doc, nomeArquivo } = await gerarPdfTreino({
+        exercicios,
+        divisao,
+      });
+      const salvoEm = await salvarECompartilhar(doc, nomeArquivo);
+      toast(
+        salvoEm
+          ? `PDF salvo em ${salvoEm}`
+          : "PDF gerado (não consegui salvar)",
+        salvoEm ? "success" : "error",
+      );
+    } catch (e) {
+      toast("Erro ao gerar PDF: " + e.message, "error");
+    }
+    setExportandoTreinoPdf(false);
   };
 
   const buscarHistorico = async () => {
@@ -4213,6 +4241,22 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     ← Trocar Divisão
                   </button>
                   <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={exportarTreinoPdf}
+                      disabled={exportandoTreinoPdf}
+                      style={{
+                        background: "rgba(245,158,11,0.1)",
+                        border: "1px solid rgba(245,158,11,0.3)",
+                        borderRadius: 10,
+                        color: "#fbbf24",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {exportandoTreinoPdf ? "Gerando..." : "📄 PDF"}
+                    </button>
                     <button
                       onClick={() => setModalImportarPDF(true)}
                       style={{
