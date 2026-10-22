@@ -4,6 +4,7 @@ import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { agendarNotificacoesRotina } from "./lib/notifications";
 import { ClipboardList, FileDown } from "lucide-react";
+import { gerarPdfRotina, salvarECompartilhar } from "./lib/pdfRotina";
 import {
   DndContext,
   closestCenter,
@@ -578,6 +579,33 @@ export default function Rotina({ user }) {
   // suas tarefas por período — usado tanto pro atalho de 1 dia quanto pro
   // modal de seleção de vários dias.
   const exportarPdfDias = async (diaIds) => {
+    const diasOrd = diaIds
+      .map((id) => dias.find((d) => d.id === id))
+      .filter(Boolean)
+      .sort((a, b) => (a.data < b.data ? -1 : a.data > b.data ? 1 : 0));
+    if (diasOrd.length === 0) return;
+    setExportandoPdf(true);
+    try {
+      const { doc, nomeArquivo } = await gerarPdfRotina({
+        diasOrdenados: diasOrd,
+        tarefas,
+        periodos: PERIODOS,
+        labelData,
+      });
+      const salvoEm = await salvarECompartilhar(doc, nomeArquivo);
+      toast(
+        salvoEm
+          ? `PDF salvo em ${salvoEm}`
+          : "PDF gerado (não consegui salvar)",
+        salvoEm ? "success" : "error",
+      );
+    } catch (e) {
+      toast("Erro ao gerar PDF: " + e.message, "error");
+    }
+    setExportandoPdf(false);
+  };
+
+  const exportarPdfDiasAntigo = async (diaIds) => {
     const diasOrdenados = diaIds
       .map((id) => dias.find((d) => d.id === id))
       .filter(Boolean)
