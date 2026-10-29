@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Variáveis de ambiente (chaves do Supabase etc.)
+.env
+.env.*
+!.env.example
+
+# Windows
+Thumbs.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
