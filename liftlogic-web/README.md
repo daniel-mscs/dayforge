@@ -8,6 +8,7 @@ DayForge é um super app de saúde e performance pessoal — construído para qu
 [![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite)](https://vitejs.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?logo=supabase)](https://supabase.com)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)
+[![Capacitor](https://img.shields.io/badge/Android-Capacitor-119eff?logo=capacitor)](https://capacitorjs.com)
 
 [Acessar o app](https://dayforge-web.vercel.app) · [Reportar bug](https://github.com/daniel-mscs/dayforge/issues)
 
@@ -22,6 +23,7 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 ## Funcionalidades
 
 ### 🏠 Home
+
 - Saudação personalizada com nome e data
 - Frase motivacional diária (estoicismo, fitness, hábitos)
 - Cards de resumo: água, peso, kcal e passos do dia
@@ -32,6 +34,7 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 - Mostrar e ocultar seções individualmente
 
 ### 🏋️ Treino
+
 - Divisões A/B/C/D/E personalizáveis
 - Timer de treino e timer de descanso configurável
 - Modal de exercício com bolinhas de séries, bip aos 10s e animação de timer
@@ -43,6 +46,7 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 - Histórico completo de treinos finalizados
 
 ### 📋 Rotina
+
 - Grade mensal navegável por mês
 - Períodos: Acordar, Manhã, Tarde, Noite
 - Drag and drop para reordenar tarefas
@@ -50,11 +54,13 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 - Progresso diário com barra visual
 
 ### 💧 Água
+
 - Registro de consumo com botões rápidos (180, 300, 500, 1000ml)
 - Meta personalizada baseada no peso (sedentário/ativo)
 - Gráfico dos últimos 7 dias
 
 ### ⚖️ Peso
+
 - Registro diário com substituição
 - Gráfico de evolução com linha de tendência e meta
 - IMC, TMB, composição corporal estimada e peso ideal
@@ -62,6 +68,7 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 - Comparativo antes/depois de medidas
 
 ### 🍽️ Macros
+
 - Banco com 110+ alimentos da tabela TACO
 - Alimentos personalizados
 - Log por refeição com preview de macros
@@ -70,59 +77,70 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 - Meta calórica diária e TMB
 
 ### 🥗 Dieta
+
 - Plano alimentar por refeição
 - Sugestão automática de dieta por objetivo e renda
 - Exibe refeição atual na home baseado no horário
 
 ### 💊 Suplementos
+
 - Cadastro com nome e dose
 - Check diário com horário registrado
 - Reset automático à meia-noite
 
 ### 👟 Passos
+
 - Registro manual diário
 - Meta personalizável
 - Equivalências em km, kcal e tempo
 
 ### 🧱 Hábitos
+
 - 6 hábitos fixos + hábitos personalizados com emoji
 - Histórico 7 dias com heatmap
 - Streak de dias consecutivos
 - XP por hábito concluído
 
 ### 🏃 Cardio
+
 - 27 atividades com cálculo automático de kcal via MET
 - Override manual de kcal
 - Gráfico de sessões do mês
 - Integração com saldo calórico do Macros
 
 ### 😴 Sono
+
 - Registro de horário dormiu/acordou
 - Avaliação de qualidade (1-5)
 - Gráfico de horas dos últimos 7 dias
 - Média de horas e qualidade semanal
 
 ### 📊 Stats
+
 - Rings de progresso circulares por métrica
 - Gráficos de área com gradiente
 - Resumo semanal de treinos, água, peso, macros e passos
 
 ### 🤖 Coach IA
+
 - Relatório semanal gerado por IA
 - Análise de treinos, macros, sono, cardio e passos
 - Contexto personalizado do perfil
 
 ### 🎮 RPG
+
 - Sistema de XP por ações concluídas
 - Avatar com skin, roupa e itens personalizáveis
 - Níveis e missões diárias
 
 ### 💰 SmartPocket
+
 - Controle de gastos, cartão, investimentos e entradas
 - Saldo mensal com gráfico
 - Resumo por categoria
 
 ### 👤 Perfil
+
 - Dados pessoais com IMC e TMB calculados
 - Campo "Sobre mim" usado pelo Coach IA
 - Notificações configuráveis
@@ -133,15 +151,15 @@ DayForge nasceu da necessidade de ter um único app que centralizasse treino, di
 
 ## Stack
 
-| Camada | Tecnologia |
-|--------|------------|
-| Frontend | React 18 + Vite |
-| Estilização | CSS puro (dark theme) |
-| Backend | Supabase (PostgreSQL + Auth) |
-| Deploy | Vercel |
-| Drag and Drop | @dnd-kit |
-| Gráficos | Recharts |
-| IA | Anthropic Claude API |
+| Camada        | Tecnologia                   |
+| ------------- | ---------------------------- |
+| Frontend      | React 18 + Vite              |
+| Estilização   | CSS puro (dark theme)        |
+| Backend       | Supabase (PostgreSQL + Auth) |
+| Deploy        | Vercel                       |
+| Drag and Drop | @dnd-kit                     |
+| Gráficos      | Recharts                     |
+| IA            | Anthropic Claude API         |
 
 ---
 
@@ -172,6 +190,7 @@ npm run dev
 ```
 
 **.env**
+
 ```
 VITE_SUPABASE_URL=sua_url
 VITE_SUPABASE_ANON_KEY=sua_chave
@@ -199,4 +218,4 @@ Desenvolvido por **Daniel** — [@daniel-mscs](https://github.com/daniel-mscs)
 
 ---
 
-*DayForge — Construa hábitos. Forje resultados.*
+_DayForge — Construa hábitos. Forje resultados._
