@@ -1066,8 +1066,8 @@ export default function PerfilTab({
             <div className="ajuda-body">
               <strong>Investimentos</strong>
               <p>
-                Registre seus aportes em Caixinha/CDB, Bolsa de Valores ou
-                Reserva de Emergência.
+                Registre seus aportes em Caixinha/CDB, Tesouro IPCA+, FIIs,
+                Bolsa de Valores ou Reserva de Emergência.
               </p>
             </div>
           </div>

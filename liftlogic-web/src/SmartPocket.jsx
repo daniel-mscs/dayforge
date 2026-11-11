@@ -47,6 +47,8 @@ const MESES = [
 ];
 const INVEST_TIPOS = [
   "Caixinha / CDB",
+  "Tesouro IPCA+",
+  "Fundos Imobiliários (FIIs)",
   "Bolsa de Valores",
   "Reserva de Emergência",
 ];
