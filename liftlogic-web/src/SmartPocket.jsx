@@ -3,6 +3,7 @@ import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
 import { agendarNotificacaoContasPendentes } from "./lib/notifications";
 import { askConfirm } from "./lib/confirm";
+import Carteira from "./Carteira";
 import {
   Wallet,
   Banknote,
@@ -2610,6 +2611,7 @@ export default function SmartPocket({ user }) {
       {/* ABA INVEST */}
       {aba === "invest" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Carteira user={user} />
           <div
             style={{
               background: "linear-gradient(155deg, #1c2026, #17191d)",
