@@ -76,10 +76,12 @@ export default function Carteira({ user }) {
   const [form, setForm] = useState(null);
   const [provForm, setProvForm] = useState(null);
   const [aberto, setAberto] = useState(null);
+  const [compras, setCompras] = useState([]);
+  const [compraForm, setCompraForm] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
   const carregar = useCallback(async () => {
-    const [a, p] = await Promise.all([
+    const [a, p, c] = await Promise.all([
       supabase
         .from("financeiro_ativos")
         .select("*")
@@ -90,10 +92,16 @@ export default function Carteira({ user }) {
         .select("*")
         .eq("user_id", user.id)
         .order("data", { ascending: false }),
+      supabase
+        .from("financeiro_compras")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("data", { ascending: false }),
     ]);
     if (a.error) toast(a.error.message, "error");
     setAtivos(a.data || []);
     setProventos(p.data || []);
+    setCompras(c.data || []);
     setCarregando(false);
   }, [user.id]);
 
@@ -185,7 +193,8 @@ export default function Carteira({ user }) {
     };
   }, [ativos, proventos, mesAtual]);
 
-  const abrirNovo = () => setForm({ ...FORM_VAZIO, tipo: aba });
+  const abrirNovo = () =>
+    setForm({ ...FORM_VAZIO, tipo: aba, data: hojeLocal() });
   const abrirEditar = (a) =>
     setForm({
       id: a.id,
@@ -217,12 +226,23 @@ export default function Carteira({ user }) {
       vencimento:
         form.tipo === "ipca" && form.vencimento ? form.vencimento : null,
     };
-    const { error } = form.id
+    const { data, error } = form.id
       ? await supabase
           .from("financeiro_ativos")
           .update(payload)
           .eq("id", form.id)
-      : await supabase.from("financeiro_ativos").insert([payload]);
+      : await supabase.from("financeiro_ativos").insert([payload]).select();
+    if (!error && !form.id && data?.[0]) {
+      await supabase.from("financeiro_compras").insert([
+        {
+          user_id: user.id,
+          ativo_id: data[0].id,
+          data: form.data || hojeLocal(),
+          cotas: payload.cotas,
+          preco: payload.preco_medio,
+        },
+      ]);
+    }
     setSalvando(false);
     if (error) return toast(error.message, "error");
     setForm(null);
@@ -231,13 +251,79 @@ export default function Carteira({ user }) {
   };
 
   const apagarAtivo = async (a) => {
-    if (!(await askConfirm(`Apagar ${a.nome} e todos os proventos dele?`)))
+    if (
+      !(await askConfirm(`Apagar ${a.nome} com todas as compras e proventos?`))
+    )
       return;
     const { error } = await supabase
       .from("financeiro_ativos")
       .delete()
       .eq("id", a.id);
     if (error) return toast(error.message, "error");
+    carregar();
+  };
+
+  const salvarCompra = async () => {
+    const a = ativos.find((x) => x.id === compraForm.ativoId);
+    const q = num(compraForm.cotas);
+    const preco = num(compraForm.preco);
+    if (!a || q <= 0) return toast("Informe a quantidade!", "error");
+    if (preco <= 0) return toast("Informe o preço pago!", "error");
+    const totalCotas = Number(a.cotas) + q;
+    const novoPM =
+      (Number(a.cotas) * Number(a.preco_medio) + q * preco) / totalCotas;
+    const { error: e1 } = await supabase.from("financeiro_compras").insert([
+      {
+        user_id: user.id,
+        ativo_id: a.id,
+        data: compraForm.data || hoje,
+        cotas: q,
+        preco,
+      },
+    ]);
+    if (e1) return toast(e1.message, "error");
+    const { error: e2 } = await supabase
+      .from("financeiro_ativos")
+      .update({
+        cotas: totalCotas,
+        preco_medio: Math.round(novoPM * 1000000) / 1000000,
+      })
+      .eq("id", a.id);
+    if (e2) return toast(e2.message, "error");
+    setCompraForm(null);
+    toast("Compra registrada!", "success");
+    carregar();
+  };
+
+  const apagarCompra = async (c) => {
+    const a = ativos.find((x) => x.id === c.ativo_id);
+    if (!a) return;
+    const restante = Number(a.cotas) - Number(c.cotas);
+    if (restante <= 0)
+      return toast("Essa é a única compra. Apague o ativo.", "error");
+    if (
+      !(await askConfirm(
+        "Apagar essa compra? As cotas e o preço médio serão recalculados.",
+      ))
+    )
+      return;
+    const novoPM =
+      (Number(a.cotas) * Number(a.preco_medio) -
+        Number(c.cotas) * Number(c.preco)) /
+      restante;
+    const { error: e1 } = await supabase
+      .from("financeiro_compras")
+      .delete()
+      .eq("id", c.id);
+    if (e1) return toast(e1.message, "error");
+    const { error: e2 } = await supabase
+      .from("financeiro_ativos")
+      .update({
+        cotas: restante,
+        preco_medio: Math.round(Math.max(novoPM, 0) * 1000000) / 1000000,
+      })
+      .eq("id", a.id);
+    if (e2) return toast(e2.message, "error");
     carregar();
   };
 
@@ -464,6 +550,17 @@ export default function Carteira({ user }) {
               </div>
             </>
           )}
+          {!form.id && (
+            <>
+              <div style={{ ...label, marginTop: 10 }}>DATA DA COMPRA</div>
+              <input
+                type="date"
+                value={form.data || ""}
+                onChange={(e) => setForm({ ...form, data: e.target.value })}
+                style={{ marginTop: 6 }}
+              />
+            </>
+          )}
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button
               onClick={() => setForm(null)}
@@ -594,14 +691,74 @@ export default function Carteira({ user }) {
               >
                 💰 Lançar provento
               </Btn>
+              <Btn
+                onClick={() =>
+                  setCompraForm({
+                    ativoId: a.id,
+                    cotas: "",
+                    preco: "",
+                    data: hoje,
+                  })
+                }
+                cor="#10b981"
+              >
+                ➕ Comprar mais
+              </Btn>
               <Btn onClick={() => setAberto(aberto_ ? null : a.id)}>
-                Histórico ({c.provs.length})
+                Histórico
               </Btn>
               <Btn onClick={() => abrirEditar(a)}>✏️</Btn>
               <Btn onClick={() => apagarAtivo(a)} cor="#ef4444">
                 ✕
               </Btn>
             </div>
+
+            {compraForm?.ativoId === a.id && (
+              <div style={{ marginTop: 12 }}>
+                <input
+                  inputMode="decimal"
+                  placeholder="Quantidade comprada"
+                  value={compraForm.cotas}
+                  onChange={(e) =>
+                    setCompraForm({ ...compraForm, cotas: e.target.value })
+                  }
+                />
+                <input
+                  inputMode="decimal"
+                  placeholder="Preço pago por cota R$"
+                  value={compraForm.preco}
+                  onChange={(e) =>
+                    setCompraForm({ ...compraForm, preco: e.target.value })
+                  }
+                  style={{ marginTop: 8 }}
+                />
+                <input
+                  type="date"
+                  value={compraForm.data}
+                  onChange={(e) =>
+                    setCompraForm({ ...compraForm, data: e.target.value })
+                  }
+                  style={{ marginTop: 8 }}
+                />
+                {num(compraForm.cotas) > 0 && num(compraForm.preco) > 0 && (
+                  <div style={{ fontSize: 12, color: "#10b981", marginTop: 8 }}>
+                    Novo total: {qtd(Number(a.cotas) + num(compraForm.cotas))} ·
+                    preço médio{" "}
+                    {brl(
+                      (Number(a.cotas) * Number(a.preco_medio) +
+                        num(compraForm.cotas) * num(compraForm.preco)) /
+                        (Number(a.cotas) + num(compraForm.cotas)),
+                    )}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <Btn onClick={() => setCompraForm(null)}>Cancelar</Btn>
+                  <Btn onClick={salvarCompra} cor="#10b981">
+                    Salvar compra
+                  </Btn>
+                </div>
+              </div>
+            )}
 
             {provForm?.ativoId === a.id && (
               <div style={{ marginTop: 12 }}>
@@ -638,6 +795,53 @@ export default function Carteira({ user }) {
 
             {aberto_ && (
               <div style={{ marginTop: 12 }}>
+                <div style={label}>COMPRAS</div>
+                {compras.filter((x) => x.ativo_id === a.id).length === 0 ? (
+                  <div style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>
+                    Nenhuma compra no histórico.
+                  </div>
+                ) : (
+                  compras
+                    .filter((x) => x.ativo_id === a.id)
+                    .map((x) => (
+                      <div
+                        key={x.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "6px 0",
+                          borderTop: "1px solid #ffffff08",
+                          fontSize: 13,
+                        }}
+                      >
+                        <span style={{ color: "#94a3b8" }}>
+                          {dataBR(x.data)} · {qtd(x.cotas)} × {brl(x.preco)}
+                        </span>
+                        <span>
+                          <b style={{ color: "#10b981" }}>
+                            {brl(Number(x.cotas) * Number(x.preco))}
+                          </b>
+                          <button
+                            onClick={() => apagarCompra(x)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#ef4444",
+                              opacity: 0.5,
+                              marginLeft: 8,
+                              cursor: "pointer",
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      </div>
+                    ))
+                )}
+                <div style={{ ...label, marginTop: 14 }}>
+                  PROVENTOS ({c.provs.length})
+                </div>
                 {c.provs.length === 0 ? (
                   <div style={{ fontSize: 12, color: "#475569" }}>
                     Nenhum provento lançado.
