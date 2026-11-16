@@ -1222,19 +1222,19 @@ export default function Rotina({ user }) {
         })()}
 
       {modalImportar && (
-              <ImportarRotina
-                user={user}
-                dias={dias}
-                onFechar={() => setModalImportar(false)}
-                onConcluido={() => {
-                  setModalImportar(false);
-                  buscarRotina();
-                }}
-              />
-            )}
+        <ImportarRotina
+          user={user}
+          dias={dias}
+          onFechar={() => setModalImportar(false)}
+          onConcluido={() => {
+            setModalImportar(false);
+            buscarRotina();
+          }}
+        />
+      )}
 
-            {modalExportPdf &&
-              (() => {
+      {modalExportPdf &&
+        (() => {
           const mesIdxPdf = mesesDisponiveis.findIndex(
             (m) => m.ano === mesExportPdf.ano && m.mes === mesExportPdf.mes,
           );
@@ -1535,6 +1535,13 @@ export default function Rotina({ user }) {
             }}
           >
             <button
+              className="rotina-btn-clonar"
+              onClick={() => setModalImportar(true)}
+              style={{ fontSize: 12, marginRight: 8, padding: "6px 12px" }}
+            >
+              📥 Importar semana
+            </button>
+            <button
               className="rotina-btn-reset"
               onClick={resetarRotina}
               style={{ fontSize: 12 }}
@@ -1732,16 +1739,16 @@ export default function Rotina({ user }) {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <button
-                                      className="rotina-btn-clonar"
-                                      onClick={() => setModalImportar(true)}
-                                      title="Importar semana"
-                                    >
-                                      📥
-                                    </button>
-                                    <button
-                                      className="rotina-btn-clonar"
-                                      onClick={() => {
-                                        setDiasSelecionadosPdf([diaSel.id]);
+                    className="rotina-btn-clonar"
+                    onClick={() => setModalImportar(true)}
+                    title="Importar semana"
+                  >
+                    📥
+                  </button>
+                  <button
+                    className="rotina-btn-clonar"
+                    onClick={() => {
+                      setDiasSelecionadosPdf([diaSel.id]);
                       setMesExportPdf({
                         ano: new Date(diaSel.data + "T00:00:00").getFullYear(),
                         mes: new Date(diaSel.data + "T00:00:00").getMonth(),
