@@ -209,6 +209,14 @@ const HORARIOS_ROTINA = {
   Noite: { hour: 17, minute: 0 },
 };
 
+function listaEmLinhas(lista) {
+  const textos = lista.map((t) => t.texto).filter(Boolean);
+  const max = 8;
+  const linhas = textos.slice(0, max);
+  if (textos.length > max) linhas.push(`+${textos.length - max} tarefas`);
+  return linhas.join("\n");
+}
+
 function resumirTarefas(lista) {
   const textos = lista.map((t) => t.texto).filter(Boolean);
   if (textos.length === 0) return "";
@@ -243,6 +251,8 @@ export async function agendarNotificacoesRotina(tarefasPorPeriodo) {
       id: IDS_NOTIF_ROTINA[periodo],
       title: `📋 ${periodo}`,
       body: resumo,
+      largeBody: listaEmLinhas(lista),
+      summaryText: `${lista.length} tarefa(s)`,
       smallIcon: "ic_notification",
       schedule: { at: quando, allowWhileIdle: true },
     });
