@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
+import { ganharXP } from "./lib/rpg";
+import RefeicaoRapida from "./RefeicaoRapida";
+import { refeicaoPorHorario } from "./lib/refeicao";
 import {
   Plus,
   X,
@@ -38,17 +41,6 @@ function calcularMesFatura(dataCompraStr, diaFechamento) {
 function numero(v) {
   const n = parseFloat(String(v ?? "").replace(",", "."));
   return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-// Mesma regra de sugestão da aba Macros
-function refeicaoPorHorario() {
-  const h = new Date().getHours();
-  if (h >= 5 && h <= 9) return "cafe";
-  if (h >= 10 && h <= 11) return "lanche1";
-  if (h >= 12 && h <= 13) return "almoco";
-  if (h >= 14 && h <= 17) return "cafetarde";
-  if (h >= 18 && h <= 22) return "janta";
-  return "outro";
 }
 
 const OPCOES = [
@@ -156,12 +148,23 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
     numero(macros.prot) * 4 + numero(macros.carb) * 4 + numero(macros.gord) * 9,
   );
 
-  const registrarRefeicao = async () => {
+  // Salva em macros_registro (mesmo formato da aba Macros)
+  const registrarMacro = async (dados) => {
+    fechar();
+    onRegistrado?.("kcal", dados.kcal);
+    toast(`+${dados.kcal.toLocaleString("pt-BR")} kcal · ${dados.nome}`, "success");
+    const { error } = await supabase.from("macros_registro").insert([
+      { user_id: user.id, data: formatarData(new Date()), ...dados },
+    ]);
+    if (error) return falhou(error);
+    ganharXP(user.id, "macros_registrado");
+  };
+
+  // "Não achou?" → só calorias (e macros opcionais)
+  const registrarKcalManual = () => {
     const kcal = Math.round(numero(valor)) || kcalCalculada;
     if (!kcal) return toast("Digite as calorias ou os macros!", "error");
-    const registro = {
-      user_id: user.id,
-      data: formatarData(new Date()),
+    registrarMacro({
       nome: nome.trim() || "Registro rápido",
       gramas: 0,
       refeicao: refeicaoPorHorario(),
@@ -169,12 +172,7 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
       prot: numero(macros.prot),
       carb: numero(macros.carb),
       gord: numero(macros.gord),
-    };
-    fechar();
-    onRegistrado?.("kcal", kcal);
-    toast(`+${kcal.toLocaleString("pt-BR")} kcal`, "success");
-    const { error } = await supabase.from("macros_registro").insert([registro]);
-    if (error) falhou(error);
+    });
   };
 
   const registrarGasto = async () => {
@@ -287,8 +285,10 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
                     : tipo === "peso"
                       ? "Peso de hoje"
                       : tipo === "refeicao"
-                        ? "Refeição"
-                        : "Novo gasto"}
+                        ? "O que você comeu?"
+                        : tipo === "kcal"
+                          ? "Lançar calorias"
+                          : "Novo gasto"}
               </div>
               <button
                 onClick={fechar}
@@ -404,10 +404,18 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
             )}
 
             {tipo === "refeicao" && (
+              <RefeicaoRapida
+                user={user}
+                onSalvar={registrarMacro}
+                onManual={() => setTipo("kcal")}
+              />
+            )}
+
+            {tipo === "kcal" && (
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  registrarRefeicao();
+                  registrarKcalManual();
                 }}
               >
                 <input
