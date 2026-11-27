@@ -63,6 +63,36 @@ function formatarData(date) {
   return local.toISOString().split("T")[0];
 }
 
+// Cache da Home: abre na hora com os dados da última visita e atualiza em
+// segundo plano quando o Supabase responde.
+const chaveCacheHome = (userId) => `df_home_cache_${userId}`;
+function lerCacheHome(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(chaveCacheHome(userId)));
+  } catch {
+    return null;
+  }
+}
+function salvarCacheHome(userId, dados) {
+  try {
+    localStorage.setItem(chaveCacheHome(userId), JSON.stringify(dados));
+  } catch {
+    /* sem espaço / modo privado */
+  }
+}
+
+// Dias seguidos com registro, contando de hoje para trás (hoje pode faltar)
+function contarStreak(diasAtivos) {
+  let s = 0;
+  for (let i = 0; i < 400; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    if (diasAtivos.has(formatarData(d))) s++;
+    else if (i > 0) break;
+  }
+  return s;
+}
+
 // Feriados nacionais fixos (mês/dia, mesmo todo ano)
 const FERIADOS_FIXOS = [
   { mes: 1, dia: 1, nome: "Ano Novo" },
@@ -175,28 +205,42 @@ export default function Home({
   divisao,
   onNavegar,
 }) {
-  const [perfil, setPerfil] = useState(null);
-  const [historico, setHistorico] = useState([]);
-  const [streak, setStreak] = useState(0);
-  const [streakDiasAtivos, setStreakDiasAtivos] = useState(new Set());
-  const [itensPendentes, setItensPendentes] = useState([]);
-  const [aguaHoje, setAguaHoje] = useState({ total: 0, meta: 2500 });
-  const [passosHoje, setPassosHoje] = useState(null);
-  const [passosMeta, setPassosMeta] = useState(10000);
-  const [pesoHoje, setPesoHoje] = useState(null);
-  const [pesoPrev, setPesoPrev] = useState(null);
-  const [rotina, setRotina] = useState(null);
-  const [carregando, setCarregando] = useState(true);
-  const [frase, setFrase] = useState(null);
+  // Lido uma vez ao montar; dados "do dia" só valem se o cache for de hoje
+  const [cacheHome] = useState(() => lerCacheHome(user.id));
+  const cacheDia =
+    cacheHome?.dia === formatarData(new Date()) ? cacheHome : null;
+  const [perfil, setPerfil] = useState(cacheHome?.perfil ?? null);
+  const [historico, setHistorico] = useState(cacheHome?.historico ?? []);
+  const [streak, setStreak] = useState(cacheHome?.streak ?? 0);
+  const [streakDiasAtivos, setStreakDiasAtivos] = useState(
+    () => new Set(cacheHome?.streakDias ?? []),
+  );
+  const [itensPendentes, setItensPendentes] = useState(
+    cacheDia?.itensPendentes ?? [],
+  );
+  const [aguaHoje, setAguaHoje] = useState(
+    cacheDia?.aguaHoje ?? { total: 0, meta: cacheHome?.aguaHoje?.meta ?? 2500 },
+  );
+  const [passosHoje, setPassosHoje] = useState(cacheDia?.passosHoje ?? null);
+  const [passosMeta, setPassosMeta] = useState(cacheHome?.passosMeta ?? 10000);
+  const [pesoHoje, setPesoHoje] = useState(cacheHome?.pesoHoje ?? null);
+  const [pesoPrev, setPesoPrev] = useState(cacheHome?.pesoPrev ?? null);
+  const [rotina, setRotina] = useState(cacheDia?.rotina ?? null);
+  const [carregando, setCarregando] = useState(!cacheHome);
+  const [frase, setFrase] = useState(cacheDia?.frase ?? null);
   const [mostrarHabitos, setMostrarHabitos] = useState(() => {
     return localStorage.getItem("home_mostrar_habitos") !== "false";
   });
-  const [kcalHoje, setKcalHoje] = useState(0);
-  const [kcalMeta, setKcalMeta] = useState(2000);
-  const [kcalGasto, setKcalGasto] = useState({ treino: 0, passos: 0 });
-  const [humor, setHumor] = useState(null);
-  const [sonoHoje, setSonoHoje] = useState(null);
-  const [treinosSemana, setTreinosSemana] = useState([]);
+  const [kcalHoje, setKcalHoje] = useState(cacheDia?.kcalHoje ?? 0);
+  const [kcalMeta, setKcalMeta] = useState(cacheHome?.kcalMeta ?? 2000);
+  const [kcalGasto, setKcalGasto] = useState(
+    cacheDia?.kcalGasto ?? { treino: 0, passos: 0 },
+  );
+  const [humor, setHumor] = useState(cacheDia?.humor ?? null);
+  const [sonoHoje, setSonoHoje] = useState(cacheDia?.sonoHoje ?? null);
+  const [treinosSemana, setTreinosSemana] = useState(
+    cacheHome?.treinosSemana ?? [],
+  );
   const [salvandoHumor, setSalvandoHumor] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [statsAniversario, setStatsAniversario] = useState(null);
@@ -466,19 +510,30 @@ export default function Home({
   }, []);
 
   useEffect(() => {
-    buscarFrase();
+    if (!cacheDia?.frase) buscarFrase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscarFrase]);
 
+  // Tudo em UMA rodada paralela (antes eram ~6 etapas em sequência).
+  // Não mostra mais o esqueleto: os dados em cache ficam na tela até chegar a resposta.
   const carregar = useCallback(async () => {
     const hoje = formatarData(new Date());
-    setCarregando(true);
+    const noventaDiasAtras = new Date();
+    noventaDiasAtras.setDate(noventaDiasAtras.getDate() - 95);
+    const inicioSemana = (() => {
+      const d = new Date();
+      const diaSemanaNum = d.getDay(); // 0 = domingo
+      const offsetSegunda = diaSemanaNum === 0 ? -6 : 1 - diaSemanaNum;
+      d.setDate(d.getDate() + offsetSegunda);
+      return formatarData(d);
+    })();
+
     const [
       { data: p },
       { data: h },
       { data: aguaRegs },
       { data: aguaMeta },
       { data: pesoRegs },
-      { data: diasData },
       { data: passosData },
       { data: passosMetaData },
       { data: macrosData },
@@ -487,6 +542,10 @@ export default function Home({
       { data: humorHoje },
       { data: sonoHoje },
       { data: gastosHojeData },
+      ,
+      { data: streakDias },
+      rotinaHoje,
+      { data: treinosSemanaDados },
     ] = await Promise.all([
       supabase.from("perfil").select("*").eq("user_id", user.id).single(),
       supabase
@@ -511,12 +570,6 @@ export default function Home({
         .eq("user_id", user.id)
         .order("data", { ascending: false })
         .limit(2),
-      supabase
-        .from("rotina_dias")
-        .select("id,data")
-        .eq("user_id", user.id)
-        .eq("data", hoje)
-        .single(),
       supabase
         .from("passos_registro")
         .select("passos")
@@ -568,21 +621,43 @@ export default function Home({
         .eq("mes", new Date().getMonth())
         .eq("ano", new Date().getFullYear())
         .eq("data", hoje),
+      supabase
+        .from("streak_registro")
+        .upsert({ user_id: user.id, data: hoje }, { onConflict: "user_id,data" }),
+      supabase
+        .from("streak_registro")
+        .select("data")
+        .eq("user_id", user.id)
+        .gte("data", formatarData(noventaDiasAtras)),
+      // Rotina de hoje + tarefas encadeadas, sem travar as outras consultas
+      supabase
+        .from("rotina_dias")
+        .select("id,data")
+        .eq("user_id", user.id)
+        .eq("data", hoje)
+        .maybeSingle()
+        .then(async ({ data: dia }) => {
+          if (!dia) return null;
+          const { data: tarefas } = await supabase
+            .from("rotina_tarefas")
+            .select("*")
+            .eq("dia_id", dia.id)
+            .order("ordem", { ascending: true });
+          return { dia, tarefas: tarefas || [] };
+        }),
+      supabase
+        .from("treinos_finalizados")
+        .select("treino, created_at")
+        .eq("user_id", user.id)
+        .gte("created_at", inicioSemana + "T00:00:00"),
     ]);
     if (p) setPerfil(p);
     if (h) setHistorico(h);
-    await registrarStreakHoje(user.id);
-    const s = await calcularStreak(user.id);
-    setStreak(s);
 
-    const noventaDiasAtras = new Date();
-    noventaDiasAtras.setDate(noventaDiasAtras.getDate() - 95);
-    const { data: streakDias } = await supabase
-      .from("streak_registro")
-      .select("data")
-      .eq("user_id", user.id)
-      .gte("data", formatarData(noventaDiasAtras));
-    setStreakDiasAtivos(new Set((streakDias || []).map((r) => r.data)));
+    const diasAtivos = new Set((streakDias || []).map((r) => r.data));
+    diasAtivos.add(hoje);
+    setStreakDiasAtivos(diasAtivos);
+    setStreak(contarStreak(diasAtivos));
 
     const totalAgua = (aguaRegs || []).reduce((s, r) => s + r.ml, 0);
     setAguaHoje({ total: totalAgua, meta: aguaMeta?.meta_ml || 2500 });
@@ -611,16 +686,10 @@ export default function Home({
       setPesoPrev(pesoRegs[1] || null);
     }
 
-    if (diasData) {
-      const { data: tarefasData } = await supabase
-        .from("rotina_tarefas")
-        .select("*")
-        .eq("dia_id", diasData.id)
-        .order("ordem", { ascending: true });
-      setRotina({ dia: diasData, tarefas: tarefasData || [] });
-
+    if (rotinaHoje) {
+      setRotina(rotinaHoje);
       const agrupadoPorPeriodo = {};
-      (tarefasData || []).forEach((t) => {
+      rotinaHoje.tarefas.forEach((t) => {
         const p = t.periodo || "Manhã";
         if (!agrupadoPorPeriodo[p]) agrupadoPorPeriodo[p] = [];
         agrupadoPorPeriodo[p].push(t);
@@ -631,18 +700,6 @@ export default function Home({
     if (humorHoje) setHumor(humorHoje);
     if (sonoHoje) setSonoHoje(sonoHoje);
 
-    const inicioSemana = (() => {
-      const d = new Date();
-      const diaSemanaNum = d.getDay(); // 0 = domingo
-      const offsetSegunda = diaSemanaNum === 0 ? -6 : 1 - diaSemanaNum;
-      d.setDate(d.getDate() + offsetSegunda);
-      return formatarData(d);
-    })();
-    const { data: treinosSemanaDados } = await supabase
-      .from("treinos_finalizados")
-      .select("treino, created_at")
-      .eq("user_id", user.id)
-      .gte("created_at", inicioSemana + "T00:00:00");
     setTreinosSemana(treinosSemanaDados || []);
     setCarregando(false);
 
@@ -666,6 +723,59 @@ export default function Home({
       gastosHoje,
     });
   }, [user.id]);
+
+
+
+  // Mantém o cache da Home em dia (inclusive após marcar tarefa, humor etc.)
+  useEffect(() => {
+    if (carregando) return;
+    salvarCacheHome(user.id, {
+      dia: formatarData(new Date()),
+      perfil,
+      historico,
+      streak,
+      streakDias: [...streakDiasAtivos],
+      itensPendentes,
+      aguaHoje,
+      passosHoje,
+      passosMeta,
+      pesoHoje,
+      pesoPrev,
+      rotina,
+      frase,
+      kcalHoje,
+      kcalMeta,
+      kcalGasto,
+      humor,
+      sonoHoje,
+      treinosSemana,
+    });
+  }, [
+    carregando, user.id, perfil, historico, streak, streakDiasAtivos,
+    itensPendentes, aguaHoje, passosHoje, passosMeta, pesoHoje, pesoPrev,
+    rotina, frase, kcalHoje, kcalMeta, kcalGasto, humor, sonoHoje, treinosSemana,
+  ]);
+
+  // Botão +: atualiza os cards na hora, antes do Supabase responder
+  const aplicarRegistroRapido = useCallback(
+    (tipo, valor) => {
+      const hoje = formatarData(new Date());
+      if (tipo === "agua") {
+        setAguaHoje((a) => ({ ...a, total: a.total + valor }));
+        setItensPendentes((itens) => itens.filter((i) => i.id !== "agua"));
+      } else if (tipo === "peso") {
+        if (pesoHoje?.data === hoje) {
+          setPesoHoje({ ...pesoHoje, peso: valor });
+        } else {
+          setPesoPrev(pesoHoje);
+          setPesoHoje({ data: hoje, peso: valor });
+        }
+      } else if (tipo === "kcal") {
+        setKcalHoje((k) => k + valor);
+      }
+    },
+    [pesoHoje],
+  );
 
   useEffect(() => {
     carregar();
@@ -760,33 +870,7 @@ export default function Home({
     setMostrarResumoRotina(false);
   };
 
-  async function registrarStreakHoje(userId) {
-    const hoje = formatarData(new Date());
-    await supabase
-      .from("streak_registro")
-      .upsert({ user_id: userId, data: hoje }, { onConflict: "user_id,data" });
-  }
 
-  async function calcularStreak(userId) {
-    const { data } = await supabase
-      .from("streak_registro")
-      .select("data")
-      .eq("user_id", userId)
-      .order("data", { ascending: false })
-      .limit(60);
-
-    if (!data || data.length === 0) return 1;
-
-    let s = 0;
-    for (let i = 0; i < 60; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dataStr = formatarData(d);
-      if (data.find((r) => r.data === dataStr)) s++;
-      else if (i > 0) break;
-    }
-    return s;
-  }
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -2253,7 +2337,11 @@ export default function Home({
         </SortableContext>
       </DndContext>
 
-      <RegistroRapido user={user} onRegistrado={carregar} />
+      <RegistroRapido
+        user={user}
+        onRegistrado={aplicarRegistroRapido}
+        onFalha={carregar}
+      />
     </div>
   );
 }

@@ -2,7 +2,15 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "./lib/supabase";
 import { toast } from "./lib/toast";
-import { Plus, X, Droplet, Scale, Banknote, CreditCard } from "lucide-react";
+import {
+  Plus,
+  X,
+  Droplet,
+  Scale,
+  Banknote,
+  CreditCard,
+  Utensils,
+} from "lucide-react";
 
 function formatarData(date) {
   const offset = date.getTimezoneOffset();
@@ -26,9 +34,27 @@ function calcularMesFatura(dataCompraStr, diaFechamento) {
   return { mes: mesFatura, ano: anoFatura };
 }
 
+// Aceita "78,5" e "78.5"
+function numero(v) {
+  const n = parseFloat(String(v ?? "").replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Mesma regra de sugestão da aba Macros
+function refeicaoPorHorario() {
+  const h = new Date().getHours();
+  if (h >= 5 && h <= 9) return "cafe";
+  if (h >= 10 && h <= 11) return "lanche1";
+  if (h >= 12 && h <= 13) return "almoco";
+  if (h >= 14 && h <= 17) return "cafetarde";
+  if (h >= 18 && h <= 22) return "janta";
+  return "outro";
+}
+
 const OPCOES = [
   { id: "agua", icon: Droplet, label: "Água", cor: "#3b82f6" },
   { id: "peso", icon: Scale, label: "Peso", cor: "#6366f1" },
+  { id: "refeicao", icon: Utensils, label: "Refeição", cor: "#f59e0b" },
   { id: "gasto", icon: Banknote, label: "Gasto", cor: "#ef4444" },
 ];
 
@@ -55,12 +81,14 @@ const CORES_CATEGORIA_GASTO = {
   Outros: "#64748b",
 };
 
-export default function RegistroRapido({ user, onRegistrado }) {
+// Fecha na hora e avisa a Home (onRegistrado) para o card mudar na hora;
+// o Supabase grava em segundo plano. Se falhar, onFalha recarrega a Home.
+export default function RegistroRapido({ user, onRegistrado, onFalha }) {
   const [aberto, setAberto] = useState(false);
   const [tipo, setTipo] = useState(null);
   const [valor, setValor] = useState("");
   const [nome, setNome] = useState("");
-  const [salvando, setSalvando] = useState(false);
+  const [macros, setMacros] = useState({ prot: "", carb: "", gord: "" });
   const [categoriaGasto, setCategoriaGasto] = useState("Outros");
   const [ehCartao, setEhCartao] = useState(false);
   const [cartoes, setCartoes] = useState([]);
@@ -85,45 +113,77 @@ export default function RegistroRapido({ user, onRegistrado }) {
     setTipo(null);
     setValor("");
     setNome("");
+    setMacros({ prot: "", carb: "", gord: "" });
     setCategoriaGasto("Outros");
     setEhCartao(false);
   };
 
+  const falhou = (error) => {
+    toast("Não foi possível salvar: " + error.message, "error");
+    onFalha?.();
+  };
+
   const registrarAgua = async (ml) => {
-    setSalvando(true);
     const agora = new Date();
     const hoje = formatarData(agora);
     const hora = agora.toTimeString().slice(0, 5);
+    fechar();
+    onRegistrado?.("agua", ml);
+    toast(`+${ml}ml`, "success");
     const { error } = await supabase
       .from("agua_registro")
       .insert([{ user_id: user.id, data: hoje, ml, hora }]);
-    setSalvando(false);
-    if (error) return toast(error.message, "error");
-    toast(`+${ml}ml registrado!`, "success");
-    onRegistrado?.();
-    fechar();
+    if (error) falhou(error);
   };
 
   const registrarPeso = async () => {
-    if (!valor) return toast("Digite o peso!", "error");
-    setSalvando(true);
+    const peso = numero(valor);
+    if (!peso) return toast("Digite o peso!", "error");
     const hoje = formatarData(new Date());
+    fechar();
+    onRegistrado?.("peso", peso);
+    toast(`${peso.toLocaleString("pt-BR")} kg`, "success");
     const { error } = await supabase
       .from("peso_registro")
       .upsert(
-        { user_id: user.id, data: hoje, peso: parseFloat(valor) },
+        { user_id: user.id, data: hoje, peso },
         { onConflict: "user_id,data" },
       );
-    setSalvando(false);
-    if (error) return toast(error.message, "error");
-    toast("Peso registrado!", "success");
-    onRegistrado?.();
+    if (error) falhou(error);
+  };
+
+  const kcalCalculada = Math.round(
+    numero(macros.prot) * 4 + numero(macros.carb) * 4 + numero(macros.gord) * 9,
+  );
+
+  const registrarRefeicao = async () => {
+    const kcal = Math.round(numero(valor)) || kcalCalculada;
+    if (!kcal) return toast("Digite as calorias ou os macros!", "error");
+    const registro = {
+      user_id: user.id,
+      data: formatarData(new Date()),
+      nome: nome.trim() || "Registro rápido",
+      gramas: 0,
+      refeicao: refeicaoPorHorario(),
+      kcal,
+      prot: numero(macros.prot),
+      carb: numero(macros.carb),
+      gord: numero(macros.gord),
+    };
     fechar();
+    onRegistrado?.("kcal", kcal);
+    toast(`+${kcal.toLocaleString("pt-BR")} kcal`, "success");
+    const { error } = await supabase.from("macros_registro").insert([registro]);
+    if (error) falhou(error);
   };
 
   const registrarGasto = async () => {
-    if (!nome || !valor) return toast("Preencha nome e valor!", "error");
-    setSalvando(true);
+    if (!nome || !numero(valor))
+      return toast("Preencha nome e valor!", "error");
+    const valorNum = numero(valor);
+    const nomeGasto = nome;
+    const categoria = categoriaGasto;
+    fechar();
     const agora = new Date();
     const hoje = formatarData(agora);
 
@@ -132,41 +192,35 @@ export default function RegistroRapido({ user, onRegistrado }) {
       const diaVencimento = cartaoObj?.dia_vencimento || 10;
       const diaFechamento = cartaoObj?.dia_fechamento || diaVencimento - 7;
       const { mes, ano } = calcularMesFatura(hoje, diaFechamento);
+      toast("Lançado no cartão!", "success");
       const { error } = await supabase.from("financeiro_cartao").insert([
         {
           user_id: user.id,
           mes,
           ano,
-          item: nome,
-          valor: parseFloat(valor),
-          categoria: categoriaGasto,
+          item: nomeGasto,
+          valor: valorNum,
+          categoria,
           cartao_id: cartaoSelecionado,
         },
       ]);
-      setSalvando(false);
-      if (error) return toast(error.message, "error");
-      toast("Lançado no cartão!", "success");
-      onRegistrado?.();
-      fechar();
+      if (error) toast(error.message, "error");
       return;
     }
 
+    toast("Gasto registrado!", "success");
     const { error } = await supabase.from("financeiro_gastos").insert([
       {
         user_id: user.id,
         mes: agora.getMonth(),
         ano: agora.getFullYear(),
-        nome,
-        valor: parseFloat(valor),
-        categoria: categoriaGasto,
+        nome: nomeGasto,
+        valor: valorNum,
+        categoria,
         data: hoje,
       },
     ]);
-    setSalvando(false);
-    if (error) return toast(error.message, "error");
-    toast("Gasto registrado!", "success");
-    onRegistrado?.();
-    fechar();
+    if (error) toast(error.message, "error");
   };
 
   return createPortal(
@@ -232,7 +286,9 @@ export default function RegistroRapido({ user, onRegistrado }) {
                     ? "Quanto de água?"
                     : tipo === "peso"
                       ? "Peso de hoje"
-                      : "Novo gasto"}
+                      : tipo === "refeicao"
+                        ? "Refeição"
+                        : "Novo gasto"}
               </div>
               <button
                 onClick={fechar}
@@ -248,7 +304,13 @@ export default function RegistroRapido({ user, onRegistrado }) {
             </div>
 
             {!tipo && (
-              <div style={{ display: "flex", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: 8,
+                }}
+              >
                 {OPCOES.map((o) => (
                   <button
                     key={o.id}
@@ -292,7 +354,6 @@ export default function RegistroRapido({ user, onRegistrado }) {
                 {[180, 300, 500, 1000].map((ml) => (
                   <button
                     key={ml}
-                    disabled={salvando}
                     onClick={() => registrarAgua(ml)}
                     style={{
                       background: "#24282d",
@@ -314,8 +375,9 @@ export default function RegistroRapido({ user, onRegistrado }) {
             {tipo === "peso" && (
               <div>
                 <input
-                  type="number"
-                  placeholder="Peso em kg"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Peso em kg (ex: 78,5)"
                   value={valor}
                   onChange={(e) => setValor(e.target.value)}
                   autoFocus
@@ -323,7 +385,6 @@ export default function RegistroRapido({ user, onRegistrado }) {
                 />
                 <button
                   onClick={registrarPeso}
-                  disabled={salvando}
                   style={{
                     marginTop: 10,
                     width: "100%",
@@ -337,9 +398,79 @@ export default function RegistroRapido({ user, onRegistrado }) {
                     cursor: "pointer",
                   }}
                 >
-                  {salvando ? "Salvando..." : "Salvar"}
+                  Salvar
                 </button>
               </div>
+            )}
+
+            {tipo === "refeicao" && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  registrarRefeicao();
+                }}
+              >
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder={
+                    kcalCalculada
+                      ? `Calorias: ${kcalCalculada} (pelos macros)`
+                      : "Calorias (kcal)"
+                  }
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                  autoFocus
+                />
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  {[
+                    ["prot", "Prot (g)"],
+                    ["carb", "Carbo (g)"],
+                    ["gord", "Gord (g)"],
+                  ].map(([campo, rotulo]) => (
+                    <input
+                      key={campo}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder={rotulo}
+                      value={macros[campo]}
+                      onChange={(e) =>
+                        setMacros((m) => ({ ...m, [campo]: e.target.value }))
+                      }
+                    />
+                  ))}
+                </div>
+                <input
+                  placeholder="O que comeu? (opcional)"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  style={{ marginTop: 8 }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    marginTop: 10,
+                    width: "100%",
+                    background: "#f59e0b",
+                    border: "none",
+                    borderRadius: 10,
+                    color: "#0a0a0a",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    padding: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  Salvar
+                </button>
+              </form>
             )}
 
             {tipo === "gasto" && (
@@ -443,7 +574,6 @@ export default function RegistroRapido({ user, onRegistrado }) {
 
                 <button
                   onClick={registrarGasto}
-                  disabled={salvando}
                   style={{
                     marginTop: 10,
                     width: "100%",
@@ -457,7 +587,7 @@ export default function RegistroRapido({ user, onRegistrado }) {
                     cursor: "pointer",
                   }}
                 >
-                  {salvando ? "Salvando..." : "Salvar"}
+                  Salvar
                 </button>
               </div>
             )}
