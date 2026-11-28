@@ -456,6 +456,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [modalConfirmarApagarTreino, setModalConfirmarApagarTreino] =
     useState(false);
   const [modalImportarPDF, setModalImportarPDF] = useState(false);
+  const [textoTreinoImport, setTextoTreinoImport] = useState("");
   const [processandoPDF, setProcessandoPDF] = useState(false);
   const [progressoOCR, setProgressoOCR] = useState(0);
   const [treinoImportado, setTreinoImportado] = useState(null);
@@ -1960,6 +1961,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setAplicandoImportado(false);
     setTreinoImportado(null);
     setModalImportarPDF(false);
+    setTextoTreinoImport("");
     toast("Treino importado com sucesso! 💪", "success");
   };
 
@@ -3020,6 +3022,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
           onClick={() => {
             if (!processandoPDF) {
               setModalImportarPDF(false);
+              setTextoTreinoImport("");
               setTreinoImportado(null);
             }
           }}
@@ -3049,7 +3052,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 size={15}
                 style={{ verticalAlign: -2, marginRight: 6 }}
               />
-              Importar treino (PDF/Foto)
+              Importar treino (Texto/PDF/Foto)
             </div>
 
             {!treinoImportado && (
@@ -3057,8 +3060,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 <div
                   style={{ fontSize: 12, color: "#64748b", marginBottom: 18 }}
                 >
-                  Sobe o PDF ou uma foto da sua ficha de treino. Eu tento
-                  reconhecer os exercícios sozinho (procurando padrões tipo
+                  Sobe o PDF ou uma foto da sua ficha de treino, ou cole o
+                  treino em texto lá embaixo. Eu tento reconhecer os
+                  exercícios sozinho (procurando padrões tipo
                   "3x12" e "40kg") — depois você confere e corrige antes de
                   aplicar.
                   <br />
@@ -3094,6 +3098,83 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     style={{ display: "none" }}
                   />
                 </label>
+
+                {/* Colar texto (igual à importação da Rotina) */}
+                {(() => {
+                  const lido = parsearTreinoTexto(textoTreinoImport);
+                  const letras = Object.keys(lido).filter((l) => lido[l].length);
+                  const total = letras.reduce((acc, l) => acc + lido[l].length, 0);
+                  return (
+                    <div style={{ marginTop: 18 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: "#cbd5e1",
+                          marginBottom: 6,
+                        }}
+                      >
+                        ✍️ Ou cole o treino em texto
+                      </div>
+                      <textarea
+                        value={textoTreinoImport}
+                        onChange={(e) => setTextoTreinoImport(e.target.value)}
+                        disabled={processandoPDF}
+                        rows={8}
+                        placeholder={`Treino A - Peito e Tríceps
+1. Supino reto 4x10 60kg
+2. Crucifixo 3x12
+3. Tríceps corda 3x15 60s
+
+Treino B - Costas e Bíceps
+Puxada frontal 4x10
+...`}
+                        style={{
+                          width: "100%",
+                          background: "#24282d",
+                          border: "1px solid #ffffff14",
+                          borderRadius: 12,
+                          color: "#f8fafc",
+                          fontSize: 13,
+                          padding: 12,
+                          resize: "vertical",
+                          fontFamily: "inherit",
+                        }}
+                      />
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: total ? "#10b981" : "#64748b",
+                          margin: "6px 0 10px",
+                        }}
+                      >
+                        {textoTreinoImport.trim()
+                          ? total
+                            ? `✓ ${total} exercício(s) em ${letras.length} treino(s): ${letras.join(", ")}`
+                            : 'Nenhum exercício reconhecido ainda. Use o formato "Nome 4x12".'
+                          : 'Cabeçalhos "Treino A", "Treino B"... e exercícios no formato "Nome 4x12 40kg 60s".'}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!total}
+                        onClick={() => setTreinoImportado(lido)}
+                        style={{
+                          width: "100%",
+                          background: total ? "#6366f1" : "#2a2e34",
+                          border: "none",
+                          borderRadius: 10,
+                          color: total ? "#fff" : "#64748b",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          padding: 12,
+                          cursor: total ? "pointer" : "default",
+                        }}
+                      >
+                        Revisar e importar
+                      </button>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
@@ -4217,7 +4298,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       size={15}
                       style={{ verticalAlign: -2, marginRight: 6 }}
                     />
-                    Importar treino (PDF/Foto)
+                    Importar treino (Texto/PDF/Foto)
                   </button>
                 </div>
               ) : (
