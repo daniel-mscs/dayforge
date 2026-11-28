@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Users,
   Home as HomeIcon,
   Dumbbell,
   Target,
@@ -70,7 +71,7 @@ const CATEGORIAS = [
   },
 ];
 
-const MAIS_IDS = CATEGORIAS.flatMap((c) => c.items.map((i) => i.id));
+const MAIS_IDS = [...CATEGORIAS.flatMap((c) => c.items.map((i) => i.id)), "alunos"];
 
 export default function BottomNav({
   abaPrincipal,
@@ -78,7 +79,15 @@ export default function BottomNav({
   showMore,
   setShowMore,
   logout,
+  ehProfissional = false,
 }) {
+  // Profissional ganha "Alunos" no topo de "Outros"
+  const categorias = ehProfissional
+    ? CATEGORIAS.map((c, idx) =>
+        idx === 3 ? { ...c, items: [{ id: "alunos", icon: Users, label: "Alunos" }, ...c.items] } : c,
+      )
+    : CATEGORIAS;
+
   const navegar = (id) => {
     setAbaPrincipal(id);
     setShowMore(false);
@@ -160,7 +169,7 @@ export default function BottomNav({
               ].map((idxs, col) => (
                 <div key={col} className="more-menu-col">
                   {idxs
-                    .map((i) => CATEGORIAS[i])
+                    .map((i) => categorias[i])
                     .map((cat) => (
                       <div key={cat.label}>
                         <div

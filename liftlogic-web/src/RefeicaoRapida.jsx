@@ -3,10 +3,7 @@ import { supabase } from "./lib/supabase";
 import { REFEICOES_OPTS, refeicaoPorHorario } from "./lib/refeicao";
 
 function normalizar(t) {
-  return (t || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -59,7 +56,9 @@ const estiloItem = {
 export default function RefeicaoRapida({ user, onSalvar, onManual }) {
   const chaveAlimentos = `df_alimentos_cache_${user.id}`;
   const chaveRecentes = `df_alimentos_recentes_${user.id}`;
-  const [alimentos, setAlimentos] = useState(() => lerCache(chaveAlimentos) || []);
+  const [alimentos, setAlimentos] = useState(
+    () => lerCache(chaveAlimentos) || [],
+  );
   const [recentes, setRecentes] = useState(() => lerCache(chaveRecentes) || []);
   const [query, setQuery] = useState("");
   const [foodSel, setFoodSel] = useState(null);
@@ -69,7 +68,10 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
   useEffect(() => {
     let ativo = true;
     Promise.all([
-      supabase.from("alimentos_base").select("*").order("nome", { ascending: true }),
+      supabase
+        .from("alimentos_base")
+        .select("*")
+        .order("nome", { ascending: true }),
       supabase.from("alimentos_custom").select("*").eq("user_id", user.id),
       supabase
         .from("macros_registro")
@@ -94,7 +96,9 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
         for (const r of ultimos.data || []) {
           if (!vistos.has(r.nome)) vistos.set(r.nome, r.gramas);
         }
-        const lista = [...vistos].slice(0, 8).map(([nome, g]) => ({ nome, gramas: g }));
+        const lista = [...vistos]
+          .slice(0, 8)
+          .map(([nome, g]) => ({ nome, gramas: g }));
         setRecentes(lista);
         salvarCache(chaveRecentes, lista);
       }
@@ -162,7 +166,14 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
             }}
           >
             {!query.trim() && recentesValidos.length > 0 && (
-              <div style={{ fontSize: 10, fontWeight: 800, color: "#64748b", letterSpacing: "0.08em" }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  color: "#64748b",
+                  letterSpacing: "0.08em",
+                }}
+              >
                 RECENTES
               </div>
             )}
@@ -170,22 +181,41 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
               ? sugestoes.map((food) => ({ food }))
               : recentesValidos
             ).map(({ food, gramas: gSug }) => (
-              <button key={food.nome} type="button" style={estiloItem} onClick={() => selecionar(food, gSug)}>
+              <button
+                key={food.nome}
+                type="button"
+                style={estiloItem}
+                onClick={() => selecionar(food, gSug)}
+              >
                 <div style={{ fontSize: 13, fontWeight: 700 }}>
                   {food.nome}
                   {food.custom && (
-                    <span style={{ fontSize: 10, color: "#818cf8", marginLeft: 6 }}>personalizado</span>
+                    <span
+                      style={{ fontSize: 10, color: "#818cf8", marginLeft: 6 }}
+                    >
+                      personalizado
+                    </span>
                   )}
                   {gSug ? (
-                    <span style={{ fontSize: 11, color: "#64748b", marginLeft: 6 }}>· {gSug}g da última vez</span>
+                    <span
+                      style={{ fontSize: 11, color: "#64748b", marginLeft: 6 }}
+                    >
+                      · {gSug}g da última vez
+                    </span>
                   ) : null}
                 </div>
-                <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{infoAlimento(food)}</div>
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                  {infoAlimento(food)}
+                </div>
               </button>
             ))}
             {query.trim() && sugestoes.length === 0 && (
-              <div style={{ fontSize: 12, color: "#64748b", padding: "6px 2px" }}>
-                {alimentos.length === 0 ? "Carregando alimentos..." : "Nenhum alimento encontrado."}
+              <div
+                style={{ fontSize: 12, color: "#64748b", padding: "6px 2px" }}
+              >
+                {alimentos.length === 0
+                  ? "Carregando alimentos..."
+                  : "Nenhum alimento encontrado."}
               </div>
             )}
           </div>
@@ -221,9 +251,14 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
             style={{ ...estiloItem, borderColor: "#f59e0b55" }}
           >
             <div style={{ fontSize: 13, fontWeight: 700 }}>
-              {foodSel.nome} <span style={{ color: "#64748b", fontWeight: 500 }}>· trocar</span>
+              {foodSel.nome}{" "}
+              <span style={{ color: "#64748b", fontWeight: 500 }}>
+                · trocar
+              </span>
             </div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{infoAlimento(foodSel)}</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+              {infoAlimento(foodSel)}
+            </div>
           </button>
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <input
@@ -235,7 +270,10 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
               onChange={(e) => setGramas(e.target.value)}
               style={{ width: 110, flexShrink: 0 }}
             />
-            <select value={refeicao} onChange={(e) => setRefeicao(e.target.value)}>
+            <select
+              value={refeicao}
+              onChange={(e) => setRefeicao(e.target.value)}
+            >
               {REFEICOES_OPTS.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.label}
@@ -243,7 +281,16 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
               ))}
             </select>
           </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 13, fontWeight: 700, minHeight: 18 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              marginTop: 10,
+              fontSize: 13,
+              fontWeight: 700,
+              minHeight: 18,
+            }}
+          >
             {preview ? (
               <>
                 <span style={{ color: "#f97316" }}>⚡ {preview.kcal} kcal</span>
@@ -252,7 +299,9 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
                 <span style={{ color: "#eab308" }}>G {preview.gord}g</span>
               </>
             ) : (
-              <span style={{ color: "#64748b", fontWeight: 500 }}>Digite as gramas</span>
+              <span style={{ color: "#64748b", fontWeight: 500 }}>
+                Digite as gramas
+              </span>
             )}
           </div>
           <button

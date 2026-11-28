@@ -1,6 +1,7 @@
 import React from "react";
 import { toast } from "./lib/toast";
 import NotificacoesTab from "./NotificacoesTab";
+import ConexaoProfissional from "./ConexaoProfissional";
 import {
   User,
   CircleHelp,
@@ -16,6 +17,9 @@ import {
 } from "lucide-react";
 
 export default function PerfilTab({
+  user,
+  conta,
+  setConta,
   perfil,
   setPerfil,
   perfilEditado,
@@ -500,6 +504,15 @@ export default function PerfilTab({
             </div>
           )}
 
+          {user && (
+            <div style={{ marginBottom: 16 }}>
+              <ConexaoProfissional
+                user={user}
+                perfil={conta}
+                onPerfilAtualizado={(r) => setConta?.((c) => ({ ...c, ...r }))}
+              />
+            </div>
+          )}
           <button
             className="nav-btn-logout"
             style={{

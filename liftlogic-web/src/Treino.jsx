@@ -57,6 +57,8 @@ import BottomNav from "./BottomNav";
 import ModalResumo from "./ModalResumo";
 import TreinoStats from "./TreinoStats";
 import PerfilTab from "./PerfilTab";
+import Alunos from "./Alunos";
+import { definirTipoConta } from "./lib/profissional";
 import { ganharXP } from "./lib/rpg";
 import { acharGif, rankearGifs, buscarGifs } from "./lib/gifs";
 import {
@@ -456,6 +458,8 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [modalConfirmarApagarTreino, setModalConfirmarApagarTreino] =
     useState(false);
   const [modalImportarPDF, setModalImportarPDF] = useState(false);
+  // Tipo de conta (aluno/profissional) e código do profissional
+  const [conta, setConta] = useState({ tipo_conta: "aluno", codigo_profissional: null });
   const [textoTreinoImport, setTextoTreinoImport] = useState("");
   const [processandoPDF, setProcessandoPDF] = useState(false);
   const [progressoOCR, setProgressoOCR] = useState(0);
@@ -710,6 +714,22 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     if (error && error.code !== "PGRST116")
       console.error("Erro perfil:", error.message);
     if (data) {
+      setConta({
+        tipo_conta: data.tipo_conta || "aluno",
+        codigo_profissional: data.codigo_profissional || null,
+      });
+      // Escolheu "profissional" no cadastro: ativa na primeira vez que o perfil existe
+      if (
+        user.user_metadata?.tipo_conta === "profissional" &&
+        data.tipo_conta === "aluno" &&
+        !data.codigo_profissional &&
+        !localStorage.getItem("df_tipo_conta_sincronizado")
+      ) {
+        localStorage.setItem("df_tipo_conta_sincronizado", "1");
+        definirTipoConta(user.id, "profissional", null)
+          .then(setConta)
+          .catch(() => {});
+      }
       const p = {
         nome: data.nome || "",
         peso: data.peso || "",
@@ -3254,28 +3274,45 @@ Puxada frontal 4x10
                               ×
                             </button>
                           </div>
+                          <input
+                            type="text"
+                            placeholder="Grupo muscular (ex: Peito)"
+                            value={ex.grupo_muscular}
+                            onChange={(e) =>
+                              atualizarExercicioImportado(
+                                letra,
+                                i,
+                                "grupo_muscular",
+                                e.target.value,
+                              )
+                            }
+                            style={{ fontSize: 12, padding: 8, marginBottom: 6 }}
+                          />
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+                              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                              gap: 6,
+                              marginBottom: 2,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: "#7c879b",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span>Séries</span>
+                            <span>Reps</span>
+                            <span>Kg</span>
+                            <span>Descanso (s)</span>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr 1fr 1fr",
                               gap: 6,
                               marginBottom: 6,
                             }}
                           >
-                            <input
-                              type="text"
-                              placeholder="Grupo"
-                              value={ex.grupo_muscular}
-                              onChange={(e) =>
-                                atualizarExercicioImportado(
-                                  letra,
-                                  i,
-                                  "grupo_muscular",
-                                  e.target.value,
-                                )
-                              }
-                              style={{ fontSize: 12, padding: 8 }}
-                            />
                             <input
                               type="number"
                               placeholder="Séries"
@@ -4134,6 +4171,7 @@ Puxada frontal 4x10
         showMore={showMore}
         setShowMore={setShowMore}
         logout={logout}
+        ehProfissional={conta.tipo_conta === "profissional"}
       />
 
       {abaPrincipal === "home" && (
@@ -4170,6 +4208,9 @@ Puxada frontal 4x10
       {abaPrincipal === "sono" && <Sono user={user} onAjuda={abrirAjuda} />}
       {abaPrincipal === "cardio" && <Cardio user={user} />}
       {abaPrincipal === "roundtimer" && <RoundTimer user={user} />}
+      {abaPrincipal === "alunos" && (
+        <Alunos perfil={conta} onAbrirPerfil={() => setAbaPrincipal("perfil")} />
+      )}
       {abaPrincipal === "coach" && <Coach user={user} />}
 
       {abaPrincipal === "treino" && (
@@ -5907,6 +5948,9 @@ Puxada frontal 4x10
 
       {abaPrincipal === "perfil" && (
         <PerfilTab
+          user={user}
+          conta={conta}
+          setConta={setConta}
           perfil={perfil}
           setPerfil={setPerfil}
           perfilEditado={perfilEditado}
