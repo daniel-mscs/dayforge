@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import Manequim from "./Manequim";
 import { useTravado } from "./lib/useTravado";
 import {
   LineChart,
@@ -49,18 +50,6 @@ function imcBarPct(imc) {
   return Math.min(100, Math.max(0, ((imc - min) / (max - min)) * 100));
 }
 
-const IMG_MASC = "/body-masc.png";
-const IMG_FEM = "/body-fem.png";
-
-const CORES = {
-  biceps: "#f59e0b",
-  peito: "#6366f1",
-  cintura: "#10b981",
-  quadril: "#ec4899",
-  coxa: "#f97316",
-  panturrilha: "#38bdf8",
-};
-
 const LABELS = {
   biceps: "Bíceps",
   peito: "Peito",
@@ -69,130 +58,6 @@ const LABELS = {
   coxa: "Coxa",
   panturrilha: "Panturrilha",
 };
-
-const PONTOS_MASC = {
-  biceps: { x: 145, y: 320, lado: "esq" },
-  peito: { x: 240, y: 305, lado: "dir" },
-  cintura: { x: 210, y: 340, lado: "dir" },
-  quadril: { x: 250, y: 400, lado: "dir" },
-  coxa: { x: 180, y: 440, lado: "esq" },
-  panturrilha: { x: 165, y: 515, lado: "esq" },
-};
-
-const PONTOS_FEM = {
-  biceps: { x: 155, y: 310, lado: "esq" },
-  peito: { x: 215, y: 310, lado: "dir" },
-  cintura: { x: 215, y: 345, lado: "dir" },
-  quadril: { x: 245, y: 400, lado: "dir" },
-  coxa: { x: 178, y: 450, lado: "esq" },
-  panturrilha: { x: 165, y: 522, lado: "esq" },
-};
-
-function BodyMeasureVisual({ sexo, medidas }) {
-  const isMasc = sexo !== "F";
-  const pontos = isMasc ? PONTOS_MASC : PONTOS_FEM;
-  const img = isMasc ? IMG_MASC : IMG_FEM;
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-      }}
-    >
-      <svg
-        viewBox="0 50 400 600"
-        width="100%"
-        style={{ maxWidth: 340, display: "block" }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <image
-          href={img}
-          x="60"
-          y="10"
-          width="280"
-          height="680"
-          preserveAspectRatio="xMidYMid meet"
-        />
-        <defs>
-          <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-            <stop offset="55%" stopColor="transparent" stopOpacity="0" />
-            <stop offset="100%" stopColor="#0d0f11" stopOpacity="1" />
-          </radialGradient>
-        </defs>
-
-        {Object.entries(pontos).map(([key, { x, y, lado }]) => {
-          const val = medidas?.[key];
-          const cor = CORES[key];
-          const isDir = lado === "dir";
-          const lx1 = isDir ? x + 18 : x - 18;
-          const lx2 = isDir ? x + 95 : x - 95;
-          const anchor = isDir ? "start" : "end";
-          const tx = lx2 + (isDir ? 4 : -4);
-
-          return (
-            <g key={key}>
-              <line
-                x1={x}
-                y1={y}
-                x2={lx1}
-                y2={y}
-                stroke={cor}
-                strokeWidth="1.2"
-                strokeDasharray="3 2"
-                opacity="0.8"
-              />
-              <line
-                x1={lx1}
-                y1={y}
-                x2={lx2}
-                y2={y}
-                stroke={cor}
-                strokeWidth="1.2"
-                opacity="0.8"
-              />
-              <circle cx={x} cy={y} r="5.5" fill={cor} opacity="0.95" />
-              <circle cx={x} cy={y} r="2.5" fill="#fff" />
-              <rect
-                x={isDir ? lx2 : lx2 - 80}
-                y={y - 17}
-                width="80"
-                height="28"
-                rx="5"
-                fill="#0d0f11"
-                opacity="0.6"
-              />
-              <text
-                x={tx}
-                y={y - 4}
-                fill={cor}
-                fontSize="9"
-                fontWeight="700"
-                textAnchor={anchor}
-                fontFamily="monospace"
-              >
-                {LABELS[key].toUpperCase()}
-              </text>
-              <text
-                x={tx}
-                y={y + 9}
-                fill={val ? "#f8fafc" : "#475569"}
-                fontSize="11"
-                fontWeight="800"
-                textAnchor={anchor}
-                fontFamily="monospace"
-              >
-                {val ? `${val} cm` : "— cm"}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
 
 export default function Peso({ user, onAjuda }) {
   const [registros, setRegistros] = useState([]);
@@ -606,7 +471,24 @@ export default function Peso({ user, onAjuda }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {/* Visual corporal */}
               <div style={{ borderRadius: 16, overflow: "hidden" }}>
-                <BodyMeasureVisual sexo={perfil?.sexo} medidas={ultima} />
+                {(() => {
+                  // Projeção: valores digitados no formulário por cima da última medição
+                  const digitadas = {};
+                  Object.entries(medidasForm).forEach(([k, v]) => {
+                    const n = parseFloat(String(v).replace(",", "."));
+                    if (n > 0) digitadas[k] = n;
+                  });
+                  const projetando = Object.keys(digitadas).length > 0;
+                  return (
+                    <Manequim
+                      sexo={perfil?.sexo}
+                      alturaCm={perfil?.altura}
+                      medidas={{ ...(ultima || {}), ...digitadas }}
+                      anterior={projetando ? ultima : medidas[1] || null}
+                      projetando={projetando}
+                    />
+                  );
+                })()}
               </div>
 
               {/* Dica de como medir */}
