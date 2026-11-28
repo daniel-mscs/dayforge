@@ -3254,28 +3254,45 @@ Puxada frontal 4x10
                               ×
                             </button>
                           </div>
+                          <input
+                            type="text"
+                            placeholder="Grupo muscular (ex: Peito)"
+                            value={ex.grupo_muscular}
+                            onChange={(e) =>
+                              atualizarExercicioImportado(
+                                letra,
+                                i,
+                                "grupo_muscular",
+                                e.target.value,
+                              )
+                            }
+                            style={{ fontSize: 12, padding: 8, marginBottom: 6 }}
+                          />
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+                              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+                              gap: 6,
+                              marginBottom: 2,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: "#7c879b",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span>Séries</span>
+                            <span>Reps</span>
+                            <span>Kg</span>
+                            <span>Descanso (s)</span>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr 1fr 1fr",
                               gap: 6,
                               marginBottom: 6,
                             }}
                           >
-                            <input
-                              type="text"
-                              placeholder="Grupo"
-                              value={ex.grupo_muscular}
-                              onChange={(e) =>
-                                atualizarExercicioImportado(
-                                  letra,
-                                  i,
-                                  "grupo_muscular",
-                                  e.target.value,
-                                )
-                              }
-                              style={{ fontSize: 12, padding: 8 }}
-                            />
                             <input
                               type="number"
                               placeholder="Séries"
