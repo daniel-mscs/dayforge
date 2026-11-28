@@ -752,7 +752,7 @@ export default function Rotina({ user }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "#1a1d21",
+          background: "#151a24",
           border: "1px solid #ffffff0d",
           borderRadius: 12,
           padding: "12px 14px",
@@ -906,7 +906,7 @@ export default function Rotina({ user }) {
                     <div
                       style={{
                         marginBottom: 16,
-                        background: "#24282d",
+                        background: "#1f2533",
                         border: "1px solid #ffffff0d",
                         borderRadius: 12,
                         padding: 12,
@@ -1124,7 +1124,7 @@ export default function Rotina({ user }) {
                                   ? "#334155"
                                   : isHoje
                                     ? "#6366f122"
-                                    : "#24282d",
+                                    : "#1f2533",
                               border: isHoje
                                 ? "1px solid #6366f1"
                                 : "1px solid #ffffff0d",
@@ -1443,7 +1443,7 @@ export default function Rotina({ user }) {
                                 ? "linear-gradient(135deg, #6366f1, #4f46e5)"
                                 : isHoje
                                   ? "#6366f122"
-                                  : "#24282d",
+                                  : "#1f2533",
                               border: isHoje
                                 ? "1px solid #6366f1"
                                 : "1px solid #ffffff0d",
@@ -1476,7 +1476,7 @@ export default function Rotina({ user }) {
                       background:
                         diasSelecionadosPdf.length > 0
                           ? "linear-gradient(135deg, #6366f1, #4f46e5)"
-                          : "#24282d",
+                          : "#1f2533",
                       border: "none",
                       color:
                         diasSelecionadosPdf.length > 0 ? "#fff" : "#475569",
@@ -1557,7 +1557,7 @@ export default function Rotina({ user }) {
               alignItems: "center",
               justifyContent: "space-between",
               marginBottom: 12,
-              background: "#1a1d21",
+              background: "#151a24",
               border: "1px solid #ffffff0d",
               borderRadius: 12,
               padding: "10px 14px",

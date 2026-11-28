@@ -1,7 +1,7 @@
 import React from "react";
 
 const shimmerStyle = {
-  background: "linear-gradient(90deg, #1a1d21 25%, #24282d 50%, #1a1d21 75%)",
+  background: "linear-gradient(90deg, #151a24 25%, #1f2533 50%, #151a24 75%)",
   backgroundSize: "800px 100%",
   animation: "skeletonShimmer 1.4s infinite",
   borderRadius: 8,
@@ -42,7 +42,7 @@ export function SkeletonCard({ children, style = {} }) {
   return (
     <div
       style={{
-        background: "#1a1d21",
+        background: "#151a24",
         border: "1px solid #ffffff0d",
         borderRadius: 16,
         padding: 16,

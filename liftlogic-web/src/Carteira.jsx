@@ -46,7 +46,7 @@ const MESES_CURTOS = [
 ];
 
 const card = {
-  background: "linear-gradient(155deg, #1c2026, #17191d)",
+  background: "linear-gradient(155deg, #181d28, #12161e)",
   border: "1px solid #ffffff10",
   borderRadius: 16,
   padding: 16,
@@ -449,7 +449,7 @@ export default function Carteira({ user }) {
               padding: "10px 8px",
               borderRadius: 10,
               border: "1px solid #ffffff10",
-              background: aba === id ? "#6366f1" : "#24282d",
+              background: aba === id ? "#6366f1" : "#1f2533",
               color: aba === id ? "#fff" : "#94a3b8",
               fontSize: 13,
               fontWeight: 700,
@@ -567,7 +567,7 @@ export default function Carteira({ user }) {
               onClick={() => setForm(null)}
               style={{
                 flex: 1,
-                background: "#24282d",
+                background: "#1f2533",
                 border: "1px solid #ffffff10",
                 borderRadius: 10,
                 color: "#94a3b8",
@@ -915,7 +915,7 @@ function Btn({ children, onClick, cor }) {
     <button
       onClick={onClick}
       style={{
-        background: "#24282d",
+        background: "#1f2533",
         border: `1px solid ${cor ? cor + "55" : "#ffffff10"}`,
         borderRadius: 8,
         color: cor || "#94a3b8",

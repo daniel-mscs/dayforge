@@ -499,7 +499,7 @@ export default function Peso({ user, onAjuda }) {
         style={{
           display: "flex",
           gap: 6,
-          background: "#1a1d21",
+          background: "#151a24",
           padding: 5,
           borderRadius: 12,
           marginBottom: 16,
@@ -612,7 +612,7 @@ export default function Peso({ user, onAjuda }) {
               {/* Dica de como medir */}
               <div
                 style={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #6366f122",
                   borderRadius: 14,
                   padding: 16,
@@ -650,7 +650,7 @@ export default function Peso({ user, onAjuda }) {
               {ultima && (
                 <div
                   style={{
-                    background: "#1a1d21",
+                    background: "#151a24",
                     border: "1px solid #ffffff0d",
                     borderRadius: 14,
                     padding: 16,
@@ -682,7 +682,7 @@ export default function Peso({ user, onAjuda }) {
                         <div
                           key={c.id}
                           style={{
-                            background: "#24282d",
+                            background: "#1f2533",
                             borderRadius: 10,
                             padding: "10px 12px",
                             textAlign: "center",
@@ -720,7 +720,7 @@ export default function Peso({ user, onAjuda }) {
               {/* Formulário */}
               <div
                 style={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff0d",
                   borderRadius: 14,
                   padding: 16,
@@ -834,7 +834,7 @@ export default function Peso({ user, onAjuda }) {
               {medidas.length >= 2 && (
                 <div
                   style={{
-                    background: "#1a1d21",
+                    background: "#151a24",
                     border: "1px solid #ffffff0d",
                     borderRadius: 14,
                     padding: 16,
@@ -867,7 +867,7 @@ export default function Peso({ user, onAjuda }) {
                       onClick={() => setMedidaSel("todos")}
                       style={{
                         background:
-                          medidaSel === "todos" ? "#ffffff22" : "#24282d",
+                          medidaSel === "todos" ? "#ffffff22" : "#1f2533",
                         border: `1px solid ${medidaSel === "todos" ? "#ffffff44" : "#ffffff0d"}`,
                         borderRadius: 8,
                         color: medidaSel === "todos" ? "#f8fafc" : "#64748b",
@@ -886,7 +886,7 @@ export default function Peso({ user, onAjuda }) {
                         onClick={() => setMedidaSel(c.id)}
                         style={{
                           background:
-                            medidaSel === c.id ? c.cor + "33" : "#24282d",
+                            medidaSel === c.id ? c.cor + "33" : "#1f2533",
                           border: `1px solid ${medidaSel === c.id ? c.cor : "#ffffff0d"}`,
                           borderRadius: 8,
                           color: medidaSel === c.id ? c.cor : "#64748b",
@@ -919,7 +919,7 @@ export default function Peso({ user, onAjuda }) {
                         />
                         <Tooltip
                           contentStyle={{
-                            background: "#1a1d21",
+                            background: "#151a24",
                             border: "1px solid #ffffff0d",
                             borderRadius: 8,
                             color: "#f8fafc",
@@ -957,7 +957,7 @@ export default function Peso({ user, onAjuda }) {
                         />
                         <Tooltip
                           contentStyle={{
-                            background: "#1a1d21",
+                            background: "#151a24",
                             border: "1px solid #ffffff0d",
                             borderRadius: 8,
                             color: "#f8fafc",
@@ -1000,7 +1000,7 @@ export default function Peso({ user, onAjuda }) {
                   return (
                     <div
                       style={{
-                        background: "#1a1d21",
+                        background: "#151a24",
                         border: "1px solid #ffffff0d",
                         borderRadius: 14,
                         padding: 16,
@@ -1040,7 +1040,7 @@ export default function Peso({ user, onAjuda }) {
                             onChange={(e) => setCompDataA(e.target.value)}
                             style={{
                               width: "100%",
-                              background: "#24282d",
+                              background: "#1f2533",
                               border: "1px solid #ffffff0d",
                               borderRadius: 8,
                               color: "#f8fafc",
@@ -1072,7 +1072,7 @@ export default function Peso({ user, onAjuda }) {
                             onChange={(e) => setCompDataB(e.target.value)}
                             style={{
                               width: "100%",
-                              background: "#24282d",
+                              background: "#1f2533",
                               border: "1px solid #ffffff0d",
                               borderRadius: 8,
                               color: "#f8fafc",
@@ -1114,7 +1114,7 @@ export default function Peso({ user, onAjuda }) {
                                 gridTemplateColumns: "80px 1fr 1fr 60px",
                                 alignItems: "center",
                                 gap: 8,
-                                background: "#24282d",
+                                background: "#1f2533",
                                 borderRadius: 10,
                                 padding: "8px 12px",
                               }}
@@ -1204,7 +1204,7 @@ export default function Peso({ user, onAjuda }) {
               {medidas.length > 1 && (
                 <div
                   style={{
-                    background: "#1a1d21",
+                    background: "#151a24",
                     border: "1px solid #ffffff0d",
                     borderRadius: 14,
                     padding: 16,
@@ -1232,7 +1232,7 @@ export default function Peso({ user, onAjuda }) {
                       <div
                         key={m.id}
                         style={{
-                          background: "#24282d",
+                          background: "#1f2533",
                           borderRadius: 10,
                           padding: "10px 14px",
                           display: "flex",
@@ -1380,7 +1380,7 @@ export default function Peso({ user, onAjuda }) {
                       onClick={() => setPeriodoGrafico(d)}
                       style={{
                         background:
-                          periodoGrafico === d ? "#6366f1" : "#24282d",
+                          periodoGrafico === d ? "#6366f1" : "#1f2533",
                         border: "1px solid #ffffff0d",
                         borderRadius: 6,
                         color: periodoGrafico === d ? "#fff" : "#64748b",
@@ -1415,7 +1415,7 @@ export default function Peso({ user, onAjuda }) {
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "#1a1d21",
+                      background: "#151a24",
                       border: "1px solid #ffffff0d",
                       borderRadius: 8,
                       color: "#f8fafc",
@@ -1551,7 +1551,7 @@ export default function Peso({ user, onAjuda }) {
                   >
                     <div
                       style={{
-                        background: "#24282d",
+                        background: "#1f2533",
                         borderRadius: 10,
                         padding: "10px 12px",
                         textAlign: "center",
@@ -1588,7 +1588,7 @@ export default function Peso({ user, onAjuda }) {
                     </div>
                     <div
                       style={{
-                        background: "#24282d",
+                        background: "#1f2533",
                         borderRadius: 10,
                         padding: "10px 12px",
                         textAlign: "center",
@@ -1621,7 +1621,7 @@ export default function Peso({ user, onAjuda }) {
                     </div>
                     <div
                       style={{
-                        background: "#24282d",
+                        background: "#1f2533",
                         borderRadius: 10,
                         padding: "10px 12px",
                         textAlign: "center",

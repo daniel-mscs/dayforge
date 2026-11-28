@@ -2322,7 +2322,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -2384,7 +2384,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     key={e.id}
                     onClick={() => vincularSuperset(modalSuperset, e)}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       border: "1px solid #ffffff0d",
                       borderRadius: 10,
                       color: "#f8fafc",
@@ -2454,7 +2454,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
             >
               <div
                 style={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff10",
                   borderRadius: 16,
                   width: "100%",
@@ -2542,7 +2542,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         background:
                           modalGif.ex.gif_url === g.url
                             ? "#6366f122"
-                            : "#24282d",
+                            : "#1f2533",
                         border: "1px solid #ffffff0d",
                         borderRadius: 8,
                         color: "#f8fafc",
@@ -3029,7 +3029,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "92%",
@@ -3131,7 +3131,7 @@ Puxada frontal 4x10
 ...`}
                         style={{
                           width: "100%",
-                          background: "#24282d",
+                          background: "#1f2533",
                           border: "1px solid #ffffff14",
                           borderRadius: 12,
                           color: "#f8fafc",
@@ -3210,7 +3210,7 @@ Puxada frontal 4x10
                         <div
                           key={i}
                           style={{
-                            background: "#24282d",
+                            background: "#1f2533",
                             border: "1px solid #ffffff0d",
                             borderRadius: 10,
                             padding: 10,
@@ -3540,7 +3540,7 @@ Puxada frontal 4x10
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -3580,7 +3580,7 @@ Puxada frontal 4x10
                     key={letra}
                     onClick={() => duplicarExercicio(modalDuplicar, letra)}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       border: "1px solid #ffffff0d",
                       borderRadius: 10,
                       color: "#f8fafc",
@@ -3631,7 +3631,7 @@ Puxada frontal 4x10
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -3722,7 +3722,7 @@ Puxada frontal 4x10
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -3768,7 +3768,7 @@ Puxada frontal 4x10
                   key={op.dias}
                   onClick={() => configurarCiclo(op.dias)}
                   style={{
-                    background: cicloDias === op.dias ? "#6366f1" : "#24282d",
+                    background: cicloDias === op.dias ? "#6366f1" : "#1f2533",
                     border: "1px solid #ffffff0d",
                     borderRadius: 10,
                     color: "#f8fafc",
@@ -3837,7 +3837,7 @@ Puxada frontal 4x10
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "92%",
@@ -3906,7 +3906,7 @@ Puxada frontal 4x10
                           onClick={() => setPreviewPreset(preset)}
                           style={{
                             textAlign: "left",
-                            background: "#24282d",
+                            background: "#1f2533",
                             border: "1px solid #ffffff0d",
                             borderRadius: 12,
                             padding: "12px 14px",
@@ -3977,7 +3977,7 @@ Puxada frontal 4x10
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               width: "92%",
               maxWidth: 420,
@@ -4073,7 +4073,7 @@ Puxada frontal 4x10
                 gap: 8,
                 padding: "14px 20px",
                 borderTop: "1px solid #ffffff0d",
-                background: "#1a1d21",
+                background: "#151a24",
                 flexShrink: 0,
               }}
             >
@@ -4618,7 +4618,7 @@ Puxada frontal 4x10
                               left: 0,
                               right: 0,
                               zIndex: 20,
-                              background: "#1a1d21",
+                              background: "#151a24",
                               border: "1px solid #ffffff0d",
                               borderRadius: 10,
                               marginTop: 4,
@@ -5261,7 +5261,7 @@ Puxada frontal 4x10
                 <div
                   style={{
                     textAlign: "center",
-                    background: "linear-gradient(155deg, #1c2026, #17191d)",
+                    background: "linear-gradient(155deg, #181d28, #12161e)",
                     border: "1px solid #ffffff10",
                     borderRadius: 16,
                     padding: "32px 20px",
@@ -5424,7 +5424,7 @@ Puxada frontal 4x10
                       <button
                         onClick={() => setPausadoMobilidade((p) => !p)}
                         style={{
-                          background: "#24282d",
+                          background: "#1f2533",
                           border: "1px solid #ffffff0d",
                           borderRadius: 10,
                           color: "#f8fafc",
@@ -5446,7 +5446,7 @@ Puxada frontal 4x10
                     <button
                       onClick={proximoExercicioMobilidade}
                       style={{
-                        background: "#24282d",
+                        background: "#1f2533",
                         border: "1px solid #ffffff0d",
                         borderRadius: 10,
                         color: "#f8fafc",
@@ -5507,7 +5507,7 @@ Puxada frontal 4x10
                         key={r.id}
                         style={{
                           background:
-                            "linear-gradient(155deg, #1c2026, #17191d)",
+                            "linear-gradient(155deg, #181d28, #12161e)",
                           border: "1px solid #ffffff10",
                           borderRadius: 14,
                           padding: 14,
@@ -5616,7 +5616,7 @@ Puxada frontal 4x10
                               <div
                                 key={i}
                                 style={{
-                                  background: "#1a1d21",
+                                  background: "#151a24",
                                   border: "1px solid #ffffff0d",
                                   borderRadius: 8,
                                   padding: "8px 10px",
@@ -5725,7 +5725,7 @@ Puxada frontal 4x10
                         <button
                           onClick={carregarRotina5Min}
                           style={{
-                            background: "#1a1d21",
+                            background: "#151a24",
                             border: "1px dashed #6366f1",
                             borderRadius: 10,
                             color: "#818cf8",
@@ -5745,7 +5745,7 @@ Puxada frontal 4x10
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            background: "#1a1d21",
+                            background: "#151a24",
                             border: "1px solid #ffffff0d",
                             borderRadius: 10,
                             padding: "10px 12px",
@@ -5799,7 +5799,7 @@ Puxada frontal 4x10
 
                   <div
                     style={{
-                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      background: "linear-gradient(155deg, #181d28, #12161e)",
                       border: "1px solid #ffffff10",
                       borderRadius: 16,
                       padding: 16,

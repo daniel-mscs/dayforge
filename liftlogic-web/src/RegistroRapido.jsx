@@ -228,7 +228,7 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
         style={{
           position: "fixed",
           right: 18,
-          bottom: 84,
+          bottom: "calc(96px + env(safe-area-inset-bottom))",
           width: 54,
           height: 54,
           borderRadius: "50%",
@@ -262,7 +262,7 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               padding: "20px 18px 28px",
@@ -321,7 +321,7 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
                       flexDirection: "column",
                       alignItems: "center",
                       gap: 8,
-                      background: "#24282d",
+                      background: "#1f2533",
                       border: "1px solid #ffffff0d",
                       borderRadius: 14,
                       padding: "18px 8px",
@@ -356,7 +356,7 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
                     key={ml}
                     onClick={() => registrarAgua(ml)}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       border: "1px solid #3b82f633",
                       borderRadius: 12,
                       color: "#3b82f6",
@@ -514,7 +514,7 @@ export default function RegistroRapido({ user, onRegistrado, onFalha }) {
                         key={cat}
                         onClick={() => setCategoriaGasto(cat)}
                         style={{
-                          background: ativa ? cor : "#24282d",
+                          background: ativa ? cor : "#1f2533",
                           border: `1px solid ${ativa ? cor : "#ffffff10"}`,
                           borderRadius: 99,
                           color: ativa ? "#0a0a0a" : "#94a3b8",

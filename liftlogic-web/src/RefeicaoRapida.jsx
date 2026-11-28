@@ -46,7 +46,7 @@ const estiloItem = {
   display: "block",
   width: "100%",
   textAlign: "left",
-  background: "#24282d",
+  background: "#1f2533",
   border: "1px solid #ffffff0d",
   borderRadius: 10,
   padding: "10px 12px",

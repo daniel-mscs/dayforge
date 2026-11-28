@@ -100,7 +100,7 @@ function App() {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          background: "#0f1113",
+          background: "#0b0d12",
           gap: 16,
         }}
       >

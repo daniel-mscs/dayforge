@@ -474,7 +474,7 @@ export default function Passos({ user, onAjuda }) {
             />
             <Tooltip
               contentStyle={{
-                background: "#1a1d21",
+                background: "#151a24",
                 border: "1px solid #ffffff0d",
                 borderRadius: 8,
                 color: "#f8fafc",

@@ -749,7 +749,7 @@ export default function Macros({ user, onAjuda }) {
                   onClick={() => setObjetivoSel(o.id)}
                   style={{
                     flex: 1,
-                    background: objetivoSel === o.id ? "#6366f1" : "#24282d",
+                    background: objetivoSel === o.id ? "#6366f1" : "#1f2533",
                     border: `1px solid ${objetivoSel === o.id ? "#6366f1" : "#ffffff0d"}`,
                     borderRadius: 8,
                     color: objetivoSel === o.id ? "#fff" : "#64748b",
@@ -1170,7 +1170,7 @@ export default function Macros({ user, onAjuda }) {
                   <div
                     key={r.id}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       borderRadius: 10,
                       padding: "10px 14px",
                       display: "flex",
@@ -1232,7 +1232,7 @@ export default function Macros({ user, onAjuda }) {
                           flex: 1,
                           minWidth: 0,
                           fontSize: 10,
-                          background: "#1a1d21",
+                          background: "#151a24",
                           border: "1px solid #ffffff0d",
                           borderRadius: 6,
                           color: "#f8fafc",
@@ -1817,7 +1817,7 @@ export default function Macros({ user, onAjuda }) {
               <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
               <Tooltip
                 contentStyle={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff0d",
                   borderRadius: 8,
                   color: "#f8fafc",
@@ -1839,7 +1839,7 @@ export default function Macros({ user, onAjuda }) {
                         ? "#10b981"
                         : d.kcal > 0
                           ? "#f59e0b"
-                          : "#24282d"
+                          : "#1f2533"
                     }
                   />
                 ))}

@@ -161,7 +161,7 @@ export default function ImportarRotina({ user, dias, onFechar, onConcluido }) {
           rows={9}
           style={{
             width: "100%",
-            background: "#24282d",
+            background: "#1f2533",
             border: "1px solid #ffffff10",
             borderRadius: 10,
             color: "#f8fafc",
@@ -253,7 +253,7 @@ export default function ImportarRotina({ user, dias, onFechar, onConcluido }) {
             onClick={onFechar}
             style={{
               flex: 1,
-              background: "#24282d",
+              background: "#1f2533",
               border: "1px solid #ffffff10",
               borderRadius: 10,
               color: "#94a3b8",

@@ -1486,7 +1486,7 @@ export default function SmartPocket({ user }) {
             display: "flex",
             alignItems: "center",
             gap: 4,
-            background: "linear-gradient(135deg, #1c2026, #17191d)",
+            background: "linear-gradient(135deg, #181d28, #12161e)",
             border: "1px solid #ffffff10",
             borderRadius: 12,
             padding: "4px 6px",
@@ -1562,7 +1562,7 @@ export default function SmartPocket({ user }) {
           alignItems: "center",
           justifyContent: "space-between",
           gap: 10,
-          background: "linear-gradient(155deg, #1c2026, #17191d)",
+          background: "linear-gradient(155deg, #181d28, #12161e)",
           border: "1px solid #ffffff10",
           borderRadius: 14,
           padding: "10px 14px",
@@ -1633,7 +1633,7 @@ export default function SmartPocket({ user }) {
             <div
               key={i}
               style={{
-                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                background: "linear-gradient(155deg, #181d28, #12161e)",
                 border: "1px solid #ffffff10",
                 borderRadius: 14,
                 padding: 14,
@@ -1663,7 +1663,7 @@ export default function SmartPocket({ user }) {
       {aba === "resumo" && (totalEntradas > 0 || totalGastos > 0) && (
         <div
           style={{
-            background: "linear-gradient(155deg, #1c2026, #17191d)",
+            background: "linear-gradient(155deg, #181d28, #12161e)",
             border: "1px solid #ffffff10",
             borderRadius: 16,
             padding: 16,
@@ -1691,7 +1691,7 @@ export default function SmartPocket({ user }) {
               />
               <Tooltip
                 contentStyle={{
-                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  background: "linear-gradient(155deg, #181d28, #12161e)",
                   border: "1px solid #ffffff10",
                   borderRadius: 8,
                   color: "#f8fafc",
@@ -1716,7 +1716,7 @@ export default function SmartPocket({ user }) {
           flexWrap: "wrap",
           justifyContent: "center",
           gap: 6,
-          background: "linear-gradient(155deg, #1c2026, #17191d)",
+          background: "linear-gradient(155deg, #181d28, #12161e)",
           padding: 6,
           borderRadius: 14,
         }}
@@ -1798,7 +1798,7 @@ export default function SmartPocket({ user }) {
               background:
                 aba === a.id
                   ? `linear-gradient(135deg, ${a.cor}, ${a.corEscura})`
-                  : "#1c2026",
+                  : "#181d28",
               border: "1px solid #ffffff0d",
               borderRadius: 10,
               color: aba === a.id ? "#fff" : a.cor,
@@ -1826,7 +1826,7 @@ export default function SmartPocket({ user }) {
             alignItems: "center",
             justifyContent: "center",
             gap: 3,
-            background: "#1c2026",
+            background: "#181d28",
             border: "1px dashed #ffffff1a",
             borderRadius: 10,
             color: "#64748b",
@@ -1849,7 +1849,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -1899,7 +1899,7 @@ export default function SmartPocket({ user }) {
             <div
               style={{
                 marginTop: 8,
-                background: "#24282d",
+                background: "#1f2533",
                 border: "1px solid #ffffff10",
                 borderRadius: 8,
                 padding: "10px 12px",
@@ -1980,7 +1980,7 @@ export default function SmartPocket({ user }) {
               <div
                 key={g.id}
                 style={{
-                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  background: "linear-gradient(155deg, #181d28, #12161e)",
                   border: "1px solid #ffffff10",
                   borderLeft: `3px solid ${CORES_CATEGORIA[g.categoria] || "#ef4444"}`,
                   borderRadius: 12,
@@ -2121,7 +2121,7 @@ export default function SmartPocket({ user }) {
           {/* Meus cartões */}
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 16,
@@ -2156,7 +2156,7 @@ export default function SmartPocket({ user }) {
                 <div
                   key={cta.id}
                   style={{
-                    background: "#24282d",
+                    background: "#1f2533",
                     border: "1px solid #ffffff10",
                     borderRadius: 10,
                     padding: "10px 12px",
@@ -2226,7 +2226,7 @@ export default function SmartPocket({ user }) {
                         }
                         style={{
                           width: 36,
-                          background: "#1a1d21",
+                          background: "#151a24",
                           border: "1px solid #ffffff10",
                           borderRadius: 6,
                           color: "#f8fafc",
@@ -2257,7 +2257,7 @@ export default function SmartPocket({ user }) {
                         }
                         style={{
                           width: 36,
-                          background: "#1a1d21",
+                          background: "#151a24",
                           border: "1px solid #ffffff10",
                           borderRadius: 6,
                           color: "#f8fafc",
@@ -2339,7 +2339,7 @@ export default function SmartPocket({ user }) {
           </div>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -2491,7 +2491,7 @@ export default function SmartPocket({ user }) {
               <div
                 key={c.id}
                 style={{
-                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  background: "linear-gradient(155deg, #181d28, #12161e)",
                   border: "1px solid #ffffff10",
                   borderLeft: "3px solid #f97316",
                   borderRadius: 12,
@@ -2566,7 +2566,7 @@ export default function SmartPocket({ user }) {
           {parcelasFuturasLista.length > 0 && (
             <div
               style={{
-                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                background: "linear-gradient(155deg, #181d28, #12161e)",
                 border: "1px solid #ffffff10",
                 borderRadius: 16,
                 padding: 16,
@@ -2615,7 +2615,7 @@ export default function SmartPocket({ user }) {
           <Carteira user={user} />
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -2637,7 +2637,7 @@ export default function SmartPocket({ user }) {
               onChange={(e) => setInvestTipo(e.target.value)}
               style={{
                 width: "100%",
-                background: "#24282d",
+                background: "#1f2533",
                 border: "1px solid #ffffff10",
                 borderRadius: 8,
                 color: "#f8fafc",
@@ -2686,7 +2686,7 @@ export default function SmartPocket({ user }) {
               <div
                 key={i.id}
                 style={{
-                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  background: "linear-gradient(155deg, #181d28, #12161e)",
                   border: "1px solid #ffffff10",
                   borderLeft: "3px solid #f59e0b",
                   borderRadius: 12,
@@ -2758,7 +2758,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -2821,7 +2821,7 @@ export default function SmartPocket({ user }) {
               <div
                 key={e.id}
                 style={{
-                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  background: "linear-gradient(155deg, #181d28, #12161e)",
                   border: "1px solid #ffffff10",
                   borderLeft: "3px solid #10b981",
                   borderRadius: 12,
@@ -2889,7 +2889,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -2966,7 +2966,7 @@ export default function SmartPocket({ user }) {
                 <div
                   key={c.id}
                   style={{
-                    background: "linear-gradient(155deg, #1c2026, #17191d)",
+                    background: "linear-gradient(155deg, #181d28, #12161e)",
                     border: "1px solid #ffffff10",
                     borderLeft: `3px solid ${paga ? "#10b981" : "#f59e0b"}`,
                     borderRadius: 12,
@@ -3111,7 +3111,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -3191,7 +3191,7 @@ export default function SmartPocket({ user }) {
                 style={{
                   flex: 1,
                   background:
-                    filtroPessoaMetas === f.id ? "#6366f1" : "#1c2026",
+                    filtroPessoaMetas === f.id ? "#6366f1" : "#181d28",
                   border: "1px solid #ffffff0d",
                   borderRadius: 8,
                   color: filtroPessoaMetas === f.id ? "#fff" : "#94a3b8",
@@ -3231,7 +3231,7 @@ export default function SmartPocket({ user }) {
                   <div
                     key={m.id}
                     style={{
-                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      background: "linear-gradient(155deg, #181d28, #12161e)",
                       border: "1px solid #ffffff10",
                       borderRadius: 16,
                       padding: 16,
@@ -3371,7 +3371,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 18,
@@ -3460,7 +3460,7 @@ export default function SmartPocket({ user }) {
                 background: "#a3e635",
                 border: "none",
                 borderRadius: 10,
-                color: "#1a1d21",
+                color: "#151a24",
                 fontSize: 14,
                 fontWeight: 700,
                 padding: 12,
@@ -3499,7 +3499,7 @@ export default function SmartPocket({ user }) {
               <div
                 key={d.id}
                 style={{
-                  background: "linear-gradient(155deg, #1c2026, #17191d)",
+                  background: "linear-gradient(155deg, #181d28, #12161e)",
                   border: "1px solid #ffffff10",
                   borderLeft: `3px solid ${d.recebido ? "#10b981" : "#a3e635"}`,
                   borderRadius: 12,
@@ -3616,7 +3616,7 @@ export default function SmartPocket({ user }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: `1px solid ${saldo >= 0 ? "#10b98144" : "#ef444444"}`,
               borderRadius: 16,
               padding: 24,
@@ -3656,7 +3656,7 @@ export default function SmartPocket({ user }) {
           {/* Total comprometido do mês (Gastos + Contas, pagas ou previstas) */}
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: "14px 18px",
@@ -3689,7 +3689,7 @@ export default function SmartPocket({ user }) {
           {evolucaoMensal.length >= 2 && (
             <div
               style={{
-                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                background: "linear-gradient(155deg, #181d28, #12161e)",
                 border: "1px solid #ffffff10",
                 borderRadius: 16,
                 padding: 16,
@@ -3720,7 +3720,7 @@ export default function SmartPocket({ user }) {
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      background: "linear-gradient(155deg, #181d28, #12161e)",
                       border: "1px solid #ffffff10",
                       borderRadius: 8,
                       color: "#f8fafc",
@@ -3745,7 +3745,7 @@ export default function SmartPocket({ user }) {
           {contas.length > 0 && (
             <div
               style={{
-                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                background: "linear-gradient(155deg, #181d28, #12161e)",
                 border: "1px solid #ffffff10",
                 borderRadius: 16,
                 padding: 16,
@@ -3827,7 +3827,7 @@ export default function SmartPocket({ user }) {
           {/* Limites por categoria */}
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 16,
@@ -3982,7 +3982,7 @@ export default function SmartPocket({ user }) {
           {/* Gastos/Cartão/Investimentos recorrentes */}
           <div
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: "1px solid #ffffff10",
               borderRadius: 16,
               padding: 16,
@@ -4038,7 +4038,7 @@ export default function SmartPocket({ user }) {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        background: "#24282d",
+                        background: "#1f2533",
                         borderRadius: 10,
                         padding: "10px 12px",
                       }}
@@ -4213,7 +4213,7 @@ export default function SmartPocket({ user }) {
             <div
               key={idx}
               style={{
-                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                background: "linear-gradient(155deg, #181d28, #12161e)",
                 border: "1px solid #ffffff10",
                 borderRadius: 16,
                 padding: 16,
@@ -4460,7 +4460,7 @@ export default function SmartPocket({ user }) {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            background: "#24282d",
+                            background: "#1f2533",
                             borderRadius: 10,
                             padding: "10px 12px",
                           }}
@@ -4544,7 +4544,7 @@ export default function SmartPocket({ user }) {
             <div
               style={{
                 marginTop: 8,
-                background: "#24282d",
+                background: "#1f2533",
                 border: "1px solid #ffffff10",
                 borderRadius: 8,
                 padding: "10px 12px",

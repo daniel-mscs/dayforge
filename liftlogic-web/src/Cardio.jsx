@@ -181,7 +181,7 @@ export default function Cardio({ user }) {
     }));
 
   const tooltipStyle = {
-    background: "#1e2126",
+    background: "#1a1f2b",
     border: "1px solid #6366f133",
     borderRadius: 10,
     color: "#f8fafc",
@@ -339,7 +339,7 @@ export default function Cardio({ user }) {
             <div
               key={i}
               style={{
-                background: "#1a1d21",
+                background: "#151a24",
                 border: "1px solid #ffffff0d",
                 borderRadius: 12,
                 padding: 12,
@@ -375,7 +375,7 @@ export default function Cardio({ user }) {
       {/* Formulário */}
       <div
         style={{
-          background: "#1a1d21",
+          background: "#151a24",
           border: "1px solid #ffffff0d",
           borderRadius: 16,
           padding: 18,
@@ -419,7 +419,7 @@ export default function Cardio({ user }) {
                 key={a.id}
                 onClick={() => setForm((p) => ({ ...p, tipo: a.id }))}
                 style={{
-                  background: sel ? "#6366f122" : "#24282d",
+                  background: sel ? "#6366f122" : "#1f2533",
                   border: `1px solid ${sel ? "#6366f1" : "#ffffff0d"}`,
                   borderRadius: 10,
                   padding: "8px 4px",
@@ -588,7 +588,7 @@ export default function Cardio({ user }) {
       {dadosGraf.length >= 2 && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #ffffff0d",
             borderRadius: 16,
             padding: 16,
@@ -670,7 +670,7 @@ export default function Cardio({ user }) {
               <div
                 key={r.id}
                 style={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff0d",
                   borderLeft: "3px solid #f59e0b",
                   borderRadius: 12,

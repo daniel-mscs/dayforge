@@ -56,7 +56,7 @@ export function ToastContainer() {
             key={t.id}
             onClick={() => remover(t.id)}
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               border: `1px solid ${cor.bg}44`,
               borderLeft: `4px solid ${cor.bg}`,
               borderRadius: 12,

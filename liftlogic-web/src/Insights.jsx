@@ -249,7 +249,7 @@ export default function Insights({ user }) {
       {insightsProntos.length === 0 ? (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #ffffff0d",
             borderRadius: 16,
             padding: "24px 20px",
@@ -270,7 +270,7 @@ export default function Insights({ user }) {
             <div
               key={i.id}
               style={{
-                background: "linear-gradient(155deg, #1c2026, #17191d)",
+                background: "linear-gradient(155deg, #181d28, #12161e)",
                 border: "1px solid #ffffff0d",
                 borderRadius: 16,
                 padding: "16px 18px",
@@ -324,7 +324,7 @@ export default function Insights({ user }) {
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff0d",
                   borderRadius: 12,
                   padding: "10px 14px",

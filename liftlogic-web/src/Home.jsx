@@ -1121,7 +1121,7 @@ export default function Home({
         <div
           className="birthday-card"
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #f59e0b55",
             borderRadius: 16,
             padding: "20px",
@@ -1227,7 +1227,7 @@ export default function Home({
                     <div
                       key={i}
                       style={{
-                        background: "#24282d",
+                        background: "#1f2533",
                         borderRadius: 12,
                         padding: "12px 14px",
                         display: "flex",
@@ -1293,7 +1293,7 @@ export default function Home({
         resumoRotinaSemana.some((d) => d.tarefas.length > 0) && (
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               border: "1px solid #6366f155",
               borderRadius: 16,
               padding: "18px 20px",
@@ -1453,7 +1453,7 @@ export default function Home({
       {isNatal && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #10b98155",
             borderRadius: 16,
             padding: "20px",
@@ -1497,7 +1497,7 @@ export default function Home({
       {isAnoNovo && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #6366f155",
             borderRadius: 16,
             padding: "20px",
@@ -1993,7 +1993,7 @@ export default function Home({
                                 }
                                 style={{
                                   flex: 1,
-                                  background: sel ? "#6366f122" : "#24282d",
+                                  background: sel ? "#6366f122" : "#1f2533",
                                   border: `1px solid ${sel ? "#6366f1" : "#ffffff0d"}`,
                                   borderRadius: 10,
                                   fontSize: 20,
@@ -2140,7 +2140,7 @@ export default function Home({
                             flexDirection: "column",
                             alignItems: "center",
                             gap: 4,
-                            background: feito ? "#10b98115" : "#24282d",
+                            background: feito ? "#10b98115" : "#1f2533",
                             border: `1px solid ${feito ? "#10b98144" : "#ffffff0d"}`,
                             borderRadius: 12,
                             padding: "10px 14px",
@@ -2189,7 +2189,7 @@ export default function Home({
               {bloco.id === "streak" && streakDiasAtivos.size > 0 && (
                 <div
                   style={{
-                    background: "#1a1d21",
+                    background: "#151a24",
                     border: "1px solid #ffffff0d",
                     borderRadius: 16,
                     padding: "18px 16px",

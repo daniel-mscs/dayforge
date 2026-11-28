@@ -436,7 +436,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
           </div>
           <div
             style={{
-              background: "#24282d",
+              background: "#1f2533",
               borderRadius: 10,
               padding: "10px 14px",
               display: "flex",

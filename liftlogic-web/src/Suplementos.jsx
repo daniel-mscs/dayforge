@@ -537,7 +537,7 @@ export default function Suplementos({
           <div
             style={{
               marginTop: 8,
-              background: "#24282d",
+              background: "#1f2533",
               border: "1px solid #ffffff10",
               borderRadius: 8,
               padding: "10px 12px",

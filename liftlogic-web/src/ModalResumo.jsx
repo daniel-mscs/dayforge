@@ -176,7 +176,7 @@ export default function ModalResumo({
                 <YAxis tick={{ fill: "#64748b", fontSize: 9 }} />
                 <Tooltip
                   contentStyle={{
-                    background: "#1a1d21",
+                    background: "#151a24",
                     border: "1px solid #ffffff0d",
                     borderRadius: 8,
                     color: "#f8fafc",
@@ -211,7 +211,7 @@ export default function ModalResumo({
               <div
                 key={ex.id}
                 style={{
-                  background: "#24282d",
+                  background: "#1f2533",
                   borderRadius: 8,
                   padding: "8px 12px",
                   display: "flex",
