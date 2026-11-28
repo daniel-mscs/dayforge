@@ -24,8 +24,22 @@ const LABELS = {
 };
 
 const PADRAO = {
-  M: { peito: 100, cintura: 86, quadril: 98, biceps: 33, coxa: 56, panturrilha: 37 },
-  F: { peito: 90, cintura: 72, quadril: 100, biceps: 28, coxa: 56, panturrilha: 35 },
+  M: {
+    peito: 100,
+    cintura: 86,
+    quadril: 98,
+    biceps: 33,
+    coxa: 56,
+    panturrilha: 37,
+  },
+  F: {
+    peito: 90,
+    cintura: 72,
+    quadril: 100,
+    biceps: 28,
+    coxa: 56,
+    panturrilha: 35,
+  },
 };
 
 const TOPO = 40; // y do topo da cabeça
@@ -155,9 +169,16 @@ function geometria(m, sexo, alturaCm) {
   };
 }
 
-export default function Manequim({ sexo, alturaCm, medidas, anterior, projetando }) {
+export default function Manequim({
+  sexo,
+  alturaCm,
+  medidas,
+  anterior,
+  projetando,
+}) {
   const sx = sexo === "F" ? "F" : "M";
-  const altura = Number(alturaCm) > 120 ? Number(alturaCm) : sx === "F" ? 163 : 175;
+  const altura =
+    Number(alturaCm) > 120 ? Number(alturaCm) : sx === "F" ? 163 : 175;
 
   const completar = (m) => {
     const r = { ...PADRAO[sx] };
@@ -168,20 +189,55 @@ export default function Manequim({ sexo, alturaCm, medidas, anterior, projetando
   const atual = geometria(completar(medidas), sx, altura);
   const fantasma = anterior ? geometria(completar(anterior), sx, altura) : null;
 
-  const lados = { peito: 1, cintura: 1, quadril: 1, biceps: -1, coxa: -1, panturrilha: -1 };
-  const linhaY = { peito: 0, cintura: 0, quadril: 0, biceps: 0, coxa: 0, panturrilha: 0 };
+  const lados = {
+    peito: 1,
+    cintura: 1,
+    quadril: 1,
+    biceps: -1,
+    coxa: -1,
+    panturrilha: -1,
+  };
+  const linhaY = {
+    peito: 0,
+    cintura: 0,
+    quadril: 0,
+    biceps: 0,
+    coxa: 0,
+    panturrilha: 0,
+  };
 
   return (
-    <div style={{ position: "relative", width: "100%", display: "flex", justifyContent: "center" }}>
-      <svg viewBox="0 0 400 600" width="100%" style={{ maxWidth: 360, display: "block" }}>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
+      <svg
+        viewBox="0 0 400 600"
+        width="100%"
+        style={{ maxWidth: 360, display: "block" }}
+      >
         <defs>
           <linearGradient id="mq-corpo" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#4c4a9e" />
             <stop offset="0.55" stopColor="#2f3277" />
             <stop offset="1" stopColor="#13504c" />
           </linearGradient>
-          <pattern id="mq-grade" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.035)" strokeWidth="1" />
+          <pattern
+            id="mq-grade"
+            width="20"
+            height="20"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 20 0 L 0 0 0 20"
+              fill="none"
+              stroke="rgba(255,255,255,0.035)"
+              strokeWidth="1"
+            />
           </pattern>
           <filter id="mq-brilho" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="6" result="b" />
@@ -196,7 +252,13 @@ export default function Manequim({ sexo, alturaCm, medidas, anterior, projetando
 
         {/* Silhueta da medição anterior (tracejada) */}
         {fantasma && (
-          <g fill="none" stroke="#94a3b8" strokeOpacity="0.45" strokeWidth="1.2" strokeDasharray="4 3">
+          <g
+            fill="none"
+            stroke="#94a3b8"
+            strokeOpacity="0.45"
+            strokeWidth="1.2"
+            strokeDasharray="4 3"
+          >
             {fantasma.corpo.map((d, i) => (
               <path key={i} d={d} />
             ))}
@@ -216,7 +278,12 @@ export default function Manequim({ sexo, alturaCm, medidas, anterior, projetando
               style={{ transition: "d 0.5s ease" }}
             />
           ))}
-          <ellipse {...atual.cabeca} fill="url(#mq-corpo)" stroke="#a5b4fc" strokeWidth="1.4" />
+          <ellipse
+            {...atual.cabeca}
+            fill="url(#mq-corpo)"
+            stroke="#a5b4fc"
+            strokeWidth="1.4"
+          />
         </g>
 
         {/* Marcações */}
@@ -228,13 +295,37 @@ export default function Manequim({ sexo, alturaCm, medidas, anterior, projetando
           const yTxt = yy + linhaY[k];
           return (
             <g key={k}>
-              <line x1={x} y1={yy} x2={xFim + (lado === 1 ? -78 : 78)} y2={yTxt} stroke={cor} strokeWidth="1" strokeDasharray="3 2" opacity="0.8" />
+              <line
+                x1={x}
+                y1={yy}
+                x2={xFim + (lado === 1 ? -78 : 78)}
+                y2={yTxt}
+                stroke={cor}
+                strokeWidth="1"
+                strokeDasharray="3 2"
+                opacity="0.8"
+              />
               <circle cx={x} cy={yy} r="4.5" fill={cor} />
               <circle cx={x} cy={yy} r="1.8" fill="#fff" />
-              <text x={xFim} y={yTxt - 4} fill={cor} fontSize="9" fontWeight="800" textAnchor={lado === 1 ? "end" : "start"} letterSpacing="0.06em">
+              <text
+                x={xFim}
+                y={yTxt - 4}
+                fill={cor}
+                fontSize="9"
+                fontWeight="800"
+                textAnchor={lado === 1 ? "end" : "start"}
+                letterSpacing="0.06em"
+              >
                 {LABELS[k].toUpperCase()}
               </text>
-              <text x={xFim} y={yTxt + 10} fill={val ? "#f8fafc" : "#475569"} fontSize="12" fontWeight="800" textAnchor={lado === 1 ? "end" : "start"}>
+              <text
+                x={xFim}
+                y={yTxt + 10}
+                fill={val ? "#f8fafc" : "#475569"}
+                fontSize="12"
+                fontWeight="800"
+                textAnchor={lado === 1 ? "end" : "start"}
+              >
                 {val ? `${val} cm` : "— cm"}
               </text>
             </g>
@@ -243,16 +334,50 @@ export default function Manequim({ sexo, alturaCm, medidas, anterior, projetando
 
         {projetando && (
           <g>
-            <rect x="130" y="6" width="140" height="22" rx="11" fill="#f59e0b22" stroke="#f59e0b66" />
-            <text x="200" y="21" textAnchor="middle" fill="#fbbf24" fontSize="10.5" fontWeight="800" letterSpacing="0.05em">
+            <rect
+              x="130"
+              y="6"
+              width="140"
+              height="22"
+              rx="11"
+              fill="#f59e0b22"
+              stroke="#f59e0b66"
+            />
+            <text
+              x="200"
+              y="21"
+              textAnchor="middle"
+              fill="#fbbf24"
+              fontSize="10.5"
+              fontWeight="800"
+              letterSpacing="0.05em"
+            >
               PROJEÇÃO AO VIVO
             </text>
           </g>
         )}
       </svg>
       {fantasma && (
-        <div style={{ position: "absolute", bottom: 6, left: 0, right: 0, textAlign: "center", fontSize: 11, color: "#7c879b" }}>
-          <span style={{ borderBottom: "1px dashed #94a3b8", marginRight: 6, display: "inline-block", width: 18, verticalAlign: 3 }} />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 6,
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            fontSize: 11,
+            color: "#7c879b",
+          }}
+        >
+          <span
+            style={{
+              borderBottom: "1px dashed #94a3b8",
+              marginRight: 6,
+              display: "inline-block",
+              width: 18,
+              verticalAlign: 3,
+            }}
+          />
           medição anterior
         </div>
       )}

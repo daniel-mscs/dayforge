@@ -57,11 +57,19 @@ function formatTime(seconds) {
 function Stepper({ valor, onChange, passo, min, max, formatar = (v) => v }) {
   return (
     <div className="rt-stepper">
-      <button type="button" onClick={() => onChange(Math.max(min, valor - passo))} aria-label="Diminuir">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, valor - passo))}
+        aria-label="Diminuir"
+      >
         <Minus size={18} />
       </button>
       <span>{formatar(valor)}</span>
-      <button type="button" onClick={() => onChange(Math.min(max, valor + passo))} aria-label="Aumentar">
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, valor + passo))}
+        aria-label="Aumentar"
+      >
         <Plus size={18} />
       </button>
     </div>
@@ -80,26 +88,57 @@ function ConfigModal({ config, preparo, mode, onSave, onClose }) {
           <span>
             <Settings size={16} /> Configurar
           </span>
-          <button className="rt-icone-btn" onClick={onClose} aria-label="Fechar">
+          <button
+            className="rt-icone-btn"
+            onClick={onClose}
+            aria-label="Fechar"
+          >
             <X size={18} />
           </button>
         </div>
 
         <div className="rt-config-linha">
           <label>Rounds</label>
-          <Stepper valor={c.rounds} onChange={set("rounds")} passo={1} min={1} max={30} />
+          <Stepper
+            valor={c.rounds}
+            onChange={set("rounds")}
+            passo={1}
+            min={1}
+            max={30}
+          />
         </div>
         <div className="rt-config-linha">
           <label>Duração do round</label>
-          <Stepper valor={c.round_duration} onChange={set("round_duration")} passo={15} min={10} max={1200} formatar={formatTime} />
+          <Stepper
+            valor={c.round_duration}
+            onChange={set("round_duration")}
+            passo={15}
+            min={10}
+            max={1200}
+            formatar={formatTime}
+          />
         </div>
         <div className="rt-config-linha">
           <label>Descanso</label>
-          <Stepper valor={c.rest_duration} onChange={set("rest_duration")} passo={15} min={0} max={600} formatar={formatTime} />
+          <Stepper
+            valor={c.rest_duration}
+            onChange={set("rest_duration")}
+            passo={15}
+            min={0}
+            max={600}
+            formatar={formatTime}
+          />
         </div>
         <div className="rt-config-linha">
           <label>Preparação antes de começar</label>
-          <Stepper valor={prep} onChange={setPrep} passo={5} min={0} max={30} formatar={(v) => `${v}s`} />
+          <Stepper
+            valor={prep}
+            onChange={setPrep}
+            passo={5}
+            min={0}
+            max={30}
+            formatar={(v) => `${v}s`}
+          />
         </div>
         {mode === "sparring" && (
           <div className="rt-config-linha">
@@ -139,13 +178,24 @@ export default function RoundTimer({ user }) {
   const [config, setConfig] = useState(carregarConfig);
   const [preparo, setPreparo] = useState(() => {
     const v = Number(localStorage.getItem(PREPARO_STORAGE_KEY));
-    return Number.isFinite(v) && localStorage.getItem(PREPARO_STORAGE_KEY) !== null ? v : 5;
+    return Number.isFinite(v) &&
+      localStorage.getItem(PREPARO_STORAGE_KEY) !== null
+      ? v
+      : 5;
   });
   const [mode, setMode] = useState("training");
   const [showConfig, setShowConfig] = useState(false);
 
-  const { fase, round, restante, rodando, progresso, iniciarOuPausar, pular, reset } =
-    useRoundTimer(config, mode, { preparo });
+  const {
+    fase,
+    round,
+    restante,
+    rodando,
+    progresso,
+    iniciarOuPausar,
+    pular,
+    reset,
+  } = useRoundTimer(config, mode, { preparo });
 
   // Trava o scroll da página com o modal aberto
   useEffect(() => {
@@ -169,13 +219,21 @@ export default function RoundTimer({ user }) {
   const [registrarNoCardio, salvandoCardio] = useTravado(async () => {
     if (!user) return;
     const duracaoMin = Math.round(
-      (config.rounds * config.round_duration + (config.rounds - 1) * config.rest_duration) / 60,
+      (config.rounds * config.round_duration +
+        (config.rounds - 1) * config.rest_duration) /
+        60,
     );
-    const { data: perfil } = await supabase.from("perfil").select("peso").eq("user_id", user.id).single();
+    const { data: perfil } = await supabase
+      .from("perfil")
+      .select("peso")
+      .eq("user_id", user.id)
+      .single();
     const pesoEfetivo = perfil?.peso || 70;
     const kcal = Math.round(MET_MUAY_THAI * pesoEfetivo * (duracaoMin / 60));
     const d = new Date();
-    const hoje = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+    const hoje = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString()
+      .split("T")[0];
     const { error } = await supabase.from("cardio_registro").insert([
       {
         user_id: user.id,
@@ -192,14 +250,18 @@ export default function RoundTimer({ user }) {
 
   const emTreino = fase !== "parado" && fase !== "fim";
   const alerta = rodando && fase === "round" && restante <= 10 && restante > 0;
-  const totalSessao = config.rounds * config.round_duration + (config.rounds - 1) * config.rest_duration;
+  const totalSessao =
+    config.rounds * config.round_duration +
+    (config.rounds - 1) * config.rest_duration;
 
   // Anel de progresso
   const R = 140;
   const C = 2 * Math.PI * R;
 
   return (
-    <div className={`rt-tela rt-fase-${fase} ${mode === "sparring" ? "rt-sparring" : ""} ${alerta ? "rt-alerta" : ""}`}>
+    <div
+      className={`rt-tela rt-fase-${fase} ${mode === "sparring" ? "rt-sparring" : ""} ${alerta ? "rt-alerta" : ""}`}
+    >
       <div className="rt-topo">
         <div className="rt-modos">
           <button
@@ -217,7 +279,12 @@ export default function RoundTimer({ user }) {
             <Swords size={14} /> Sparring
           </button>
         </div>
-        <button className="rt-icone-btn" onClick={() => setShowConfig(true)} disabled={emTreino} aria-label="Configurar">
+        <button
+          className="rt-icone-btn"
+          onClick={() => setShowConfig(true)}
+          disabled={emTreino}
+          aria-label="Configurar"
+        >
           <Settings size={20} />
         </button>
       </div>
@@ -245,7 +312,10 @@ export default function RoundTimer({ user }) {
         </div>
       )}
 
-      <div className="rt-relogio" onClick={fase !== "fim" ? iniciarOuPausar : undefined}>
+      <div
+        className="rt-relogio"
+        onClick={fase !== "fim" ? iniciarOuPausar : undefined}
+      >
         <svg viewBox="0 0 320 320" className="rt-anel">
           <circle cx="160" cy="160" r={R} className="rt-anel-fundo" />
           <circle
@@ -262,7 +332,9 @@ export default function RoundTimer({ user }) {
             {fase === "fim" ? <Trophy size={16} /> : null} {ROTULO_FASE[fase]}
             {fase === "round" ? ` ${round}/${config.rounds}` : ""}
           </span>
-          <span className="rt-tempo">{fase === "fim" ? formatTime(totalSessao) : formatTime(restante)}</span>
+          <span className="rt-tempo">
+            {fase === "fim" ? formatTime(totalSessao) : formatTime(restante)}
+          </span>
           <span className="rt-sub">
             {fase === "parado" && "toque para começar"}
             {fase === "preparo" && "prepare-se"}
@@ -276,38 +348,78 @@ export default function RoundTimer({ user }) {
       <div className="rt-rounds">
         {Array.from({ length: config.rounds }, (_, i) => {
           const n = i + 1;
-          const feito = fase === "fim" || n < round || (n === round && fase === "descanso");
+          const feito =
+            fase === "fim" || n < round || (n === round && fase === "descanso");
           const atual = n === round && fase === "round";
-          return <span key={n} className={`rt-ponto ${feito ? "rt-feito" : ""} ${atual ? "rt-atual" : ""}`} />;
+          return (
+            <span
+              key={n}
+              className={`rt-ponto ${feito ? "rt-feito" : ""} ${atual ? "rt-atual" : ""}`}
+            />
+          );
         })}
       </div>
 
       <div className="rt-controles">
-        <button className="rt-btn-redondo" onClick={reset} aria-label="Recomeçar" disabled={fase === "parado"}>
+        <button
+          className="rt-btn-redondo"
+          onClick={reset}
+          aria-label="Recomeçar"
+          disabled={fase === "parado"}
+        >
           <RotateCcw size={22} />
         </button>
         {fase !== "fim" ? (
-          <button className="rt-btn-play" onClick={iniciarOuPausar} aria-label={rodando ? "Pausar" : "Iniciar"}>
-            {rodando ? <Pause size={34} fill="currentColor" /> : <Play size={34} fill="currentColor" />}
+          <button
+            className="rt-btn-play"
+            onClick={iniciarOuPausar}
+            aria-label={rodando ? "Pausar" : "Iniciar"}
+          >
+            {rodando ? (
+              <Pause size={34} fill="currentColor" />
+            ) : (
+              <Play size={34} fill="currentColor" />
+            )}
           </button>
         ) : (
-          <button className="rt-btn-play" onClick={() => { reset(); }} aria-label="Novo treino">
+          <button
+            className="rt-btn-play"
+            onClick={() => {
+              reset();
+            }}
+            aria-label="Novo treino"
+          >
             <RotateCcw size={32} />
           </button>
         )}
-        <button className="rt-btn-redondo" onClick={pular} aria-label="Pular fase" disabled={!emTreino}>
+        <button
+          className="rt-btn-redondo"
+          onClick={pular}
+          aria-label="Pular fase"
+          disabled={!emTreino}
+        >
           <SkipForward size={22} />
         </button>
       </div>
 
       <div className="rt-resumo">
-        {config.rounds} rounds · {formatTime(config.round_duration)} · descanso {formatTime(config.rest_duration)} ·
-        total {formatTime(totalSessao)}
+        {config.rounds} rounds · {formatTime(config.round_duration)} · descanso{" "}
+        {formatTime(config.rest_duration)} · total {formatTime(totalSessao)}
       </div>
 
       {fase === "fim" && user && (
-        <button className="rt-btn-principal rt-btn-cardio" onClick={registrarNoCardio} disabled={salvandoCardio}>
-          {salvandoCardio ? "Salvando..." : (<><Check size={16} /> Registrar no Cardio</>)}
+        <button
+          className="rt-btn-principal rt-btn-cardio"
+          onClick={registrarNoCardio}
+          disabled={salvandoCardio}
+        >
+          {salvandoCardio ? (
+            "Salvando..."
+          ) : (
+            <>
+              <Check size={16} /> Registrar no Cardio
+            </>
+          )}
         </button>
       )}
 

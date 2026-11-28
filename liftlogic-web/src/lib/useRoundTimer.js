@@ -19,7 +19,10 @@ function bipe(freq = 880, duracao = 0.12) {
     const ganho = audioCtx.createGain();
     osc.frequency.value = freq;
     ganho.gain.setValueAtTime(0.25, audioCtx.currentTime);
-    ganho.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracao);
+    ganho.gain.exponentialRampToValueAtTime(
+      0.001,
+      audioCtx.currentTime + duracao,
+    );
     osc.connect(ganho).connect(audioCtx.destination);
     osc.start();
     osc.stop(audioCtx.currentTime + duracao);
@@ -68,7 +71,14 @@ export function useRoundTimer(config, mode, { preparo = 5 } = {}) {
   const [restante, setRestante] = useState(config.round_duration);
   const [rodando, setRodando] = useState(false);
 
-  const ref = useRef({ fimEm: 0, pausadoCom: 0, fase: "parado", round: 1, avisou: false, ultimoBipe: null });
+  const ref = useRef({
+    fimEm: 0,
+    pausadoCom: 0,
+    fase: "parado",
+    round: 1,
+    avisou: false,
+    ultimoBipe: null,
+  });
   const cfgRef = useRef(config);
   const modoRef = useRef(mode);
   useEffect(() => {
@@ -77,7 +87,11 @@ export function useRoundTimer(config, mode, { preparo = 5 } = {}) {
   });
 
   const duracaoDa = (f) =>
-    f === "preparo" ? preparo : f === "round" ? cfgRef.current.round_duration : cfgRef.current.rest_duration;
+    f === "preparo"
+      ? preparo
+      : f === "round"
+        ? cfgRef.current.round_duration
+        : cfgRef.current.rest_duration;
 
   const entrarNaFase = useCallback(
     (f, r, inicio) => {
@@ -137,18 +151,29 @@ export function useRoundTimer(config, mode, { preparo = 5 } = {}) {
       const agora = Date.now();
       // Pode ter passado mais de uma fase com o app em segundo plano
       let guarda = 0;
-      while (s.fase !== "fim" && agora >= s.fimEm && guarda++ < 100) avancar(s.fimEm);
+      while (s.fase !== "fim" && agora >= s.fimEm && guarda++ < 100)
+        avancar(s.fimEm);
       if (s.fase === "fim") return;
       const seg = Math.max(0, Math.ceil((s.fimEm - agora) / 1000));
       setRestante(seg);
       const cfg = cfgRef.current;
-      if (modoRef.current === "sparring" && s.fase === "round" && !s.avisou && seg === cfg.warning_time) {
+      if (
+        modoRef.current === "sparring" &&
+        s.fase === "round" &&
+        !s.avisou &&
+        seg === cfg.warning_time
+      ) {
         s.avisou = true;
         tocarAviso();
         vibrar([100, 80, 100]);
       }
       // 3-2-1 antes de começar cada round
-      if ((s.fase === "preparo" || s.fase === "descanso") && seg <= 3 && seg >= 1 && s.ultimoBipe !== seg) {
+      if (
+        (s.fase === "preparo" || s.fase === "descanso") &&
+        seg <= 3 &&
+        seg >= 1 &&
+        s.ultimoBipe !== seg
+      ) {
         s.ultimoBipe = seg;
         bipe(660);
       }
@@ -161,7 +186,8 @@ export function useRoundTimer(config, mode, { preparo = 5 } = {}) {
   useEffect(() => {
     manterTelaAcesa(emTreino);
     const reativar = () => {
-      if (emTreino && document.visibilityState === "visible") manterTelaAcesa(true);
+      if (emTreino && document.visibilityState === "visible")
+        manterTelaAcesa(true);
     };
     document.addEventListener("visibilitychange", reativar);
     return () => document.removeEventListener("visibilitychange", reativar);
@@ -193,24 +219,47 @@ export function useRoundTimer(config, mode, { preparo = 5 } = {}) {
     const s = ref.current;
     if (s.fase === "parado" || s.fase === "fim") return;
     avancar(Date.now());
-    if (!rodando) ref.current.pausadoCom = Math.max(0, ref.current.fimEm - Date.now());
+    if (!rodando)
+      ref.current.pausadoCom = Math.max(0, ref.current.fimEm - Date.now());
   }, [avancar, rodando]);
 
   const reset = useCallback(() => {
-    ref.current = { fimEm: 0, pausadoCom: 0, fase: "parado", round: 1, avisou: false, ultimoBipe: null };
+    ref.current = {
+      fimEm: 0,
+      pausadoCom: 0,
+      fase: "parado",
+      round: 1,
+      avisou: false,
+      ultimoBipe: null,
+    };
     setRodando(false);
     setFase("parado");
     setRound(1);
     setRestante(cfgRef.current.round_duration);
   }, []);
 
-
   const total =
-    fase === "preparo" ? preparo : fase === "descanso" ? config.rest_duration : fase === "fim" ? 1 : config.round_duration;
-  const progresso = fase === "fim" ? 1 : total > 0 ? (total - restante) / total : 0;
+    fase === "preparo"
+      ? preparo
+      : fase === "descanso"
+        ? config.rest_duration
+        : fase === "fim"
+          ? 1
+          : config.round_duration;
+  const progresso =
+    fase === "fim" ? 1 : total > 0 ? (total - restante) / total : 0;
 
   // Parado: mostra sempre a duração da configuração atual (ex.: ao trocar de preset)
   const restanteVisivel = fase === "parado" ? config.round_duration : restante;
 
-  return { fase, round, restante: restanteVisivel, rodando, progresso, iniciarOuPausar, pular, reset };
+  return {
+    fase,
+    round,
+    restante: restanteVisivel,
+    rodando,
+    progresso,
+    iniciarOuPausar,
+    pular,
+    reset,
+  };
 }

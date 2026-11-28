@@ -9,6 +9,7 @@ export default function Login({ onLoginSuccess }) {
     confirmarSenha: "",
   });
   const [loading, setLoading] = useState(false);
+  const [tipoConta, setTipoConta] = useState("aluno");
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -105,6 +106,8 @@ export default function Login({ onLoginSuccess }) {
       const { data, error } = await supabase.auth.signUp({
         email: emailLimpo(),
         password: form.senha,
+        // vira perfil.tipo_conta quando o perfil é criado (ver Treino.buscarPerfil)
+        options: { data: { tipo_conta: tipoConta } },
       });
       if (error) setErro(mensagemErro(error));
       // Com a confirmação de e-mail desligada no Supabase, a conta já entra direto
@@ -353,6 +356,41 @@ export default function Login({ onLoginSuccess }) {
                   {form.senha === form.confirmarSenha
                     ? "✅ Senhas coincidem"
                     : "❌ Senhas não coincidem"}
+                </span>
+              )}
+            </div>
+          )}
+
+          {modo === "register" && (
+            <div className="login-field">
+              <label>TIPO DE CONTA</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  ["aluno", "🏋️ Aluno", "Uso o app para mim"],
+                  ["profissional", "💼 Profissional", "Personal / nutri"],
+                ].map(([id, rotulo, sub]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setTipoConta(id)}
+                    style={{
+                      textAlign: "left",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      cursor: "pointer",
+                      background: tipoConta === id ? "rgba(99,102,241,0.16)" : "#1f2533",
+                      border: `1px solid ${tipoConta === id ? "#6366f1" : "rgba(255,255,255,0.08)"}`,
+                      color: "#f8fafc",
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{rotulo}</div>
+                    <div style={{ fontSize: 11, color: "#7c879b", marginTop: 2 }}>{sub}</div>
+                  </button>
+                ))}
+              </div>
+              {tipoConta === "profissional" && (
+                <span style={{ fontSize: 11, color: "#7c879b", marginTop: 6, display: "block" }}>
+                  Você usa o app normalmente e ganha a aba Alunos, com um código para seus alunos se conectarem.
                 </span>
               )}
             </div>
