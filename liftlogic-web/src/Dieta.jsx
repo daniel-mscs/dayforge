@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { agendarNotificacoesDieta } from "./lib/notifications";
 import {
   Sun,
@@ -93,7 +94,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
     buscarDieta();
   }, [buscarDieta]);
 
-  const salvarRefeicao = async (refeicaoId, conteudo) => {
+  const [salvarRefeicao] = useTravado(async (refeicaoId, conteudo) => {
     setSalvando(true);
     await supabase.from("dieta_plano").upsert(
       {
@@ -110,7 +111,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
       return novo;
     });
     setSalvando(false);
-  };
+  });
 
   const KCAL_DIETAS = {
     emagrecer: { baixa: 1600, media: 1800, alta: 2000 },
@@ -198,7 +199,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
     },
   };
 
-  const aplicarDieta = async () => {
+  const [aplicarDieta] = useTravado(async () => {
     const dieta = DIETAS[objetivo][renda];
     const updates = Object.entries(dieta).map(([refeicao, conteudo]) =>
       supabase.from("dieta_plano").upsert(
@@ -214,7 +215,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
     await Promise.all(updates);
     setPlano((prev) => ({ ...prev, ...dieta }));
     setShowSugestao(false);
-  };
+  });
 
   const refeicaoAtual = () => {
     const hora = new Date().getHours();
@@ -435,7 +436,7 @@ export default function Dieta({ user, compact = false, onAjuda }) {
           </div>
           <div
             style={{
-              background: "#24282d",
+              background: "#1f2533",
               borderRadius: 10,
               padding: "10px 14px",
               display: "flex",

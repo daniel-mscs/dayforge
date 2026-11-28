@@ -10,6 +10,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import {
   BarChart,
   Bar,
@@ -73,7 +74,7 @@ export default function Passos({ user, onAjuda }) {
     buscarTudo();
   }, [buscarTudo]);
 
-  const registrarPassos = async () => {
+  const [registrarPassos] = useTravado(async () => {
     const val = parseInt(passosInput);
     if (!val || val <= 0) {
       toast("Digite um valor válido!", "error");
@@ -114,14 +115,14 @@ export default function Passos({ user, onAjuda }) {
       if (val >= meta) await ganharXP(user.id, "meta_passos");
     }
     setPassosInput("");
-  };
+  });
 
   const deletarRegistro = async (id) => {
     await supabase.from("passos_registro").delete().eq("id", id);
     setRegistros((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const salvarMeta = async () => {
+  const [salvarMeta] = useTravado(async () => {
     const val = parseInt(metaInput);
     if (!val || val < 100) {
       toast("Meta inválida!", "error");
@@ -136,7 +137,7 @@ export default function Passos({ user, onAjuda }) {
     setMeta(val);
     setMetaInput("");
     setEditandoMeta(false);
-  };
+  });
 
   const hoje_reg = registros.find((r) => r.data === hoje);
   const passosHoje = hoje_reg?.passos || 0;
@@ -473,7 +474,7 @@ export default function Passos({ user, onAjuda }) {
             />
             <Tooltip
               contentStyle={{
-                background: "#1a1d21",
+                background: "#151a24",
                 border: "1px solid #ffffff0d",
                 borderRadius: 8,
                 color: "#f8fafc",

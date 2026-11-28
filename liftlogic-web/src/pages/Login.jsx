@@ -40,17 +40,44 @@ export default function Login({ onLoginSuccess }) {
     return { label: "Forte", color: "#10b981", width: "100%" };
   };
 
+  // O teclado do celular costuma deixar espaço no fim / letra maiúscula no e-mail
+  const emailLimpo = () => form.email.trim().toLowerCase();
+
+  // Traduz os erros do Supabase Auth para algo útil
+  const mensagemErro = (error) => {
+    const code = error?.code || "";
+    const msg = (error?.message || "").toLowerCase();
+    if (code === "invalid_credentials" || msg.includes("invalid login"))
+      return "E-mail ou senha incorretos.";
+    if (code === "email_not_confirmed" || msg.includes("not confirmed"))
+      return "Confirme seu e-mail antes de entrar (veja a caixa de entrada e o spam).";
+    if (code === "user_already_exists" || msg.includes("already registered"))
+      return "Já existe uma conta com esse e-mail. Tente entrar.";
+    if (code === "over_request_rate_limit" || code === "over_email_send_rate_limit" || msg.includes("rate limit"))
+      return "Muitas tentativas. Espere alguns minutos e tente de novo.";
+    if (code === "weak_password") return "Senha fraca. Use pelo menos 6 caracteres.";
+    if (msg.includes("fetch") || msg.includes("network") || error?.status === 0)
+      return "Sem conexão com o servidor. Verifique sua internet.";
+    return error?.message || "Algo deu errado. Tente de novo.";
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setErro("");
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.senha,
-    });
-    if (error) setErro("Email ou senha incorretos.");
-    else onLoginSuccess(data.session);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailLimpo(),
+        password: form.senha,
+      });
+      if (error) setErro(mensagemErro(error));
+      else onLoginSuccess(data.session);
+    } catch (err) {
+      setErro(mensagemErro(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async (e) => {
@@ -58,7 +85,7 @@ export default function Login({ onLoginSuccess }) {
     setErro("");
     setSucesso("");
 
-    if (!form.email) {
+    if (!emailLimpo()) {
       setErro("Digite seu e-mail.");
       return;
     }
@@ -72,27 +99,41 @@ export default function Login({ onLoginSuccess }) {
       return;
     }
 
+    if (loading) return;
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.senha,
-    });
-    if (error) setErro(error.message);
-    else setSucesso("Conta criada! Verifique seu email para confirmar. 📧");
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: emailLimpo(),
+        password: form.senha,
+      });
+      if (error) setErro(mensagemErro(error));
+      // Com a confirmação de e-mail desligada no Supabase, a conta já entra direto
+      else if (data?.session) onLoginSuccess(data.session);
+      else setSucesso("Conta criada! Verifique seu email para confirmar. 📧");
+    } catch (err) {
+      setErro(mensagemErro(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = async () => {
-    if (!form.email) {
+    if (!emailLimpo()) {
       setErro("Digite seu e-mail antes de solicitar a redefinição.");
       return;
     }
+    if (resetLoading) return;
     setResetLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
-      redirectTo: "https://dayforge-web.vercel.app/reset-password",
-    });
+    let error = null;
+    try {
+      ({ error } = await supabase.auth.resetPasswordForEmail(emailLimpo(), {
+        redirectTo: "https://dayforge-web.vercel.app/reset-password",
+      }));
+    } catch (err) {
+      error = err;
+    }
     setResetLoading(false);
-    if (error) setErro("Erro ao enviar e-mail: " + error.message);
+    if (error) setErro("Erro ao enviar e-mail: " + mensagemErro(error));
     else {
       setResetSent(true);
       setErro("");

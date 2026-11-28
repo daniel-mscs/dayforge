@@ -12,7 +12,7 @@ import {
 } from "recharts";
 
 const tooltipStyle = {
-  background: "#1a1d21",
+  background: "#151a24",
   border: "1px solid #ffffff0d",
   borderRadius: 8,
   color: "#f8fafc",
@@ -148,7 +148,7 @@ export default function TreinoStats({
                   <div
                     key={nome}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       borderRadius: 10,
                       padding: "10px 14px",
                       display: "flex",

@@ -82,7 +82,7 @@ function novoExercicio(progresso, ultima) {
 }
 
 const card = {
-  background: "linear-gradient(155deg, #1c2026, #17191d)",
+  background: "linear-gradient(155deg, #181d28, #12161e)",
   border: "1px solid #ffffff10",
   borderRadius: 16,
   padding: 18,

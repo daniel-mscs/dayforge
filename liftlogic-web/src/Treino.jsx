@@ -456,6 +456,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
   const [modalConfirmarApagarTreino, setModalConfirmarApagarTreino] =
     useState(false);
   const [modalImportarPDF, setModalImportarPDF] = useState(false);
+  const [textoTreinoImport, setTextoTreinoImport] = useState("");
   const [processandoPDF, setProcessandoPDF] = useState(false);
   const [progressoOCR, setProgressoOCR] = useState(0);
   const [treinoImportado, setTreinoImportado] = useState(null);
@@ -1960,6 +1961,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
     setAplicandoImportado(false);
     setTreinoImportado(null);
     setModalImportarPDF(false);
+    setTextoTreinoImport("");
     toast("Treino importado com sucesso! 💪", "success");
   };
 
@@ -2320,7 +2322,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -2382,7 +2384,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     key={e.id}
                     onClick={() => vincularSuperset(modalSuperset, e)}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       border: "1px solid #ffffff0d",
                       borderRadius: 10,
                       color: "#f8fafc",
@@ -2452,7 +2454,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
             >
               <div
                 style={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff10",
                   borderRadius: 16,
                   width: "100%",
@@ -2540,7 +2542,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         background:
                           modalGif.ex.gif_url === g.url
                             ? "#6366f122"
-                            : "#24282d",
+                            : "#1f2533",
                         border: "1px solid #ffffff0d",
                         borderRadius: 8,
                         color: "#f8fafc",
@@ -3020,13 +3022,14 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
           onClick={() => {
             if (!processandoPDF) {
               setModalImportarPDF(false);
+              setTextoTreinoImport("");
               setTreinoImportado(null);
             }
           }}
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "92%",
@@ -3049,7 +3052,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 size={15}
                 style={{ verticalAlign: -2, marginRight: 6 }}
               />
-              Importar treino (PDF/Foto)
+              Importar treino (Texto/PDF/Foto)
             </div>
 
             {!treinoImportado && (
@@ -3057,8 +3060,9 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 <div
                   style={{ fontSize: 12, color: "#64748b", marginBottom: 18 }}
                 >
-                  Sobe o PDF ou uma foto da sua ficha de treino. Eu tento
-                  reconhecer os exercícios sozinho (procurando padrões tipo
+                  Sobe o PDF ou uma foto da sua ficha de treino, ou cole o
+                  treino em texto lá embaixo. Eu tento reconhecer os
+                  exercícios sozinho (procurando padrões tipo
                   "3x12" e "40kg") — depois você confere e corrige antes de
                   aplicar.
                   <br />
@@ -3094,6 +3098,83 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     style={{ display: "none" }}
                   />
                 </label>
+
+                {/* Colar texto (igual à importação da Rotina) */}
+                {(() => {
+                  const lido = parsearTreinoTexto(textoTreinoImport);
+                  const letras = Object.keys(lido).filter((l) => lido[l].length);
+                  const total = letras.reduce((acc, l) => acc + lido[l].length, 0);
+                  return (
+                    <div style={{ marginTop: 18 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 800,
+                          color: "#cbd5e1",
+                          marginBottom: 6,
+                        }}
+                      >
+                        ✍️ Ou cole o treino em texto
+                      </div>
+                      <textarea
+                        value={textoTreinoImport}
+                        onChange={(e) => setTextoTreinoImport(e.target.value)}
+                        disabled={processandoPDF}
+                        rows={8}
+                        placeholder={`Treino A - Peito e Tríceps
+1. Supino reto 4x10 60kg
+2. Crucifixo 3x12
+3. Tríceps corda 3x15 60s
+
+Treino B - Costas e Bíceps
+Puxada frontal 4x10
+...`}
+                        style={{
+                          width: "100%",
+                          background: "#1f2533",
+                          border: "1px solid #ffffff14",
+                          borderRadius: 12,
+                          color: "#f8fafc",
+                          fontSize: 13,
+                          padding: 12,
+                          resize: "vertical",
+                          fontFamily: "inherit",
+                        }}
+                      />
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: total ? "#10b981" : "#64748b",
+                          margin: "6px 0 10px",
+                        }}
+                      >
+                        {textoTreinoImport.trim()
+                          ? total
+                            ? `✓ ${total} exercício(s) em ${letras.length} treino(s): ${letras.join(", ")}`
+                            : 'Nenhum exercício reconhecido ainda. Use o formato "Nome 4x12".'
+                          : 'Cabeçalhos "Treino A", "Treino B"... e exercícios no formato "Nome 4x12 40kg 60s".'}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!total}
+                        onClick={() => setTreinoImportado(lido)}
+                        style={{
+                          width: "100%",
+                          background: total ? "#6366f1" : "#2a2e34",
+                          border: "none",
+                          borderRadius: 10,
+                          color: total ? "#fff" : "#64748b",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          padding: 12,
+                          cursor: total ? "pointer" : "default",
+                        }}
+                      >
+                        Revisar e importar
+                      </button>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
@@ -3129,7 +3210,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         <div
                           key={i}
                           style={{
-                            background: "#24282d",
+                            background: "#1f2533",
                             border: "1px solid #ffffff0d",
                             borderRadius: 10,
                             padding: 10,
@@ -3459,7 +3540,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -3499,7 +3580,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     key={letra}
                     onClick={() => duplicarExercicio(modalDuplicar, letra)}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       border: "1px solid #ffffff0d",
                       borderRadius: 10,
                       color: "#f8fafc",
@@ -3550,7 +3631,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -3641,7 +3722,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "90%",
@@ -3687,7 +3768,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                   key={op.dias}
                   onClick={() => configurarCiclo(op.dias)}
                   style={{
-                    background: cicloDias === op.dias ? "#6366f1" : "#24282d",
+                    background: cicloDias === op.dias ? "#6366f1" : "#1f2533",
                     border: "1px solid #ffffff0d",
                     borderRadius: 10,
                     color: "#f8fafc",
@@ -3756,7 +3837,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               padding: "24px 20px",
               width: "92%",
@@ -3825,7 +3906,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                           onClick={() => setPreviewPreset(preset)}
                           style={{
                             textAlign: "left",
-                            background: "#24282d",
+                            background: "#1f2533",
                             border: "1px solid #ffffff0d",
                             borderRadius: 12,
                             padding: "12px 14px",
@@ -3896,7 +3977,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
         >
           <div
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               borderRadius: 20,
               width: "92%",
               maxWidth: 420,
@@ -3992,7 +4073,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 gap: 8,
                 padding: "14px 20px",
                 borderTop: "1px solid #ffffff0d",
-                background: "#1a1d21",
+                background: "#151a24",
                 flexShrink: 0,
               }}
             >
@@ -4217,7 +4298,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       size={15}
                       style={{ verticalAlign: -2, marginRight: 6 }}
                     />
-                    Importar treino (PDF/Foto)
+                    Importar treino (Texto/PDF/Foto)
                   </button>
                 </div>
               ) : (
@@ -4537,7 +4618,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               left: 0,
                               right: 0,
                               zIndex: 20,
-                              background: "#1a1d21",
+                              background: "#151a24",
                               border: "1px solid #ffffff0d",
                               borderRadius: 10,
                               marginTop: 4,
@@ -5180,7 +5261,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                 <div
                   style={{
                     textAlign: "center",
-                    background: "linear-gradient(155deg, #1c2026, #17191d)",
+                    background: "linear-gradient(155deg, #181d28, #12161e)",
                     border: "1px solid #ffffff10",
                     borderRadius: 16,
                     padding: "32px 20px",
@@ -5343,7 +5424,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                       <button
                         onClick={() => setPausadoMobilidade((p) => !p)}
                         style={{
-                          background: "#24282d",
+                          background: "#1f2533",
                           border: "1px solid #ffffff0d",
                           borderRadius: 10,
                           color: "#f8fafc",
@@ -5365,7 +5446,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                     <button
                       onClick={proximoExercicioMobilidade}
                       style={{
-                        background: "#24282d",
+                        background: "#1f2533",
                         border: "1px solid #ffffff0d",
                         borderRadius: 10,
                         color: "#f8fafc",
@@ -5426,7 +5507,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         key={r.id}
                         style={{
                           background:
-                            "linear-gradient(155deg, #1c2026, #17191d)",
+                            "linear-gradient(155deg, #181d28, #12161e)",
                           border: "1px solid #ffffff10",
                           borderRadius: 14,
                           padding: 14,
@@ -5535,7 +5616,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                               <div
                                 key={i}
                                 style={{
-                                  background: "#1a1d21",
+                                  background: "#151a24",
                                   border: "1px solid #ffffff0d",
                                   borderRadius: 8,
                                   padding: "8px 10px",
@@ -5644,7 +5725,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                         <button
                           onClick={carregarRotina5Min}
                           style={{
-                            background: "#1a1d21",
+                            background: "#151a24",
                             border: "1px dashed #6366f1",
                             borderRadius: 10,
                             color: "#818cf8",
@@ -5664,7 +5745,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            background: "#1a1d21",
+                            background: "#151a24",
                             border: "1px solid #ffffff0d",
                             borderRadius: 10,
                             padding: "10px 12px",
@@ -5718,7 +5799,7 @@ function Treino({ logout, user, abrirPerfil, onAbrirPerfilConcluido }) {
 
                   <div
                     style={{
-                      background: "linear-gradient(155deg, #1c2026, #17191d)",
+                      background: "linear-gradient(155deg, #181d28, #12161e)",
                       border: "1px solid #ffffff10",
                       borderRadius: 16,
                       padding: 16,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { Target, Scale, Dumbbell, ListChecks, Plus } from "lucide-react";
@@ -71,7 +72,7 @@ export default function MetasPessoais({ user }) {
     buscarTudo();
   }, [buscarTudo]);
 
-  const adicionarMeta = async () => {
+  const [adicionarMeta] = useTravado(async () => {
     if (!titulo || !valorAlvo || !dataPrazo) {
       toast("Preencha nome, valor alvo e prazo!", "error");
       return;
@@ -107,7 +108,7 @@ export default function MetasPessoais({ user }) {
     setDataPrazo("");
     setMostrarForm(false);
     toast("Meta criada! 🎯", "success");
-  };
+  });
 
   const removerMeta = async (id) => {
     const ok = await askConfirm("Remover essa meta?");
@@ -145,7 +146,7 @@ export default function MetasPessoais({ user }) {
       {metas.length === 0 && !mostrarForm && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #ffffff0d",
             borderRadius: 16,
             padding: "28px 20px",
@@ -199,7 +200,7 @@ export default function MetasPessoais({ user }) {
           <div
             key={m.id}
             style={{
-              background: "linear-gradient(155deg, #1c2026, #17191d)",
+              background: "linear-gradient(155deg, #181d28, #12161e)",
               border: `1px solid ${concluida ? "#10b98144" : prazoVencido ? "#ef444444" : "#ffffff10"}`,
               borderRadius: 16,
               padding: 16,
@@ -332,7 +333,7 @@ export default function MetasPessoais({ user }) {
       {mostrarForm ? (
         <div
           style={{
-            background: "linear-gradient(155deg, #1c2026, #17191d)",
+            background: "linear-gradient(155deg, #181d28, #12161e)",
             border: "1px solid #ffffff10",
             borderRadius: 16,
             padding: 18,
@@ -394,7 +395,7 @@ export default function MetasPessoais({ user }) {
           <div
             style={{
               marginTop: 8,
-              background: "#24282d",
+              background: "#1f2533",
               border: "1px solid #ffffff10",
               borderRadius: 8,
               padding: "10px 12px",

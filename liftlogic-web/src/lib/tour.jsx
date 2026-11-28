@@ -92,7 +92,7 @@ export default function Tour({ onFechar, onNavegar }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#1e2126",
+          background: "#1a1f2b",
           border: "1px solid #6366f1",
           borderRadius: 20,
           padding: "24px 22px 20px",
@@ -182,7 +182,7 @@ export default function Tour({ onFechar, onNavegar }) {
               <div
                 key={i}
                 style={{
-                  background: "#24282d",
+                  background: "#1f2533",
                   border: "1px solid #6366f144",
                   borderRadius: 8,
                   padding: "5px 10px",

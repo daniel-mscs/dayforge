@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { GraduationCap, Plus, Trash2, Check } from "lucide-react";
@@ -58,7 +59,7 @@ function fmtData(prazo) {
 }
 
 const card = {
-  background: "linear-gradient(155deg, #1c2026, #17191d)",
+  background: "linear-gradient(155deg, #181d28, #12161e)",
   border: "1px solid #ffffff10",
   borderRadius: 16,
   padding: 16,
@@ -218,7 +219,7 @@ export default function Faculdade({ user }) {
     buscar();
   }, [buscar]);
 
-  const adicionar = async () => {
+  const [adicionar] = useTravado(async () => {
     if (!titulo.trim()) return toast("Dá um nome pra tarefa", "error");
     if (!prazo) return toast("Escolhe o prazo", "error");
     const { data, error } = await supabase
@@ -241,7 +242,7 @@ export default function Faculdade({ user }) {
     setTitulo("");
     setAbrindo(false);
     toast("Tarefa adicionada 🎓", "success");
-  };
+  });
 
   const alternar = async (t) => {
     const novo = !t.feito;

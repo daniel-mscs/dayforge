@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 
@@ -45,7 +46,7 @@ const MESES_CURTOS = [
 ];
 
 const card = {
-  background: "linear-gradient(155deg, #1c2026, #17191d)",
+  background: "linear-gradient(155deg, #181d28, #12161e)",
   border: "1px solid #ffffff10",
   borderRadius: 16,
   padding: 16,
@@ -208,7 +209,7 @@ export default function Carteira({ user }) {
       vencimento: a.vencimento || "",
     });
 
-  const salvarAtivo = async () => {
+  const [salvarAtivo] = useTravado(async () => {
     const nome = form.nome.trim();
     if (!nome) return toast("Informe o nome/ticker!", "error");
     if (num(form.cotas) <= 0) return toast("Informe a quantidade!", "error");
@@ -248,7 +249,7 @@ export default function Carteira({ user }) {
     setForm(null);
     toast(form.id ? "Ativo atualizado!" : "Ativo adicionado!", "success");
     carregar();
-  };
+  });
 
   const apagarAtivo = async (a) => {
     if (
@@ -263,7 +264,7 @@ export default function Carteira({ user }) {
     carregar();
   };
 
-  const salvarCompra = async () => {
+  const [salvarCompra] = useTravado(async () => {
     const a = ativos.find((x) => x.id === compraForm.ativoId);
     const q = num(compraForm.cotas);
     const preco = num(compraForm.preco);
@@ -293,7 +294,7 @@ export default function Carteira({ user }) {
     setCompraForm(null);
     toast("Compra registrada!", "success");
     carregar();
-  };
+  });
 
   const apagarCompra = async (c) => {
     const a = ativos.find((x) => x.id === c.ativo_id);
@@ -327,7 +328,7 @@ export default function Carteira({ user }) {
     carregar();
   };
 
-  const salvarProvento = async () => {
+  const [salvarProvento] = useTravado(async () => {
     const a = ativos.find((x) => x.id === provForm.ativoId);
     const porCota = num(provForm.porCota);
     if (!a || porCota <= 0) return toast("Informe o valor por cota!", "error");
@@ -344,7 +345,7 @@ export default function Carteira({ user }) {
     setProvForm(null);
     toast("Provento lançado!", "success");
     carregar();
-  };
+  });
 
   const apagarProvento = async (p) => {
     if (!(await askConfirm("Apagar esse provento?"))) return;
@@ -448,7 +449,7 @@ export default function Carteira({ user }) {
               padding: "10px 8px",
               borderRadius: 10,
               border: "1px solid #ffffff10",
-              background: aba === id ? "#6366f1" : "#24282d",
+              background: aba === id ? "#6366f1" : "#1f2533",
               color: aba === id ? "#fff" : "#94a3b8",
               fontSize: 13,
               fontWeight: 700,
@@ -566,7 +567,7 @@ export default function Carteira({ user }) {
               onClick={() => setForm(null)}
               style={{
                 flex: 1,
-                background: "#24282d",
+                background: "#1f2533",
                 border: "1px solid #ffffff10",
                 borderRadius: 10,
                 color: "#94a3b8",
@@ -914,7 +915,7 @@ function Btn({ children, onClick, cor }) {
     <button
       onClick={onClick}
       style={{
-        background: "#24282d",
+        background: "#1f2533",
         border: `1px solid ${cor ? cor + "55" : "#ffffff10"}`,
         borderRadius: 8,
         color: cor || "#94a3b8",

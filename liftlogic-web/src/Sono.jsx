@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { Moon, Sun, Save, Lightbulb } from "lucide-react";
 import { SkeletonSono } from "./lib/skeleton";
@@ -90,7 +91,7 @@ export default function Sono({ user, onAjuda }) {
 
   const registroHoje = registros.find((r) => r.data === hoje);
 
-  const salvar = async () => {
+  const [salvar] = useTravado(async () => {
     setSalvando(true);
     const payload = {
       user_id: user.id,
@@ -111,7 +112,7 @@ export default function Sono({ user, onAjuda }) {
     setSalvando(false);
     setEditando(false);
     toast("Sono registrado!", "success");
-  };
+  });
 
   const deletar = async (id) => {
     await supabase.from("sono_registro").delete().eq("id", id);
@@ -359,7 +360,7 @@ export default function Sono({ user, onAjuda }) {
           <div
             key={i}
             style={{
-              background: "#1a1d21",
+              background: "#151a24",
               border: "1px solid #ffffff0d",
               borderRadius: 12,
               padding: 12,
@@ -394,7 +395,7 @@ export default function Sono({ user, onAjuda }) {
       {dadosGrafico.some((d) => d.horas > 0) && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #ffffff0d",
             borderRadius: 14,
             padding: 16,
@@ -418,7 +419,7 @@ export default function Sono({ user, onAjuda }) {
               <YAxis tick={{ fill: "#64748b", fontSize: 9 }} domain={[0, 10]} />
               <Tooltip
                 contentStyle={{
-                  background: "#1a1d21",
+                  background: "#151a24",
                   border: "1px solid #ffffff0d",
                   borderRadius: 8,
                   color: "#f8fafc",
@@ -435,7 +436,7 @@ export default function Sono({ user, onAjuda }) {
                         ? "#10b981"
                         : d.horas > 0
                           ? "#f59e0b"
-                          : "#24282d"
+                          : "#1f2533"
                     }
                   />
                 ))}
@@ -451,7 +452,7 @@ export default function Sono({ user, onAjuda }) {
 
       <div
         style={{
-          background: "#1a1d21",
+          background: "#151a24",
           border: "1px solid #ffffff0d",
           borderRadius: 14,
           padding: 16,
@@ -516,7 +517,7 @@ export default function Sono({ user, onAjuda }) {
                 <div
                   key={i}
                   style={{
-                    background: "#24282d",
+                    background: "#1f2533",
                     borderRadius: 10,
                     padding: "10px 12px",
                     textAlign: "center",
@@ -542,7 +543,7 @@ export default function Sono({ user, onAjuda }) {
             </div>
             <div
               style={{
-                background: "#24282d",
+                background: "#1f2533",
                 borderRadius: 10,
                 padding: "10px 14px",
                 display: "flex",
@@ -617,7 +618,7 @@ export default function Sono({ user, onAjuda }) {
             {dormiu && acordou && (
               <div
                 style={{
-                  background: "#24282d",
+                  background: "#1f2533",
                   borderRadius: 10,
                   padding: "8px 14px",
                   textAlign: "center",
@@ -650,7 +651,7 @@ export default function Sono({ user, onAjuda }) {
                     style={{
                       flex: 1,
                       background:
-                        qualidade === q ? qualidadeCor(q) + "33" : "#24282d",
+                        qualidade === q ? qualidadeCor(q) + "33" : "#1f2533",
                       border: `1px solid ${qualidade === q ? qualidadeCor(q) : "#ffffff0d"}`,
                       borderRadius: 8,
                       color: qualidade === q ? qualidadeCor(q) : "#64748b",
@@ -728,7 +729,7 @@ export default function Sono({ user, onAjuda }) {
       {registros.filter((r) => r.data !== hoje).length > 0 && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #ffffff0d",
             borderRadius: 14,
             padding: 16,
@@ -755,7 +756,7 @@ export default function Sono({ user, onAjuda }) {
                   <div
                     key={r.id}
                     style={{
-                      background: "#24282d",
+                      background: "#1f2533",
                       borderRadius: 10,
                       padding: "10px 14px",
                       display: "flex",
@@ -822,7 +823,7 @@ export default function Sono({ user, onAjuda }) {
 
       <div
         style={{
-          background: "#1a1d21",
+          background: "#151a24",
           border: "1px solid #6366f122",
           borderRadius: 14,
           padding: 16,

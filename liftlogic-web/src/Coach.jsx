@@ -450,7 +450,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
       {/* Período */}
       <div
         style={{
-          background: "#1a1d21",
+          background: "#151a24",
           border: "1px solid #ffffff0d",
           borderRadius: 16,
           padding: 16,
@@ -479,7 +479,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
                 }}
                 style={{
                   flex: 1,
-                  background: sel ? "#6366f122" : "#24282d",
+                  background: sel ? "#6366f122" : "#1f2533",
                   border: `1px solid ${sel ? "#6366f1" : "#ffffff0d"}`,
                   borderRadius: 12,
                   padding: "10px 4px",
@@ -579,7 +579,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
       {prompt && (
         <div
           style={{
-            background: "#1a1d21",
+            background: "#151a24",
             border: "1px solid #6366f133",
             borderRadius: 16,
             padding: 20,
@@ -660,7 +660,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
           {/* Preview resumido */}
           <div
             style={{
-              background: "#24282d",
+              background: "#1f2533",
               borderRadius: 10,
               padding: 12,
               marginBottom: 14,
@@ -702,7 +702,7 @@ Seja direto, use os números reais, evite respostas genéricas.`;
                 rel="noopener noreferrer"
                 style={{
                   flex: 1,
-                  background: "#24282d",
+                  background: "#1f2533",
                   border: "1px solid #ffffff0d",
                   borderRadius: 10,
                   padding: "10px 4px",

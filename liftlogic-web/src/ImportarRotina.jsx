@@ -57,9 +57,16 @@ export default function ImportarRotina({ user, dias, onFechar, onConcluido }) {
       return;
     setImportando(true);
     try {
-      // 1) garante que cada data existe em rotina_dias
+      // 1) garante que cada data existe em rotina_dias.
+      // Usa o PRIMEIRO registro de cada data (o mesmo que a tela da Rotina
+      // mostra). Se houver registros duplicados da mesma data, guarda todos
+      // para apagar as tarefas de todos ao substituir.
       const mapa = {};
-      dias.forEach((d) => (mapa[d.data] = d.id));
+      const todosIdsDaData = {};
+      dias.forEach((d) => {
+        if (!mapa[d.data]) mapa[d.data] = d.id;
+        (todosIdsDaData[d.data] ||= []).push(d.id);
+      });
       const faltando = diasLidos
         .filter((d) => !mapa[d.data])
         .map((d) => d.data);
@@ -75,11 +82,25 @@ export default function ImportarRotina({ user, dias, onFechar, onConcluido }) {
 
       // 2) tarefas já existentes (pra não duplicar / continuar a ordem)
       if (substituir) {
-        const { error } = await supabase
+        const idsParaLimpar = diasLidos.flatMap(
+          (d) => todosIdsDaData[d.data] || [mapa[d.data]],
+        );
+        const { count: antes } = await supabase
+          .from("rotina_tarefas")
+          .select("id", { count: "exact", head: true })
+          .in("dia_id", idsParaLimpar);
+        const { data: apagadas, error } = await supabase
           .from("rotina_tarefas")
           .delete()
-          .in("dia_id", ids);
+          .in("dia_id", idsParaLimpar)
+          .select("id");
         if (error) throw error;
+        // O Supabase não dá erro quando a permissão (RLS) impede apagar:
+        // só não apaga nada. Avisa em vez de duplicar as tarefas.
+        if ((antes || 0) > 0 && (apagadas || []).length === 0)
+          throw new Error(
+            "não foi possível apagar as tarefas antigas (permissão do banco). Nada foi importado.",
+          );
       }
       const { data: existentes } = substituir
         ? { data: [] }
@@ -161,7 +182,7 @@ export default function ImportarRotina({ user, dias, onFechar, onConcluido }) {
           rows={9}
           style={{
             width: "100%",
-            background: "#24282d",
+            background: "#1f2533",
             border: "1px solid #ffffff10",
             borderRadius: 10,
             color: "#f8fafc",
@@ -253,7 +274,7 @@ export default function ImportarRotina({ user, dias, onFechar, onConcluido }) {
             onClick={onFechar}
             style={{
               flex: 1,
-              background: "#24282d",
+              background: "#1f2533",
               border: "1px solid #ffffff10",
               borderRadius: 10,
               color: "#94a3b8",

@@ -75,7 +75,7 @@ export default function Onboarding({ user, onConcluir }) {
     fontWeight: 700,
     cursor: "pointer",
     border: `1px solid ${ativo ? "#6366f1" : "#ffffff0d"}`,
-    background: ativo ? "#6366f1" : "#1a1d21",
+    background: ativo ? "#6366f1" : "#151a24",
     color: ativo ? "#fff" : "#64748b",
     transition: "all 0.2s",
   });
@@ -188,7 +188,7 @@ export default function Onboarding({ user, onConcluir }) {
                 height: 4,
                 borderRadius: 99,
                 background:
-                  etapa > n ? "#10b981" : etapa === n ? "#6366f1" : "#1e2126",
+                  etapa > n ? "#10b981" : etapa === n ? "#6366f1" : "#1a1f2b",
                 transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)",
               }}
             />
@@ -259,7 +259,7 @@ export default function Onboarding({ user, onConcluir }) {
                 style={{
                   background: form.nome.trim()
                     ? "linear-gradient(135deg, #6366f1, #4f46e5)"
-                    : "#1e2126",
+                    : "#1a1f2b",
                   border: "none",
                   borderRadius: 12,
                   color: "#fff",
@@ -544,7 +544,7 @@ export default function Onboarding({ user, onConcluir }) {
                       key={o.id}
                       onClick={() => set("objetivo", o.id)}
                       style={{
-                        background: ativo ? `${o.cor}15` : "#1a1d21",
+                        background: ativo ? `${o.cor}15` : "#151a24",
                         border: `1px solid ${ativo ? o.cor + "66" : "#ffffff0d"}`,
                         borderRadius: 14,
                         padding: "16px 18px",
@@ -562,7 +562,7 @@ export default function Onboarding({ user, onConcluir }) {
                           width: 48,
                           height: 48,
                           borderRadius: 12,
-                          background: ativo ? `${o.cor}22` : "#24282d",
+                          background: ativo ? `${o.cor}22` : "#1f2533",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -598,7 +598,7 @@ export default function Onboarding({ user, onConcluir }) {
                           width: 22,
                           height: 22,
                           borderRadius: "50%",
-                          background: ativo ? o.cor : "#24282d",
+                          background: ativo ? o.cor : "#1f2533",
                           border: `2px solid ${ativo ? o.cor : "#ffffff1a"}`,
                           display: "flex",
                           alignItems: "center",

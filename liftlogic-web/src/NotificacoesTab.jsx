@@ -125,7 +125,7 @@ export default function NotificacoesTab({
 
       <div
         style={{
-          background: "#1a1d21",
+          background: "#151a24",
           border: "1px solid #ffffff0d",
           borderRadius: 16,
           padding: 16,
@@ -151,7 +151,7 @@ export default function NotificacoesTab({
               <div
                 key={n.id}
                 style={{
-                  background: "#24282d",
+                  background: "#1f2533",
                   borderRadius: 12,
                   padding: "12px 14px",
                 }}
