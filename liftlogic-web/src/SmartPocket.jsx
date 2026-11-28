@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { agendarNotificacaoContasPendentes } from "./lib/notifications";
 import { askConfirm } from "./lib/confirm";
@@ -599,7 +600,7 @@ export default function SmartPocket({ user }) {
 
   const [gastoEssencial, setGastoEssencial] = useState(true);
 
-  const adicionarGasto = async () => {
+  const [adicionarGasto] = useTravado(async () => {
     if (!gastoNome || !gastoValor) return toast("Preencha os campos!", "error");
     const { data, error } = await supabase
       .from("financeiro_gastos")
@@ -622,9 +623,9 @@ export default function SmartPocket({ user }) {
     setGastoValor("");
     setGastoData("");
     document.getElementById("gasto-nome")?.focus();
-  };
+  });
 
-  const adicionarCartao = async () => {
+  const [adicionarCartao] = useTravado(async () => {
     if (!cartaoItem || !cartaoValor)
       return toast("Preencha os campos!", "error");
     if (!cartaoSelecionado)
@@ -687,9 +688,9 @@ export default function SmartPocket({ user }) {
     setCartaoParcelado(false);
     setCartaoParcelas("2");
     document.getElementById("cartao-item")?.focus();
-  };
+  });
 
-  const adicionarCartaoConta = async () => {
+  const [adicionarCartaoConta] = useTravado(async () => {
     if (!novoCartaoNome) return toast("Dá um nome pro cartão!", "error");
     const diaVenc = parseInt(novoCartaoVencimento, 10) || 10;
     let diaFech = diaVenc - 7;
@@ -710,7 +711,7 @@ export default function SmartPocket({ user }) {
     if (!cartaoSelecionado) setCartaoSelecionado(data[0].id);
     setNovoCartaoNome("");
     setNovoCartaoVencimento("10");
-  };
+  });
 
   const removerCartaoConta = async (id) => {
     const ok = await askConfirm(
@@ -742,7 +743,7 @@ export default function SmartPocket({ user }) {
       .eq("id", id);
   };
 
-  const salvarLimite = async () => {
+  const [salvarLimite] = useTravado(async () => {
     if (!novoLimiteValor) return toast("Informe o valor do limite!", "error");
     const { data, error } = await supabase
       .from("financeiro_limites")
@@ -761,14 +762,14 @@ export default function SmartPocket({ user }) {
       data[0],
     ]);
     setNovoLimiteValor("");
-  };
+  });
 
   const removerLimite = async (id) => {
     await supabase.from("financeiro_limites").delete().eq("id", id);
     setLimites((prev) => prev.filter((l) => l.id !== id));
   };
 
-  const adicionarRecorrente = async () => {
+  const [adicionarRecorrente] = useTravado(async () => {
     if (!novoRecorrenteNome || !novoRecorrenteValor)
       return toast("Preencha os campos!", "error");
     if (novoRecorrenteTipo === "cartao" && !novoRecorrenteCartaoId)
@@ -800,7 +801,7 @@ export default function SmartPocket({ user }) {
     setNovoRecorrenteNome("");
     setNovoRecorrenteValor("");
     document.getElementById("recorrente-nome")?.focus();
-  };
+  });
 
   const removerRecorrente = async (id) => {
     await supabase.from("financeiro_recorrentes").delete().eq("id", id);
@@ -815,7 +816,7 @@ export default function SmartPocket({ user }) {
       .upsert({ user_id: user.id, ...atualizado }, { onConflict: "user_id" });
   };
 
-  const salvarSaldoInicial = async (valor) => {
+  const [salvarSaldoInicial] = useTravado(async (valor) => {
     setSaldoAcumulado(valor);
     await supabase
       .from("financeiro_saldo_inicial")
@@ -823,9 +824,9 @@ export default function SmartPocket({ user }) {
         { user_id: user.id, mes, ano, valor, manual: true },
         { onConflict: "user_id,mes,ano" },
       );
-  };
+  });
 
-  const adicionarConta = async () => {
+  const [adicionarConta] = useTravado(async () => {
     if (!contaNome || !contaPlanejado)
       return toast("Preencha nome e valor planejado!", "error");
     const { data, error } = await supabase
@@ -845,7 +846,7 @@ export default function SmartPocket({ user }) {
     setContaNome("");
     setContaPlanejado("");
     document.getElementById("conta-nome")?.focus();
-  };
+  });
 
   const marcarContaPaga = async (conta, valorPago) => {
     const val = parseFloat(valorPago);
@@ -875,7 +876,7 @@ export default function SmartPocket({ user }) {
     );
   };
 
-  const adicionarMeta = async () => {
+  const [adicionarMeta] = useTravado(async () => {
     if (!metaNome || !metaValorAlvo)
       return toast("Preencha nome e valor da meta!", "error");
     const { data, error } = await supabase
@@ -894,7 +895,7 @@ export default function SmartPocket({ user }) {
     setMetaNome("");
     setMetaValorAlvo("");
     document.getElementById("meta-nome")?.focus();
-  };
+  });
 
   const contribuirMeta = async (meta) => {
     const val = parseFloat(contribuicaoInput[meta.id]);
@@ -926,7 +927,7 @@ export default function SmartPocket({ user }) {
     );
   };
 
-  const adicionarDivida = async () => {
+  const [adicionarDivida] = useTravado(async () => {
     if (!dividaPessoa || !dividaValor)
       return toast("Preencha quem deve e o valor!", "error");
 
@@ -961,7 +962,7 @@ export default function SmartPocket({ user }) {
     setDividaParcelado(false);
     setDividaParcelas("2");
     document.getElementById("divida-pessoa")?.focus();
-  };
+  });
 
   const marcarDividaRecebida = async (id) => {
     const hojeStr = formatarDataHoje();
@@ -1132,7 +1133,7 @@ export default function SmartPocket({ user }) {
     toast("Gasto atualizado!", "success");
   };
 
-  const clonarMesPassado = async () => {
+  const [clonarMesPassado] = useTravado(async () => {
     if (clonandoMes) return;
     setClonandoMes(true);
     const mp = mes === 0 ? { mes: 11, ano: ano - 1 } : { mes: mes - 1, ano };
@@ -1237,9 +1238,9 @@ export default function SmartPocket({ user }) {
       toast("Erro ao clonar: " + err.message, "error");
     }
     setClonandoMes(false);
-  };
+  });
 
-  const adicionarInvestimento = async () => {
+  const [adicionarInvestimento] = useTravado(async () => {
     if (!investValor) return toast("Informe o valor!", "error");
     const { data, error } = await supabase
       .from("financeiro_investimentos")
@@ -1256,9 +1257,9 @@ export default function SmartPocket({ user }) {
     if (error) return toast(error.message, "error");
     setInvestimentos((prev) => [data[0], ...prev]);
     setInvestValor("");
-  };
+  });
 
-  const adicionarEntrada = async () => {
+  const [adicionarEntrada] = useTravado(async () => {
     if (!entradaNome || !entradaValor)
       return toast("Preencha os campos!", "error");
     const { data, error } = await supabase
@@ -1278,7 +1279,7 @@ export default function SmartPocket({ user }) {
     setEntradaNome("");
     setEntradaValor("");
     document.getElementById("entrada-nome")?.focus();
-  };
+  });
 
   const deletar = async (tabela, id, setter) => {
     await supabase.from(tabela).delete().eq("id", id);

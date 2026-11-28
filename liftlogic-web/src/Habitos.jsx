@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { ganharXP } from "./lib/rpg";
 import {
   Dumbbell,
@@ -168,7 +169,7 @@ export default function Habitos({ user, compact = false, onAjuda }) {
     setStreak(calcularStreak(novoMapa));
   };
 
-  const adicionarCustom = async () => {
+  const [adicionarCustom] = useTravado(async () => {
     if (!novoLabel.trim()) {
       toast("Digite o nome do hábito!", "error");
       return;
@@ -193,7 +194,7 @@ export default function Habitos({ user, compact = false, onAjuda }) {
     setNovoIcon("⭐");
     setShowForm(false);
     setShowEmojis(false);
-  };
+  });
 
   const deletarCustom = async (customId) => {
     const ok = await askConfirm("Remover este hábito?");

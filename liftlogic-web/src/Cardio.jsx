@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { ganharXP } from "./lib/rpg";
 import {
@@ -105,7 +106,7 @@ export default function Cardio({ user }) {
 
   const ativSelecionada = ATIVIDADES.find((a) => a.id === form.tipo);
 
-  const registrar = async () => {
+  const [registrar] = useTravado(async () => {
     if (!form.duracao) {
       toast("Informe a duração!", "warning");
       return;
@@ -154,7 +155,7 @@ export default function Cardio({ user }) {
     setMsgCelebracao(mensagens[Math.floor(Math.random() * mensagens.length)]);
     setCelebrando(true);
     setTimeout(() => setCelebrando(false), 3000);
-  };
+  });
 
   const deletar = async (id) => {
     await supabase.from("cardio_registro").delete().eq("id", id);

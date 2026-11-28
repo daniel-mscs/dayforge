@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./lib/supabase";
 import { REFEICOES_OPTS, refeicaoPorHorario } from "./lib/refeicao";
 
@@ -129,8 +129,10 @@ export default function RefeicaoRapida({ user, onSalvar, onManual }) {
   const g = parseFloat(String(gramas).replace(",", "."));
   const preview = foodSel && g > 0 ? calcMacros(foodSel, g) : null;
 
+  const jaSalvou = useRef(false);
   const salvar = () => {
-    if (!preview) return;
+    if (!preview || jaSalvou.current) return; // evita dois toques seguidos
+    jaSalvou.current = true;
     onSalvar({ nome: foodSel.nome, gramas: g, refeicao, ...preview });
   };
 

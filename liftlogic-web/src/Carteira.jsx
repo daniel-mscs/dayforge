@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 
@@ -208,7 +209,7 @@ export default function Carteira({ user }) {
       vencimento: a.vencimento || "",
     });
 
-  const salvarAtivo = async () => {
+  const [salvarAtivo] = useTravado(async () => {
     const nome = form.nome.trim();
     if (!nome) return toast("Informe o nome/ticker!", "error");
     if (num(form.cotas) <= 0) return toast("Informe a quantidade!", "error");
@@ -248,7 +249,7 @@ export default function Carteira({ user }) {
     setForm(null);
     toast(form.id ? "Ativo atualizado!" : "Ativo adicionado!", "success");
     carregar();
-  };
+  });
 
   const apagarAtivo = async (a) => {
     if (
@@ -263,7 +264,7 @@ export default function Carteira({ user }) {
     carregar();
   };
 
-  const salvarCompra = async () => {
+  const [salvarCompra] = useTravado(async () => {
     const a = ativos.find((x) => x.id === compraForm.ativoId);
     const q = num(compraForm.cotas);
     const preco = num(compraForm.preco);
@@ -293,7 +294,7 @@ export default function Carteira({ user }) {
     setCompraForm(null);
     toast("Compra registrada!", "success");
     carregar();
-  };
+  });
 
   const apagarCompra = async (c) => {
     const a = ativos.find((x) => x.id === c.ativo_id);
@@ -327,7 +328,7 @@ export default function Carteira({ user }) {
     carregar();
   };
 
-  const salvarProvento = async () => {
+  const [salvarProvento] = useTravado(async () => {
     const a = ativos.find((x) => x.id === provForm.ativoId);
     const porCota = num(provForm.porCota);
     if (!a || porCota <= 0) return toast("Informe o valor por cota!", "error");
@@ -344,7 +345,7 @@ export default function Carteira({ user }) {
     setProvForm(null);
     toast("Provento lançado!", "success");
     carregar();
-  };
+  });
 
   const apagarProvento = async (p) => {
     if (!(await askConfirm("Apagar esse provento?"))) return;

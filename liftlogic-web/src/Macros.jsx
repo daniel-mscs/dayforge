@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import {
   BarChart,
   Bar,
@@ -322,7 +323,7 @@ export default function Macros({ user, onAjuda }) {
     setRefeicaoSel(refeicaoAtualSugerida());
   }, []);
 
-  const adicionarAlimento = async () => {
+  const [adicionarAlimento, adicionando] = useTravado(async () => {
     if (!foodSel) {
       toast("Selecione um alimento!", "warning");
       return;
@@ -357,14 +358,14 @@ export default function Macros({ user, onAjuda }) {
     setSugestoes([]);
     toast("Alimento adicionado!", "success");
     await ganharXP(user.id, "macros_registrado");
-  };
+  });
 
   const deletarRegistro = async (id) => {
     await supabase.from("macros_registro").delete().eq("id", id);
     setRegistros((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const salvarMeta = async () => {
+  const [salvarMeta, salvandoMeta] = useTravado(async () => {
     const val = parseInt(metaInput);
     if (!val || val < 500) {
       toast("Meta inválida!", "warning");
@@ -376,9 +377,9 @@ export default function Macros({ user, onAjuda }) {
     setMeta(val);
     setMetaInput("");
     setEditandoMeta(false);
-  };
+  });
 
-  const salvarCustom = async () => {
+  const [salvarCustom, salvandoCustom] = useTravado(async () => {
     const { nome, kcal, prot, carb, gord, vit_c, vit_d, calcio, ferro, fibra } =
       novoAlimento;
     if (!nome || !kcal) {
@@ -422,7 +423,7 @@ export default function Macros({ user, onAjuda }) {
     });
     setShowCustomForm(false);
     toast("Alimento salvo!", "success");
-  };
+  });
 
   const buscarHistoricoDia = async (data) => {
     if (!data) return;
@@ -455,7 +456,7 @@ export default function Macros({ user, onAjuda }) {
     setCarregandoClonar(false);
   };
 
-  const clonarAlimento = async (r) => {
+  const [clonarAlimento, clonando] = useTravado(async (r) => {
     const g = parseFloat(gramasClonar[r.id] ?? r.gramas);
     if (!g || g <= 0) {
       toast("Digite uma quantidade válida!", "warning");
@@ -502,7 +503,7 @@ export default function Macros({ user, onAjuda }) {
     setRegistros((prev) => [...prev, data[0]]);
     toast("Alimento clonado!", "success");
     await ganharXP(user.id, "macros_registrado");
-  };
+  });
 
   const total = registros.reduce(
     (acc, r) => ({
@@ -1081,8 +1082,13 @@ export default function Macros({ user, onAjuda }) {
               </option>
             ))}
           </select>
-          <button className="macros-btn-add" onClick={adicionarAlimento}>
-            + Add
+          <button
+            className="macros-btn-add"
+            onClick={adicionarAlimento}
+            disabled={adicionando}
+            style={adicionando ? { opacity: 0.6 } : undefined}
+          >
+            {adicionando ? "Salvando..." : "+ Add"}
           </button>
         </div>
         {preview && (
@@ -1241,7 +1247,9 @@ export default function Macros({ user, onAjuda }) {
                       </select>
                       <button
                         onClick={() => clonarAlimento(r)}
+                        disabled={clonando}
                         style={{
+                          opacity: clonando ? 0.6 : 1,
                           background: "#6366f1",
                           border: "none",
                           borderRadius: 8,
@@ -1392,8 +1400,12 @@ export default function Macros({ user, onAjuda }) {
               }}
               autoFocus
             />
-            <button className="macros-btn-add" onClick={salvarMeta}>
-              Salvar
+            <button
+              className="macros-btn-add"
+              onClick={salvarMeta}
+              disabled={salvandoMeta}
+            >
+              {salvandoMeta ? "Salvando..." : "Salvar"}
             </button>
             <button
               className="peso-btn-cancelar"
@@ -1543,8 +1555,12 @@ export default function Macros({ user, onAjuda }) {
                 />
               </div>
             </div>
-            <button className="macros-btn-add" onClick={salvarCustom}>
-              Salvar alimento
+            <button
+              className="macros-btn-add"
+              onClick={salvarCustom}
+              disabled={salvandoCustom}
+            >
+              {salvandoCustom ? "Salvando..." : "Salvar alimento"}
             </button>
           </div>
         )}

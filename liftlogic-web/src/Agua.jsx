@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import {
   Droplet,
@@ -98,7 +99,7 @@ export default function Agua({ user, onAjuda }) {
   const totalHoje = registros.reduce((sum, r) => sum + r.ml, 0);
   const pct = Math.min(100, Math.round((totalHoje / meta) * 100));
 
-  const adicionarAgua = async (ml) => {
+  const [adicionarAgua] = useTravado(async (ml) => {
     if (!ml || ml <= 0) return;
     const hora = new Date().toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -123,7 +124,7 @@ export default function Agua({ user, onAjuda }) {
       [hoje]: [data[0], ...(prev[hoje] || [])],
     }));
     setCustomMl("");
-  };
+  });
 
   const deletarRegistro = async (id) => {
     await supabase.from("agua_registro").delete().eq("id", id);
@@ -134,7 +135,7 @@ export default function Agua({ user, onAjuda }) {
     }));
   };
 
-  const salvarMeta = async (novoMl) => {
+  const [salvarMeta] = useTravado(async (novoMl) => {
     const val = Number(novoMl || metaInput);
     if (!val || val < 500) {
       toast("Meta inválida!", "warning");
@@ -146,7 +147,7 @@ export default function Agua({ user, onAjuda }) {
     setMeta(val);
     setMetaInput("");
     toast("Meta atualizada!", "success");
-  };
+  });
 
   const sugerirMeta = (tipo) => {
     if (!perfil?.peso) {

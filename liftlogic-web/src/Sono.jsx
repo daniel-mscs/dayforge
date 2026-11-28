@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { Moon, Sun, Save, Lightbulb } from "lucide-react";
 import { SkeletonSono } from "./lib/skeleton";
@@ -90,7 +91,7 @@ export default function Sono({ user, onAjuda }) {
 
   const registroHoje = registros.find((r) => r.data === hoje);
 
-  const salvar = async () => {
+  const [salvar] = useTravado(async () => {
     setSalvando(true);
     const payload = {
       user_id: user.id,
@@ -111,7 +112,7 @@ export default function Sono({ user, onAjuda }) {
     setSalvando(false);
     setEditando(false);
     toast("Sono registrado!", "success");
-  };
+  });
 
   const deletar = async (id) => {
     await supabase.from("sono_registro").delete().eq("id", id);

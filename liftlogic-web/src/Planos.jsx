@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { askConfirm, askPrompt } from "./lib/confirm";
 import { MODELOS_PLANO } from "./lib/planosModelos";
@@ -249,7 +250,7 @@ export default function Planos({ user }) {
     setCriando(true);
   };
 
-  const criarPlano = async () => {
+  const [criarPlano] = useTravado(async () => {
     if (!novoTitulo.trim()) return toast("Dê um nome pro plano!", "error");
     setSalvando(true);
     const modelo = MODELOS_PLANO.find((m) => m.id === modeloId);
@@ -299,7 +300,7 @@ export default function Planos({ user }) {
     setSalvando(false);
     setAbertoId(plano.id);
     toast("Plano criado! 🎯", "success");
-  };
+  });
 
   const plano = planos.find((p) => p.id === abertoId);
   const itensDoPlano = itens
@@ -417,7 +418,7 @@ export default function Planos({ user }) {
     }
   };
 
-  const adicionarItem = async (grupo) => {
+  const [adicionarItem] = useTravado(async (grupo) => {
     const texto = await askPrompt(`Novo item em "${grupo}":`, "");
     if (!texto || !texto.trim()) return;
     const ordem = itens.length
@@ -438,9 +439,9 @@ export default function Planos({ user }) {
       .select();
     if (error) return toast(error.message, "error");
     setItens((prev) => [...prev, data[0]]);
-  };
+  });
 
-  const novoGrupo = async () => {
+  const [novoGrupo] = useTravado(async () => {
     const nome = await askPrompt("Nome do novo grupo (ex: Documentos):", "");
     if (!nome || !nome.trim()) return;
     const ordem = itens.length
@@ -462,7 +463,7 @@ export default function Planos({ user }) {
     if (error) return toast(error.message, "error");
     setItens((prev) => [...prev, data[0]]);
     toast("Grupo criado! ✅", "success");
-  };
+  });
 
   const renomearGrupo = async (grupo) => {
     const nome = await askPrompt("Novo nome do grupo:", grupo);

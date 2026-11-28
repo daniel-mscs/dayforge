@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { agendarNotificacoesSuplementos } from "./lib/notifications";
 import { SkeletonSupl } from "./lib/skeleton";
@@ -141,7 +142,7 @@ export default function Suplementos({
     gotas: " gotas",
   };
 
-  const adicionarSupl = async () => {
+  const [adicionarSupl] = useTravado(async () => {
     if (!nomeInput.trim() || !doseInput.trim()) {
       toast("Preencha nome e dose!", "warning");
       return;
@@ -186,7 +187,7 @@ export default function Suplementos({
     setMostrarVitaminas(false);
     toast("Suplemento adicionado!", "success");
     agendarNotificacoesSuplementos(novaLista);
-  };
+  });
 
   const deletarSupl = async (id) => {
     await supabase.from("suplementos").delete().eq("id", id);

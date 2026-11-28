@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import { toast } from "./lib/toast";
 import { askConfirm } from "./lib/confirm";
 import { Target, Scale, Dumbbell, ListChecks, Plus } from "lucide-react";
@@ -71,7 +72,7 @@ export default function MetasPessoais({ user }) {
     buscarTudo();
   }, [buscarTudo]);
 
-  const adicionarMeta = async () => {
+  const [adicionarMeta] = useTravado(async () => {
     if (!titulo || !valorAlvo || !dataPrazo) {
       toast("Preencha nome, valor alvo e prazo!", "error");
       return;
@@ -107,7 +108,7 @@ export default function MetasPessoais({ user }) {
     setDataPrazo("");
     setMostrarForm(false);
     toast("Meta criada! 🎯", "success");
-  };
+  });
 
   const removerMeta = async (id) => {
     const ok = await askConfirm("Remover essa meta?");

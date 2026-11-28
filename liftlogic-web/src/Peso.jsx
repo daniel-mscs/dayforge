@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "./lib/supabase";
+import { useTravado } from "./lib/useTravado";
 import {
   LineChart,
   Line,
@@ -250,7 +251,7 @@ export default function Peso({ user, onAjuda }) {
     buscarTudo();
   }, [buscarTudo]);
 
-  const registrarPeso = async () => {
+  const [registrarPeso] = useTravado(async () => {
     const val = parseFloat(pesoInput);
     if (!val || val < 30 || val > 300) {
       toast("Digite um peso válido!", "warning");
@@ -288,14 +289,14 @@ export default function Peso({ user, onAjuda }) {
     setPerfil((prev) => ({ ...prev, peso: val }));
     setPesoInput("");
     await ganharXP(user.id, "peso_registrado");
-  };
+  });
 
   const deletarRegistro = async (id) => {
     await supabase.from("peso_registro").delete().eq("id", id);
     setRegistros((prev) => prev.filter((r) => r.id !== id));
   };
 
-  const salvarMeta = async () => {
+  const [salvarMeta] = useTravado(async () => {
     const val = parseFloat(metaInput);
     if (!val || val < 30) {
       toast("Meta inválida!", "warning");
@@ -307,7 +308,7 @@ export default function Peso({ user, onAjuda }) {
     setMeta(val);
     setMetaInput("");
     setEditandoMeta(false);
-  };
+  });
 
   const mediaSemana = () => {
     const ultimos7 = registros.filter(
